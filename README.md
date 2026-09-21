@@ -22,9 +22,15 @@ Build 3.0 adds Supabase email OTP sign-in. Returning users with a valid session 
 
 For a 6-digit email code, configure the Supabase Auth email template to include `{{ .Token }}`. Existing VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY variables are used.
 
-## Build 3.1 — Passkeys
-- Adds Supabase WebAuthn passkey support using `@supabase/supabase-js` 2.105+ experimental passkey API.
-- Welcome screen offers **Sign in with Face ID / Passkey** plus email OTP fallback.
-- My Golf offers **Set up Face ID / Passkey** for an authenticated golfer.
-- Email OTP input accepts 6–10 digits so it works with the project's current OTP length while settings are being finalised.
-- Supabase Dashboard must have Passkeys enabled with RP ID `golfgainzcomps.co.uk` and origin `https://golfgainzcomps.co.uk`.
+
+## Build 3.1 Passkeys
+Adds Supabase WebAuthn passkey registration/sign-in. Requires Authentication > Passkeys enabled with RP ID golfgainzcomps.co.uk and origin https://golfgainzcomps.co.uk. Email OTP remains fallback/recovery. OTP input accepts 6-10 digits.
+
+## Build 3.2 additions
+- Society creation no longer requires an Admin PIN; authenticated owner/admin roles control management.
+- Society naming copy clarified and example placeholder removed.
+- Society owners can permanently delete a society after a destructive confirmation.
+- New competition defaults: Stableford, no course/tee selected, £0, 1 day, separate daily pots on, 100/0/0 pot and prize split.
+- Prize weighting and overall split auto-balance to exactly 100%.
+- Played-with contacts and future competition invites; contacts can be removed with confirmation.
+- Active competition is remembered locally so returning to the site offers Continue Scoring; hole scores already autosave to local/cloud state.

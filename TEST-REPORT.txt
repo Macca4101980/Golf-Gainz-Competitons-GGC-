@@ -1,0 +1,21 @@
+GGC Build 3.2 static regression checks
+======================================
+PASS - Build label 3.2
+PASS - No society PIN input
+PASS - Society delete warning
+PASS - Course defaults blank
+PASS - Fee defaults zero
+PASS - Daily pots default on
+PASS - Pot defaults 100/0/0
+PASS - Prize defaults 100/0/0
+PASS - Auto balance exists
+PASS - Contacts persisted
+PASS - Contact remove confirm
+PASS - Invites persisted
+PASS - Pending invite accept
+PASS - Active comp persisted
+PASS - Resume scoring banner
+PASS - Hole autosave
+PASS - Passkey retained
+
+17/17 checks passed.

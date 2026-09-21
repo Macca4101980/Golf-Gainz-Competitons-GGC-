@@ -34,3 +34,10 @@ Adds Supabase WebAuthn passkey registration/sign-in. Requires Authentication > P
 - Prize weighting and overall split auto-balance to exactly 100%.
 - Played-with contacts and future competition invites; contacts can be removed with confirmation.
 - Active competition is remembered locally so returning to the site offers Continue Scoring; hole scores already autosave to local/cloud state.
+
+## Build 3.3
+- Permanent player profile table keyed directly to Supabase Auth UUID. A deployment/browser cache change no longer defines the user's identity.
+- Run `supabase-setup-3.3.sql` once in Supabase SQL Editor before testing this build.
+- Passkey status is stored on the cloud profile. My Golf changes to “Passkey enabled” and offers “Set up a new passkey” after successful registration.
+- Prize Pot Weighting and Overall Prize Split use 10% dropdowns and remain constrained to 100%.
+- Existing competition/society state remains in `ggc_state` for this migration build so current data is not intentionally discarded.

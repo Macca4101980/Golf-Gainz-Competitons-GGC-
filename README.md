@@ -21,3 +21,10 @@ Security note: Build 2.3 still uses the shared ggc_state cloud document. UI perm
 Build 3.0 adds Supabase email OTP sign-in. Returning users with a valid session go straight into GGC. New authenticated users are asked to create a display name and Handicap Index. The email address is held by Supabase Auth and is not copied into the shared GGC state or displayed to society members.
 
 For a 6-digit email code, configure the Supabase Auth email template to include `{{ .Token }}`. Existing VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY variables are used.
+
+## Build 3.1 — Passkeys
+- Adds Supabase WebAuthn passkey support using `@supabase/supabase-js` 2.105+ experimental passkey API.
+- Welcome screen offers **Sign in with Face ID / Passkey** plus email OTP fallback.
+- My Golf offers **Set up Face ID / Passkey** for an authenticated golfer.
+- Email OTP input accepts 6–10 digits so it works with the project's current OTP length while settings are being finalised.
+- Supabase Dashboard must have Passkeys enabled with RP ID `golfgainzcomps.co.uk` and origin `https://golfgainzcomps.co.uk`.

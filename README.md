@@ -35,7 +35,7 @@ Adds Supabase WebAuthn passkey registration/sign-in. Requires Authentication > P
 - Played-with contacts and future competition invites; contacts can be removed with confirmation.
 - Active competition is remembered locally so returning to the site offers Continue Scoring; hole scores already autosave to local/cloud state.
 
-## Build 3.3
+## Build 3.4
 - Permanent player profile table keyed directly to Supabase Auth UUID. A deployment/browser cache change no longer defines the user's identity.
 - Run `supabase-setup-3.3.sql` once in Supabase SQL Editor before testing this build.
 - Passkey status is stored on the cloud profile. My Golf changes to “Passkey enabled” and offers “Set up a new passkey” after successful registration.

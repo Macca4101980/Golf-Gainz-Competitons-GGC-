@@ -16,3 +16,8 @@ Existing Build 1 local data is migrated into a default society. Supabase continu
 - Score-entry player selector only lists golfers who have entered that competition; no free-text Add Golfer.
 
 Security note: Build 2.3 still uses the shared ggc_state cloud document. UI permissions and hashed PINs are implemented, but true server-enforced per-user RLS requires Supabase Auth + normalized tables in a later backend migration.
+
+## Build 3.0 authentication
+Build 3.0 adds Supabase email OTP sign-in. Returning users with a valid session go straight into GGC. New authenticated users are asked to create a display name and Handicap Index. The email address is held by Supabase Auth and is not copied into the shared GGC state or displayed to society members.
+
+For a 6-digit email code, configure the Supabase Auth email template to include `{{ .Token }}`. Existing VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY variables are used.

@@ -37,3 +37,5 @@ header{
 
 /* Build 3.9 authentication/testing */
 .testreset{margin-top:22px;padding-top:18px;border-top:1px solid #d6ddd7;display:grid;gap:10px}.testreset .danger{margin-top:4px}.authcard p{line-height:1.45}
+
+.returningPasskey{display:grid;gap:6px;text-align:center;margin:5px 0 10px}.returningPasskey small{color:var(--muted)}.passkeyLogin{width:100%}

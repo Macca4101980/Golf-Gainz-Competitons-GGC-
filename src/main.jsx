@@ -10,38 +10,7 @@ const formats=[
 ['stableford','Individual Stableford','Play your own ball. Highest Stableford points wins.','points'],
 ['stroke','Stroke Play / Medal','Lowest net stroke total wins.','stroke'],
 ['gross-stroke','Gross Stroke Play','Scratch medal with no handicap deduction.','stroke'],
-['max-score','Maximum Score','Stroke play with a maximum score set for each hole.','stroke'],
 ['par-bogey','Par / Bogey','Score each hole as a win, half or loss against net par.','points'],
-['modified-stableford','Modified Stableford','Custom points values for scores relative to par.','points'],
-['4bbb','Four-Ball Better Ball (4BBB)','Pairs; each plays their own ball and the better score counts.','points'],
-['aggregate-pairs','Aggregate Pairs','Both partners scores contribute to the pair total.','points'],
-['foursomes','Foursomes / Alternate Shot','Pairs play one ball and alternate shots.','stroke'],
-['greensomes','Greensomes','Both tee off, choose a drive, then alternate shots.','stroke'],
-['gruesomes','Gruesomes / Bloodsomes','Opponents choose which drive you must use, then alternate shots.','stroke'],
-['pinehurst','Pinehurst / Chapman','Both drive, play partner鈥檚 ball, choose one, then alternate.','stroke'],
-['scramble','Texas Scramble','Team scramble with a minimum number of drives per player.','stroke'],
-['scramble-standard','Scramble','Everyone plays from the chosen best shot until holed.','stroke'],
-['florida','Florida / Step-Aside Scramble','Chosen player sits out the next shot.','stroke'],
-['pairs-scramble','Pairs Scramble','Two-player scramble.','stroke'],
-['shamble','Shamble / Bramble','Choose the best drive, then everyone finishes their own ball.','points'],
-['best1','Best 1 from 4','Best team Stableford score counts on each hole.','points'],
-['best2','Best 2 from 4','Best two team Stableford scores count on each hole.','points'],
-['best3','Best 3 from 4','Best three team Stableford scores count on each hole.','points'],
-['waltz','Waltz / 1-2-3','Count 1, then 2, then 3 Stableford scores, repeating.','points'],
-['cha-cha-cha','Cha Cha Cha','1-2-3 team scoring pattern repeated around the course.','points'],
-['irish-fourball','Irish Four Ball','One score counts early, two in the middle, three coming home.','points'],
-['bowmaker','Bowmaker','Team Stableford with a configurable number of scores counting.','points'],
-['alliance','Four-Ball Alliance / Am-Am','Team event with selected individual scores counting each hole.','points'],
-['yellow-ball','Yellow Ball','Rotating nominated ball score combines with team scoring.','points'],
-['sixes','Sixes / 6-6-6','Change partners or format every six holes.','points'],
-['skins','Skins','Each hole carries a prize; ties can carry over.','points'],
-['nassau','Nassau','Separate contests for front nine, back nine and overall.','stroke'],
-['matchplay','Singles Match Play','Win, lose or halve each hole against an opponent.','points'],
-['fourball-match','Four-Ball Match Play','Pairs match play using the better ball on each side.','points'],
-['foursomes-match','Foursomes Match Play','Alternate-shot pairs match play.','points'],
-['eclectic','Eclectic / Ringer','Best score recorded on each hole across multiple rounds.','stroke'],
-['flag','Flag Competition','Play until your stroke allowance is used; furthest progress wins.','stroke'],
-['quota','Quota / Points','Earn points against an individual target or quota.','points'],
 ['blind-pairs','Blind Pairs','Everyone plays an individual Stableford card. After scoring, players are randomly paired and each pair鈥檚 Stableford points are combined. The draw should only be made once.','points']
 ]
 const harlWhite=[[347,4,6],[166,3,8],[517,5,12],[397,4,2],[135,3,18],[535,5,10],[429,4,4],[367,4,16],[332,4,14],[381,4,7],[521,5,11],[596,5,1],[152,3,17],[410,4,5],[452,4,3],[166,3,9],[327,4,13],[285,4,15]];
@@ -92,7 +61,7 @@ if(CLOUD&&auth&&!profileReady)return <WelcomeShell><p>Loading your GGC profile鈥
 if(CLOUD&&auth&&profileReady&&!currentMe)return <WelcomeShell><PlayerModal embedded add={addPlayer}/></WelcomeShell>;
 if(tab==='score'){const c=state.comps.find(x=>x.id===activeComp);if(c)return <ScoreScreen c={c} state={state} setState={setState} me={currentMe} back={()=>setTab('home')}/>}
 const resumeComp=currentMe?state.comps.find(c=>c.id===activeComp&&(c.status||'live')==='live'&&(c.entries||[]).includes(currentMe.id)):null;const pendingInvites=currentMe?state.comps.filter(c=>(c.status||'live')==='live'&&(c.invites||[]).includes(currentMe.id)):[];
-return <div className="app"><header><div className="brand"><div className="wordmark">GOLF <em>GAINZ</em><small>COMPS</small></div><span>Build 3.8R1 路 {cloud}</span></div><button className="icon" onClick={()=>setTab('admin')}><Settings/></button></header><main>
+return <div className="app"><header><div className="brand"><div className="wordmark">GOLF <em>GAINZ</em><small>COMPS</small></div><span>Build 3.8R2 路 {cloud}</span></div><button className="icon" onClick={()=>setTab('admin')}><Settings/></button></header><main>
 {tab==='home'&&<><section className="hero"><p>GOLF GAINZ COMPS</p><h1>Golf competitions.<br/><em>Made simple.</em></h1><button onClick={()=>setModal('comp')}><Plus/> CREATE A COMP</button></section><SocietyBar society={society} setModal={setModal}/>{pendingInvites.length>0&&<><SectionTitle a="INVITATIONS" b={`${pendingInvites.length} waiting`}/>{pendingInvites.map(c=><div className="card inviteCard" key={c.id}><b>{c.name}</b><span>{state.societies.find(q=>q.id===c.societyId)?.name||'GGC society'}</span><button className="primary" onClick={()=>{setSocId(c.societyId);localStorage.setItem('ggc-society',c.societyId);enter(c)}}>ACCEPT & ENTER <ChevronRight/></button></div>)}</>}{resumeComp&&<div className="resume card"><b>ROUND IN PROGRESS</b><span>{resumeComp.name} 路 pick up where you left off.</span><button className="primary" onClick={()=>setTab('score')}>CONTINUE SCORING <ChevronRight/></button></div>}{!currentMe?<div className="callout" onClick={()=>setModal('player')}><UserRound/><div><b>Set up your player</b><span>Add your name + Handicap Index once.</span></div><ChevronRight/></div>:<div className="me"><span>PLAYING AS</span><b>{currentMe.name} 路 HI {formatHI(currentMe.hi)}</b></div>}<SectionTitle a="LIVE COMPS" b={society?.name}/>{live.length?live.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={society} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>):<Empty text="No live competitions in this society."/>}</>}
 {tab==='comps'&&<><Title t="Competitions"/><button className="primary" onClick={()=>setModal('comp')}><Plus/>NEW COMPETITION</button>{comps.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={society} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>)}</>}
 {tab==='oom'&&<><Title t="Order of Merit"/><p className="muted">{society?.name} 路 field-size points. Team points are divided equally between team members.</p><OomTable state={state} society={society}/></>}

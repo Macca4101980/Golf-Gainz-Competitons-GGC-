@@ -34,3 +34,6 @@ header{
 
 /* 3.8R profile HI editor */
 .hiEditor{margin:14px 0 18px}.hiEditPanel{display:grid;gap:10px}.hiEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hiMsg{display:block;margin-top:8px}.card .editHiBtn{color:#0b140d!important;background:#e8eee8!important;border-color:#b8c2b9!important}
+
+/* Build 3.9 authentication/testing */
+.testreset{margin-top:22px;padding-top:18px;border-top:1px solid #d6ddd7;display:grid;gap:10px}.testreset .danger{margin-top:4px}.authcard p{line-height:1.45}

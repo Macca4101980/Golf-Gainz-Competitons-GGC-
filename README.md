@@ -50,3 +50,8 @@ Includes test-data.json and an owner-only Admin button to seed a deletable GGC S
 ## Build 3.7.1 test-society fix
 
 Fixes the regression-pack handoff: loading the pack now adds the authenticated owner as owner/member, switches directly into GGC Scoring Test without a forced reload, and allows the normal cloud-save debounce to persist the seeded state. Build and PWA cache labels are bumped to 3.7.1.
+
+## Build 3.7.2 hotfix
+- Regression JSON is now shipped from `public/test-data.json`, so `/test-data.json` exists in the Vite production deployment.
+- iPhone/PWA header now respects the top safe area so the GGC wordmark and settings cog sit below the status bar/Dynamic Island.
+- Secondary actions inside white profile cards now use a dark background with readable light text.

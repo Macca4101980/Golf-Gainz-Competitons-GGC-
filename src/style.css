@@ -13,3 +13,16 @@
 .resume,.inviteCard{display:flex;flex-direction:column;gap:10px}.resume>b{color:#69ee45;letter-spacing:.08em}.inviteCard>span{color:#8d978f}.contacts{margin-top:24px;padding-top:20px;border-top:1px solid #d8ddd8}.contacts h3{margin:0 0 10px}.contactrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e2e5e2}.contactrow span{display:flex;flex-direction:column}.contactrow small{color:#7e8981}.textdanger{background:transparent;border:0;color:#d84747;font-weight:800}.inviteRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.danger{background:#4a1717!important;color:#ffb6b6!important;border:1px solid #7b2b2b!important}
 
 .shareggc{margin:22px 0;padding-top:18px;border-top:1px solid #d8ddd8}.shareggc h3{margin:0 0 8px}.installed{display:flex;align-items:center;gap:8px;margin-top:12px;padding:11px;border-radius:10px;background:#e5f8df;color:#176326;font-weight:900}.installed svg{width:18px}
+
+/* Build 3.7.2 mobile/PWA fixes */
+header{
+  padding-top:calc(16px + env(safe-area-inset-top));
+  padding-left:calc(18px + env(safe-area-inset-left));
+  padding-right:calc(18px + env(safe-area-inset-right));
+}
+.card .secondary,.profilecard .secondary,.shareggc .secondary{
+  background:#101912;
+  color:#f5f7f4;
+  border:1px solid #334036;
+}
+.card .secondary svg,.profilecard .secondary svg,.shareggc .secondary svg{color:#f5f7f4}

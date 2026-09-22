@@ -87,3 +87,38 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .memberRow.memberMe{background:#d9ddda!important;border-color:#f2f4f2!important;color:#101511!important}.memberRow.memberMe small{color:#59635c!important}.memberRow.memberMe em{color:#202720!important}.memberRow.memberMe mark{background:#101511;color:#fff}
 .memberControls{max-width:48%}.memberControls .secondary{background:#101912!important;color:#fff!important;border-color:#465248!important}
 .manageMemberSummary{display:grid;gap:5px;padding:14px;border:1px solid #334036;border-radius:12px;margin-bottom:10px}.manageMemberSummary span{color:var(--muted)}.manageDanger{width:100%;margin-top:10px;padding:14px;border-radius:12px;font-weight:900}
+
+/* Build 3.12.2 — iPhone scrollable modal/sheet hotfix */
+.shade{
+  position:fixed!important;
+  inset:0!important;
+  height:100dvh!important;
+  min-height:100vh;
+  overflow:hidden!important;
+  align-items:flex-end!important;
+  z-index:200!important;
+}
+.modal{
+  width:min(720px,100%)!important;
+  max-height:calc(100dvh - env(safe-area-inset-top) - 12px)!important;
+  height:auto!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  box-sizing:border-box;
+  padding-bottom:calc(120px + env(safe-area-inset-bottom))!important;
+  touch-action:pan-y;
+}
+.modalhead{
+  position:sticky;
+  top:-20px;
+  z-index:4;
+  background:#0b130d;
+  padding-top:20px;
+}
+.modal input,.modal select,.modal button{touch-action:manipulation}
+@supports not (height:100dvh){
+  .shade{height:100vh!important}
+  .modal{max-height:calc(100vh - env(safe-area-inset-top) - 12px)!important}
+}

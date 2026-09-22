@@ -26,3 +26,11 @@ header{
   border:1px solid #334036;
 }
 .card .secondary svg,.profilecard .secondary svg,.shareggc .secondary svg{color:#f5f7f4}
+/* Build 3.8 contrast fixes: buttons rendered inside light cards */
+.card .secondary,.comp.card .secondary,.profilecard .secondary,.shareggc .secondary,.card button.secondary{
+  background:#102216 !important;color:#f7faf7 !important;border-color:#36513c !important;opacity:1 !important;
+}
+.card .secondary:disabled,.profilecard .secondary:disabled,.shareggc .secondary:disabled{background:#dfe4df !important;color:#68716b !important;border-color:#c4cbc5 !important;opacity:1 !important}
+
+/* 3.8R profile HI editor */
+.hiEditor{margin:14px 0 18px}.hiEditPanel{display:grid;gap:10px}.hiEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hiMsg{display:block;margin-top:8px}.card .editHiBtn{color:#0b140d!important;background:#e8eee8!important;border-color:#b8c2b9!important}

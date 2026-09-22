@@ -80,3 +80,10 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .memberRow mark{background:#d7ddd8;color:#111;border-radius:999px;padding:2px 6px;font-size:9px;margin-left:5px}
 .memberControls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.memberControls .mini{margin:0!important;padding:8px 9px!important;font-size:9px!important;width:auto!important}
 .inviteActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.inviteActions .secondary{margin-top:0}
+
+/* Build 3.12.1 society UI */
+.societySwitch{flex:1!important;min-width:0!important;text-align:left!important;background:transparent!important;border:0!important;color:inherit!important;padding:0!important;display:grid!important;gap:2px!important}
+.societySwitch b{font-size:17px}.societySwitch small{color:var(--muted);font-size:9px;letter-spacing:1.6px}.societyChoice{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:#101912;color:#f5f7f4;border:1px solid #334036;border-radius:14px;padding:15px;margin:9px 0}.societyChoice span{display:grid;gap:3px}.societyChoice small{color:#aeb7b0}.societyChoice.selected{border-color:var(--green)}
+.memberRow.memberMe{background:#d9ddda!important;border-color:#f2f4f2!important;color:#101511!important}.memberRow.memberMe small{color:#59635c!important}.memberRow.memberMe em{color:#202720!important}.memberRow.memberMe mark{background:#101511;color:#fff}
+.memberControls{max-width:48%}.memberControls .secondary{background:#101912!important;color:#fff!important;border-color:#465248!important}
+.manageMemberSummary{display:grid;gap:5px;padding:14px;border:1px solid #334036;border-radius:12px;margin-bottom:10px}.manageMemberSummary span{color:var(--muted)}.manageDanger{width:100%;margin-top:10px;padding:14px;border-radius:12px;font-weight:900}

@@ -45,3 +45,8 @@ Adds Supabase WebAuthn passkey registration/sign-in. Requires Authentication > P
 
 ## Build 3.7 regression pack
 Includes test-data.json and an owner-only Admin button to seed a deletable GGC Scoring Test society with 8 golfers, including a +2.4 HI test player. The pack covers every format name: implemented engines are scored; formats without a dedicated engine remain deliberately blocked so they cannot silently calculate with the wrong rules.
+
+
+## Build 3.7.1 test-society fix
+
+Fixes the regression-pack handoff: loading the pack now adds the authenticated owner as owner/member, switches directly into GGC Scoring Test without a forced reload, and allows the normal cloud-save debounce to persist the seeded state. Build and PWA cache labels are bumped to 3.7.1.

@@ -41,3 +41,7 @@ Adds Supabase WebAuthn passkey registration/sign-in. Requires Authentication > P
 - Passkey status is stored on the cloud profile. My Golf changes to “Passkey enabled” and offers “Set up a new passkey” after successful registration.
 - Prize Pot Weighting and Overall Prize Split use 10% dropdowns and remain constrained to 100%.
 - Existing competition/society state remains in `ggc_state` for this migration build so current data is not intentionally discarded.
+
+
+## Build 3.7 regression pack
+Includes test-data.json and an owner-only Admin button to seed a deletable GGC Scoring Test society with 8 golfers, including a +2.4 HI test player. The pack covers every format name: implemented engines are scored; formats without a dedicated engine remain deliberately blocked so they cannot silently calculate with the wrong rules.

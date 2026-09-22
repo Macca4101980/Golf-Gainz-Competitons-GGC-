@@ -39,3 +39,38 @@ header{
 .testreset{margin-top:22px;padding-top:18px;border-top:1px solid #d6ddd7;display:grid;gap:10px}.testreset .danger{margin-top:4px}.authcard p{line-height:1.45}
 
 .returningPasskey{display:grid;gap:6px;text-align:center;margin:5px 0 10px}.returningPasskey small{color:var(--muted)}.passkeyLogin{width:100%}
+
+/* Build 3.11 societies */
+.compSociety{display:flex;align-items:center;gap:6px;font-weight:800;font-size:12px;margin:6px 0 2px}.compSociety svg{width:15px;height:15px}
+.groupList{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:10px}.groupList span,.memberRow span{display:grid;gap:3px}.groupList small,.memberRow small{color:var(--muted)}
+.groupHero h2{margin:4px 0}.groupHero>span{color:var(--muted)}.groupActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.memberRow{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.memberRow em{font-size:11px;font-style:normal;font-weight:900}.groupBack{margin-bottom:8px}
+nav{grid-template-columns:repeat(5,1fr)}
+
+/* Build 3.11.1 — iPhone bottom navigation fix */
+:root{--ggc-nav-h:76px}
+.app{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 28px)}
+main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
+.app>nav{
+  position:fixed!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:0!important;
+  top:auto!important;
+  transform:translateX(-50%)!important;
+  width:min(720px,100vw)!important;
+  height:auto!important;
+  margin:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  align-items:start;
+  box-sizing:border-box;
+  padding:9px 4px calc(9px + env(safe-area-inset-bottom))!important;
+  background:#081009!important;
+  border-top:1px solid #253027;
+  z-index:100!important;
+  overflow:visible!important;
+}
+.app>nav button{min-width:0;padding:3px 1px!important;line-height:1.15}
+.app>nav i{font-size:19px}
+@supports(height:100dvh){.app{min-height:100dvh}}

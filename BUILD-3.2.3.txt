@@ -1,0 +1,15 @@
+GGC Build 3.2.3 — Multi-Group Views
+
+PASS - deterministic scoring suite
+PASS - 3.2.2 working OOM engine preserved byte-for-byte
+PASS - OOM iterates all shown Groups
+PASS - Competitions grouped by shown Group
+PASS - Home live competitions aggregate shown Groups
+PASS - Home exposes a Share button per shown Group
+PASS - Me Show/Hide filter present
+PASS - Hide is display-only
+PASS - Create Competition Group selector retained
+PASS - Scoring lifecycle guard retained
+PASS - Realtime echo guard retained
+PASS - Group leave immediate persistence retained
+PASS - Build marker 3.2.3

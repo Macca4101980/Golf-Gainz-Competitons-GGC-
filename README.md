@@ -1,3 +1,3 @@
-# Golf Gainz Comps — Build 3.2.2
+# Golf Gainz Comps — Build 3.2.3
 
-OOM regression fix with permanent regression audit. See `GGC-MASTER-REGRESSION-AUDIT.md`.
+Multi-Group Home, Competitions and OOM views with Show/Hide filters in My Golf.

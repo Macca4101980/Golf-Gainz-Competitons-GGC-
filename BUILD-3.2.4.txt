@@ -1,0 +1,17 @@
+GGC Build 3.2.4 — Safe PWA Updates
+
+PASS deterministic scoring regression
+PASS - Existing OOM engine preserved
+PASS - Multi-Group OOM retained
+PASS - Multi-Group competitions retained
+PASS - Show/Hide retained
+PASS - Realtime guard retained
+PASS - Closed scoring guard retained
+PASS - Update does not auto-reload on install
+PASS - Update activation requires message
+PASS - App offers explicit UPDATE NOW
+PASS - Update checks on focus
+PASS - Update checks on foreground
+PASS - Update checks periodically
+PASS - SW bypasses HTTP cache
+PASS - Version marker

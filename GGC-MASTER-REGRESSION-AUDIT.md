@@ -41,5 +41,24 @@
 | ⚫ | New regressions detected in automated/static suite | None detected. |
 | 🟠 | Production compile | Local Vite compile unavailable because dependencies are not installed; Vercel is the production compile test. |
 
+## Build 3.2.4 — Safe PWA Updates
+
+| Status | Area | Result |
+|---|---|---|
+| 🔵 | PWA-UPDATE-001 detection | Checks for a new service worker on app focus, foreground return and every 30 minutes. |
+| 🔵 | PWA-UPDATE-001 safe activation | New worker waits; GGC does **not** auto-reload while a golfer may be scoring. |
+| 🔵 | PWA-UPDATE-001 prompt | UPDATE NOW activates the waiting build and reloads; LATER leaves the current session running. |
+| 🟢 | 3.2.3 multi-Group OOM code | Retained; existing OOM engine preserved. |
+| 🟢 | 3.2.3 multi-Group Competitions code | Retained. |
+| 🟢 | 3.2.3 Show/Hide filter code | Retained. |
+| 🟢 | Stableford / Nett Stroke / Gross Stroke / Par-Bogey | Deterministic 8-player regression passed again. |
+| 🟢 | Blind Pairs / OOM bands / plus handicaps | Deterministic regression passed again. |
+| 🟢 | Realtime echo guard / closed scoring guard | Retained. |
+| 🟠 | PWA update on real iPhone | Must be proven with 3.2.4 installed and a later deployment available. |
+| 🟠 | Update while a card is in progress | Live test: ignore prompt → continue/submit card → update afterwards. |
+| 🟠 | Production Vite compile | Vercel remains the production compile/deploy check. |
+| 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged. |
+| ⚫ | New regressions detected by 3.2.4 automated/static suite | None detected. |
+
 ## Permanent release rule
 Every new behaviour is added here and the full accumulated regression suite is rerun. Any previously working behaviour that fails becomes ⚫ until fixed and retested.

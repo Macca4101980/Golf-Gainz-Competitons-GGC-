@@ -1,3 +1,3 @@
-# Golf Gainz Comps — Build 3.2.3
+# Golf Gainz Comps — Build 3.2.4
 
-Multi-Group Home, Competitions and OOM views with Show/Hide filters in My Golf.
+Safe one-tap PWA update notification. No automatic reload during scoring. Multi-Group views from 3.2.3 retained.

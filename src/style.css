@@ -125,3 +125,6 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 
 /* Build 3.13.6: equal Group action buttons */
 .groupActions>button{margin-top:0!important;min-height:74px;height:100%;width:100%;}
+
+/* Build 3.2 clarity */
+.groupBack{display:inline-flex!important;align-items:center;justify-content:center;width:auto!important;min-height:46px;padding:0 18px!important;margin:4px 0 14px!important;font-weight:900!important;border:1px solid rgba(255,255,255,.22)!important}.howto p{line-height:1.45;margin:0 0 16px}.howto p b{font-size:1.05rem}.howto .card{text-align:center;margin-top:18px}

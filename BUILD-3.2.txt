@@ -1,0 +1,14 @@
+GGC BUILD 3.2 CLEAN COMPLETE
+
+PASS - complete Vite essentials
+PASS - Build 3.2 visible
+PASS - no runtime 3.13.8
+PASS - package 3.2.0
+PASS - fresh service worker
+PASS - Supabase integration
+PASS - Realtime guard
+PASS - How To
+PASS - Delete Group selector
+PASS - global courses
+PASS - score + par
+PASS - score - birdie

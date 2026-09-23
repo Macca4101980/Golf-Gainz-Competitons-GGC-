@@ -1,0 +1,24 @@
+GGC BUILD 3.2.1 — REGRESSION CONTROLLED
+
+PASS - Build marker is 3.2.1
+PASS - OOM accepts legacy array pairs
+PASS - OOM accepts object pair records
+PASS - Malformed Blind Pairs cannot be reduced directly
+PASS - Odd Blind Pairs draw is blocked
+PASS - Blind Pairs draw immediate cloud save
+PASS - Competition create/edit immediate persistence
+PASS - Competition invite immediate persistence
+PASS - Closed competition scoring guard
+PASS - Card save/submit immediate persistence
+PASS - Front/back/18 change protects existing scores
+PASS - 8-golfer regression loader restored
+PASS - Only one Supabase setup SQL remains
+PASS - Supabase setup uses authenticated policies
+PASS - Old anonymous SQL removed
+PASS - Realtime echo guard retained
+PASS - Blank plus starts at par
+PASS - Blank minus starts at birdie
+PASS - Deterministic scoring/OOM/plus-HI regression suite
+PASS - Core GroupsPage source unchanged from 3.2 baseline
+
+See GGC-MASTER-REGRESSION-AUDIT.md for the permanent audit.

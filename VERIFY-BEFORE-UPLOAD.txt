@@ -1,0 +1,12 @@
+GGC BUILD 3.2 GITHUB UPLOAD VERIFICATION
+
+PASS - src/main.jsx says Build 3.2
+PASS - src/main.jsx has no 3.13.8
+PASS - package.json version 3.2.0
+PASS - root sw.js cache bumped
+PASS - no active runtime 3.13.8 refs
+PASS - How To present
+PASS - Delete Group selector present
+PASS - global courses present
+PASS - blank + = par code present
+PASS - blank - = birdie code present

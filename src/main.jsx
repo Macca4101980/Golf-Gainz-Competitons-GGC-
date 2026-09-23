@@ -30,23 +30,28 @@ function migrate(x){
 }
 function getOomRows(state,societyId){
  const totals={};
- const add=(id,pts)=>{if(!id||!pts)return;totals[id]=(totals[id]||0)+pts};
- state.comps.filter(c=>c.societyId===societyId&&c.status==='completed').forEach(c=>{
-  let rows=state.cards.filter(x=>x.compId===c.id).map(x=>scoreCard(x,c,state)).filter(x=>x.player);
-  const rule=FORMAT_RULES[c.format]||FORMAT_RULES.stableford;
-  rows.sort(rule.lowerWins?(a,b)=>a.rankValue-b.rankValue:(a,b)=>b.rankValue-a.rankValue);
-  if(c.format==='blind-pairs'&&c.blindDraw?.pairs?.length){
-   const byId=Object.fromEntries(rows.map(r=>[r.player.id,r]));
-   const pairs=c.blindDraw.pairs.map(pair=>{const ids=normaliseBlindPairIds(pair);return ids.length?{ids,score:ids.reduce((a,id)=>a+(byId[id]?.points||0),0)}:null}).filter(Boolean).sort((a,b)=>b.score-a.score);
-   const pts=oomPointsForField(rows.length);
-   pairs.forEach((pair,i)=>{const teamPts=pts[i]||0;if(pair.ids.length)pair.ids.forEach(id=>add(id,teamPts/pair.ids.length))});
-  }else{
-   const pts=oomPointsForField(rows.length);rows.forEach((r,i)=>add(r.player.id,pts[i]||0));
-  }
+ const comps=Array.isArray(state?.comps)?state.comps:[];
+ const cards=Array.isArray(state?.cards)?state.cards:[];
+ const players=Array.isArray(state?.players)?state.players:[];
+ const add=(id,pts)=>{const n=Number(pts);if(!id||!Number.isFinite(n)||n<=0)return;totals[id]=(totals[id]||0)+n};
+ comps.filter(c=>c&&c.societyId===societyId&&c.status==='completed').forEach(c=>{
+  try{
+   let rows=cards.filter(x=>x&&x.compId===c.id).map(x=>{try{return scoreCard(x,c,state)}catch{return null}}).filter(x=>x?.player&&Number.isFinite(Number(x.rankValue)));
+   const rule=FORMAT_RULES[c.format]||FORMAT_RULES.stableford;
+   rows.sort(rule.lowerWins?(a,b)=>Number(a.rankValue)-Number(b.rankValue):(a,b)=>Number(b.rankValue)-Number(a.rankValue));
+   if(c.format==='blind-pairs'&&Array.isArray(c.blindDraw?.pairs)&&c.blindDraw.pairs.length){
+    const byId=Object.fromEntries(rows.map(r=>[r.player.id,r]));
+    const pairs=c.blindDraw.pairs.map(pair=>{const ids=normaliseBlindPairIds(pair).filter(id=>byId[id]);return ids.length?{ids,score:ids.reduce((a,id)=>a+(Number(byId[id]?.points)||0),0)}:null}).filter(Boolean).sort((a,b)=>b.score-a.score);
+    const pts=oomPointsForField(rows.length);
+    pairs.forEach((pair,i)=>{const teamPts=pts[i]||0;if(pair.ids.length)pair.ids.forEach(id=>add(id,teamPts/pair.ids.length))});
+   }else{
+    const pts=oomPointsForField(rows.length);rows.forEach((r,i)=>add(r.player.id,pts[i]||0));
+   }
+  }catch(e){console.warn('Skipping malformed competition in OOM',c?.id,e)}
  });
- return Object.entries(totals).map(([id,points])=>({player:state.players.find(p=>p.id===id),points})).filter(x=>x.player).sort((a,b)=>b.points-a.points||a.player.name.localeCompare(b.player.name));
+ return Object.entries(totals).map(([id,points])=>({player:players.find(p=>p?.id===id),points:Number(points)||0})).filter(x=>x.player).sort((a,b)=>b.points-a.points||String(a.player.name||'').localeCompare(String(b.player.name||'')));
 }
-function OomTable({state,society}){const rows=getOomRows(state,society?.id);if(!rows.length)return <Empty text="No OOM points awarded yet."/>;return <div className="leader card"><h3>ORDER OF MERIT</h3>{rows.map((r,i)=><div className="leaderrow" key={r.player.id}><strong>{i+1}</strong><span><b>{r.player.name}</b><small>HI {formatHI(r.player.hi)}</small></span><em>{Number.isInteger(r.points)?r.points:r.points.toFixed(1)} pts</em></div>)}</div>}
+function OomTable({state,society}){let rows=[];try{rows=getOomRows(state,society?.id)}catch(e){console.error('OOM calculation error',e);return <div className="card"><h3>ORDER OF MERIT</h3><p className="muted">Order of Merit data could not be calculated. No other part of GGC has been affected.</p></div>}if(!rows.length)return <div className="card"><h3>ORDER OF MERIT</h3><p className="muted">No OOM points awarded yet.</p></div>;return <div className="leader card"><h3>ORDER OF MERIT</h3>{rows.map((r,i)=><div className="leaderrow" key={r.player.id}><strong>{i+1}</strong><span><b>{r.player.name||'Golfer'}</b><small>HI {formatHI(r.player.hi)}</small></span><em>{Number.isFinite(r.points)?(Number.isInteger(r.points)?r.points:r.points.toFixed(1)):0} pts</em></div>)}</div>}
 function App(){const[state,setState]=useState(()=>{try{return migrate(JSON.parse(localStorage.getItem(K))||JSON.parse(localStorage.getItem('ggc-build1')))}catch{return clone(seed)}});const[tab,setTab]=useState('home');const[cloud,setCloud]=useState(CLOUD?'Connecting…':'Local only');const[modal,setModal]=useState(null);const[me,setMe]=useState(()=>localStorage.getItem('ggc-me')||'');const[auth,setAuth]=useState(()=>readAuth());const[authReady,setAuthReady]=useState(!CLOUD);const[profileReady,setProfileReady]=useState(!CLOUD);const[activeComp,setActiveComp]=useState(()=>localStorage.getItem('ggc-active-comp')||null);const[editComp,setEditComp]=useState(null);const[socId,setSocId]=useState(()=>localStorage.getItem('ggc-society')||'default-society');const remoteStateRef=useRef(null);
 useEffect(()=>{localStorage.setItem(K,JSON.stringify(state));if(remoteStateRef.current===state){remoteStateRef.current=null;return}if(CLOUD&&auth?.access_token&&profileReady){const t=setTimeout(()=>saveCloud(state,setCloud,auth.access_token),600);return()=>clearTimeout(t)}},[state,auth?.access_token,profileReady]);useEffect(()=>{if(!CLOUD)return;let alive=true;supabase.auth.getSession().then(({data})=>{if(!alive)return;const a=data?.session||null;if(a)writeAuth(a);else clearAuth();setAuth(a);setAuthReady(true);if(!a)setProfileReady(true)});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,a)=>{if(!alive)return;if(a)writeAuth(a);else clearAuth();setAuth(a);setAuthReady(true);if(!a)setProfileReady(true)});return()=>{alive=false;subscription?.unsubscribe()}},[]);
 useEffect(()=>{if(!CLOUD||!auth?.access_token)return;let alive=true;let fetching=false;const refresh=async(label='Live synced')=>{if(!alive||fetching)return;fetching=true;try{const latest=await loadCloud(auth.access_token);if(alive&&latest){const remote=migrate(latest);remoteStateRef.current=remote;setState(remote);setCloud(label)}}catch{}finally{fetching=false}};const channel=supabase.channel('ggc-live-main').on('postgres_changes',{event:'*',schema:'public',table:'ggc_state',filter:'id=eq.main'},()=>refresh('Live synced')).subscribe(status=>{if(status==='SUBSCRIBED')setCloud('● Live');if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloud('Reconnecting…')});const wake=()=>{if(document.visibilityState==='visible')refresh('● Live')};const online=()=>refresh('● Live');document.addEventListener('visibilitychange',wake);window.addEventListener('focus',wake);window.addEventListener('online',online);return()=>{alive=false;document.removeEventListener('visibilitychange',wake);window.removeEventListener('focus',wake);window.removeEventListener('online',online);supabase.removeChannel(channel)}},[auth?.access_token]);
@@ -61,7 +66,7 @@ if(CLOUD&&auth&&!profileReady)return <WelcomeShell><p>Loading your GGC profile�
 if(CLOUD&&auth&&profileReady&&!currentMe)return <WelcomeShell><PlayerModal embedded add={addPlayer}/></WelcomeShell>;
 if(tab==='score'){const c=state.comps.find(x=>x.id===activeComp);if(c)return <ScoreScreen c={c} state={state} setState={setState} me={currentMe} auth={auth} setCloud={setCloud} back={()=>setTab('home')}/>}
 const resumeComp=currentMe?state.comps.find(c=>c.id===activeComp&&(c.status||'live')==='live'&&(c.entries||[]).includes(currentMe.id)):null;const pendingInvites=currentMe?state.comps.filter(c=>(c.status||'live')==='live'&&(c.invites||[]).includes(currentMe.id)):[];
-return <div className="app"><header><div className="brand"><div className="wordmark">GOLF <em>GAINZ</em><small>COMPS</small></div><span>Build 3.2.1 · {cloud}</span></div><button className="icon" onClick={()=>setTab('admin')}><Settings/></button></header><main>
+return <div className="app"><header><div className="brand"><div className="wordmark">GOLF <em>GAINZ</em><small>COMPS</small></div><span>Build 3.2.2 · {cloud}</span></div><button className="icon" onClick={()=>setTab('admin')}><Settings/></button></header><main>
 {tab==='home'&&<><section className="hero"><p>GOLF GAINZ COMPS</p><h1>Golf competitions.<br/><em>Made simple.</em></h1><button onClick={()=>setModal('howto')}>ⓘ HOW TO USE GGC</button></section><SocietyBar society={society} setModal={setModal}/>{pendingInvites.length>0&&<><SectionTitle a="INVITATIONS" b={`${pendingInvites.length} waiting`}/>{pendingInvites.map(c=><div className="card inviteCard" key={c.id}><b>{c.name}</b><span>{state.societies.find(q=>q.id===c.societyId)?.name||'GGC group'}</span><button className="primary" onClick={()=>{setSocId(c.societyId);localStorage.setItem('ggc-society',c.societyId);enter(c)}}>ACCEPT & ENTER <ChevronRight/></button></div>)}</>}{resumeComp&&<div className="resume card"><b>ROUND IN PROGRESS</b><span>{resumeComp.name} · pick up where you left off.</span><button className="primary" onClick={()=>setTab('score')}>CONTINUE SCORING <ChevronRight/></button></div>}{!currentMe?<div className="callout" onClick={()=>setModal('player')}><UserRound/><div><b>Set up your player</b><span>Add your name + Handicap Index once.</span></div><ChevronRight/></div>:<div className="me"><span>PLAYING AS</span><b>{currentMe.name} · HI {formatHI(currentMe.hi)}</b></div>}<SectionTitle a="LIVE COMPETITIONS" b={society?.name}/>{live.length?live.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={society} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>):<Empty text="No live competitions in this group."/>}</>}
 {tab==='comps'&&<><Title t="Competitions"/><button className="primary" onClick={()=>setModal('comp')}><Plus/>NEW COMPETITION</button>{comps.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={society} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>)}</>}
 {tab==='groups'&&<GroupsPage state={state} setState={setState} me={currentMe} setSocId={setSocId} setTab={setTab} setModal={setModal} setEditComp={setEditComp} auth={auth} setCloud={setCloud}/>} 

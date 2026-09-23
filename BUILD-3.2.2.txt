@@ -1,0 +1,19 @@
+GGC BUILD 3.2.2 — OOM REGRESSION FIX
+
+PASS - Build marker 3.2.2
+PASS - OOM render has safe empty state
+PASS - OOM render catches calculation failure
+PASS - OOM calculation defaults missing arrays
+PASS - OOM skips bad scorecards
+PASS - OOM skips malformed competitions
+PASS - OOM supports legacy pair arrays
+PASS - OOM supports object pairs
+PASS - OOM player-name sort is null-safe
+PASS - Realtime guard retained
+PASS - Group leave immediate save
+PASS - Blank + par
+PASS - Blank - birdie
+PASS - Scoring closed guard
+PASS - deterministic scoring/helper suite
+
+IMPORTANT: OOM deployed screen remains AMBER until tested against real Supabase data.

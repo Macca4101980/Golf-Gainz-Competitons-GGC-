@@ -122,3 +122,6 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
   .shade{height:100vh!important}
   .modal{max-height:calc(100vh - env(safe-area-inset-top) - 12px)!important}
 }
+
+/* Build 3.13.6: equal Group action buttons */
+.groupActions>button{margin-top:0!important;min-height:74px;height:100%;width:100%;}

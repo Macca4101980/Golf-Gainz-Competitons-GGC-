@@ -8,8 +8,8 @@ export const FORMAT_RULES={
  flag:{verified:true,category:'individual',defaultAllowance:100,lowerWins:false,description:'Each golfer has a stroke budget based on course par plus Playing Handicap. The flag is placed where that allowance runs out.',entry:'Enter scores up to the point your allowance expires, then record the hole reached and shot position. If you finish 18, record strokes left.',result:'Furthest progress wins; golfers completing 18 rank by strokes remaining.'},
  eclectic:{verified:true,category:'individual',defaultAllowance:95,lowerWins:true,description:'Best score recorded on each hole across multiple rounds.',entry:'Choose the round being played and enter its gross scores. GGC keeps the best score for each hole.',result:'Lowest best-hole aggregate wins.'},
  waltz:{verified:true,category:'individual',defaultAllowance:95,lowerWins:false,description:'Individual Stableford with a repeating 1×, 2×, 3× multiplier.',entry:'Enter gross strokes. GGC applies 1× on hole 1, 2× on hole 2, 3× on hole 3 and repeats.',result:'Highest weighted Stableford total wins.'},
- 'blind-pairs':{verified:true,category:'pairs',defaultAllowance:95,lowerWins:false},
- '4bbb':{verified:false},'aggregate-pairs':{verified:false},foursomes:{verified:false},greensomes:{verified:false},gruesomes:{verified:false},pinehurst:{verified:false},scramble:{verified:false},'scramble-standard':{verified:false},florida:{verified:false},'pairs-scramble':{verified:false},shamble:{verified:false},best1:{verified:false},best2:{verified:false},best3:{verified:false},'cha-cha-cha':{verified:false},'irish-fourball':{verified:false},bowmaker:{verified:false},alliance:{verified:false},'yellow-ball':{verified:false},sixes:{verified:false},skins:{verified:false},nassau:{verified:false},matchplay:{verified:false},'fourball-match':{verified:false},'foursomes-match':{verified:false},quota:{verified:false}
+ 'blind-pairs':{verified:true,category:'pairs',defaultAllowance:95,lowerWins:false,description:'Blind Pairs Stableford. Individual cards are combined after the draw.',entry:'Each golfer enters their own gross scores.',result:'Highest combined pair Stableford total wins.'},
+ '4bbb':{verified:false},'4bbb-stableford':{verified:true,category:'pairs',defaultAllowance:85,lowerWins:false,description:'Four-Ball Stableford: both partners play their own ball; best Stableford score on each hole counts.',entry:'Each partner enters their own gross score.',result:'Highest Better-Ball Stableford total wins.'},'4bbb-stroke':{verified:true,category:'pairs',defaultAllowance:85,lowerWins:true,description:'Four-Ball stroke play: both partners play their own ball; lowest nett score on each hole counts.',entry:'Each partner enters their own gross score.',result:'Lowest Better-Ball nett total wins.'},'aggregate-stableford':{verified:true,category:'pairs',defaultAllowance:95,lowerWins:false,description:'Both partners play their own ball and both Stableford scores count.',entry:'Each partner enters their own gross score.',result:'Highest combined Stableford total wins.'},'aggregate-stroke':{verified:true,category:'pairs',defaultAllowance:95,lowerWins:true,description:'Both partners play their own ball and both nett scores count.',entry:'Each partner enters their own gross score.',result:'Lowest combined nett total wins.'},'4bbb-match':{verified:true,category:'pairs',defaultAllowance:90,lowerWins:false,description:'Four-Ball match play between two pairs.',entry:'All four golfers enter their own gross scores.',result:'Best nett result on each hole wins the hole; most holes up wins the match.'},'aggregate-pairs':{verified:false},foursomes:{verified:false},greensomes:{verified:false},gruesomes:{verified:false},pinehurst:{verified:false},scramble:{verified:false},'scramble-standard':{verified:false},florida:{verified:false},'pairs-scramble':{verified:false},shamble:{verified:false},best1:{verified:false},best2:{verified:false},best3:{verified:false},'cha-cha-cha':{verified:false},'irish-fourball':{verified:false},bowmaker:{verified:false},alliance:{verified:false},'yellow-ball':{verified:false},sixes:{verified:false},skins:{verified:false},nassau:{verified:false},matchplay:{verified:false},'fourball-match':{verified:false},'foursomes-match':{verified:false},quota:{verified:false}
 };
 export function rawCourseHandicap(hi,tee,par){return (+hi||0)*(+tee?.slope||113)/113+((+tee?.rating||par)-par)}
 export function whsRound(n){return n<0?-Math.round(Math.abs(n)):Math.round(n)}
@@ -31,36 +31,22 @@ export function validateFormatStart(format,count){return null}
 export function normaliseBlindPairIds(pair){return Array.isArray(pair)?pair:Array.isArray(pair?.ids)?pair.ids:[]}
 export function oomPointsForField(n){if(n<5)return[];const first=n<=8?10:n<=12?12:n<=16?14:16;return Array.from({length:n},(_,i)=>Math.max(0,first-(i*2)))}
 
-// Legacy compatibility for competitions created as Singles Match Play before
-// the format catalogue was re-categorised. New Match Play competitions are
-// added with the Group formats; this keeps existing saved competitions usable.
-export function matchPlayResult(c,state){
- const cards=(state.cards||[]).filter(card=>card.compId===c.id).slice(0,2);
- if(cards.length!==2)return null;
- const rows=cards.map(card=>scoreCard(card,c,state));
- if(rows.some(r=>!r?.player))return null;
- const course=state.courses.find(x=>x.id===cards[0].courseId||x.id===c.course);
- const tee=course?.tees?.find(t=>t.name===(cards[0].tee||c.tee));
- const hs=tee?.holes||[];
- const selected=selectedIndexes(c,hs);
- const phs=rows.map(r=>r.playingHandicap);
- const low=Math.min(...phs);
- const rel=phs.map(ph=>ph-low);
- let diff=0,played=0;
- for(const i of selected){
-   const ga=+(cards[0]?.gross?.[i]||0),gb=+(cards[1]?.gross?.[i]||0);
-   if(!ga||!gb)continue;
-   const si=hs[i]?.si||i+1;
-   const na=ga-holeStrokes(rel[0],si),nb=gb-holeStrokes(rel[1],si);
-   if(na<nb)diff++; else if(nb<na)diff--;
-   played++;
+export function pairScore(pair,c,state){
+ const ids=(pair?.ids||pair||[]).slice(0,2); const cards=ids.map(id=>state.cards.find(x=>x.compId===c.id&&x.playerId===id)).filter(Boolean); const rs=cards.map(card=>scoreCard(card,c,state));
+ if(!rs.length)return {ids,complete:0,rankValue:c.format.includes('stroke')?99999:-99999,points:0,net:0,holes:[]};
+ const n=Math.max(...rs.map(r=>r.holes.length)); let points=0,net=0; const holes=[];
+ for(let i=0;i<n;i++){const hs=rs.map(r=>r.holes[i]).filter(h=>h?.gross>0); if(!hs.length){holes.push(null);continue}
+   if(c.format==='4bbb-stableford'||c.format==='4bbb-match'){const v=Math.max(...hs.map(h=>h.points));points+=v;holes.push({value:v});}
+   else if(c.format==='4bbb-stroke'){const v=Math.min(...hs.map(h=>h.net));net+=v;holes.push({value:v});}
+   else if(c.format==='aggregate-stableford'||c.format==='blind-pairs'){const v=hs.reduce((a,h)=>a+h.points,0);points+=v;holes.push({value:v});}
+   else if(c.format==='aggregate-stroke'){const v=hs.reduce((a,h)=>a+h.net,0);net+=v;holes.push({value:v});}
  }
- const total=selected.length,remaining=Math.max(0,total-played),lead=Math.abs(diff);
- const complete=played===total||lead>remaining;
- let label='AS';
- if(diff!==0){
-   if(complete&&remaining>0)label=`${lead}&${remaining}`;
-   else label=`${lead} UP`;
- }
- return{rows,diff,played,remaining,complete,label,winner:diff>0?0:diff<0?1:null,relativeHandicaps:rel};
+ const complete=holes.filter(Boolean).length; const lower=c.format==='4bbb-stroke'||c.format==='aggregate-stroke'; return {ids,complete,points,net,holes,rankValue:lower?net:points};
+}
+export function fourballMatchResult(pairA,pairB,c,state){
+ const all=[...(pairA?.ids||[]),...(pairB?.ids||[])]; const course=state.courses.find(x=>x.id===c.course); const tee=course?.tees.find(t=>t.name===c.tee); const hs=tee?.holes||[]; const par=hs.reduce((a,h)=>a+h.par,0)||72; const allowance=c.handicapAllowance??90;
+ const raw=Object.fromEntries(all.map(id=>{const p=state.players.find(x=>x.id===id);return [id,rawCourseHandicap(p?.hi,tee,par)]})); const low=Math.min(...Object.values(raw)); const rel=Object.fromEntries(all.map(id=>[id,whsRound((raw[id]-low)*(allowance/100))]));
+ const gross=id=>state.cards.find(x=>x.compId===c.id&&x.playerId===id)?.gross||[]; let up=0,played=0; const holes=[];
+ for(let i=0;i<hs.length;i++){const h=hs[i];const best=pair=>Math.min(...(pair.ids||[]).map(id=>{const g=+(gross(id)[i]||0);return g?g-holeStrokes(rel[id],h.si):999}));const a=best(pairA),b=best(pairB);if(a===999||b===999){holes.push(null);continue}played++;if(a<b)up++;else if(b<a)up--;holes.push({a,b,up});}
+ const left=Math.max(0,hs.length-played);return {up,played,left,holes,relativeHandicaps:rel,text:up===0?'All Square':`${Math.abs(up)} UP`};
 }

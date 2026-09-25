@@ -1,0 +1,2 @@
+GGC Build 3.4.1 — Pairs formats
+Adds 4BBB Stableford, 4BBB Stroke Play, Aggregate Stableford, Aggregate Stroke Play, 4BBB Match Play and Blind Pairs foundations.

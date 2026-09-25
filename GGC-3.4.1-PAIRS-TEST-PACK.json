@@ -1,0 +1,13 @@
+{
+  "build":"3.4.1",
+  "purpose":"Realistic manual live testing for Pairs formats",
+  "players":[
+    {"name":"Pair A1","hi":5.4,"scores":[5,3,5,4,3,5,4,5,4,4,5,6,3,4,5,3,4,4]},
+    {"name":"Pair A2","hi":12.8,"scores":[4,4,6,5,3,6,5,4,5,5,6,6,4,5,5,4,4,5]},
+    {"name":"Pair B1","hi":7.1,"scores":[4,3,6,4,4,5,5,4,4,5,5,6,3,5,5,3,4,4]},
+    {"name":"Pair B2","hi":16.2,"scores":[5,4,6,5,3,6,5,5,5,5,6,7,4,5,6,4,5,5]}
+  ],
+  "pairings":[["Pair A1","Pair A2"],["Pair B1","Pair B2"]],
+  "formats":["4BBB Stableford","4BBB Stroke Play","Aggregate Stableford","Aggregate Stroke Play","4BBB Match Play","Blind Pairs"],
+  "notes":["Scores are intentionally ordinary club-golf scores: pars/bogeys common, birdies uncommon, doubles occasional.","Use the same four cards across formats so differences come from the scoring engine rather than artificial cards."]
+}

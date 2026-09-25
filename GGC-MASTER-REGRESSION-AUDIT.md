@@ -73,3 +73,23 @@ Status rule: BLUE = changed this build and tested successfully; GREEN = unchange
 - 🟠 PWA-UPDATE-001 — Update prompt remains parked by user request.
 
 No item is marked GREEN solely from code inspection; live-only behaviours remain AMBER.
+
+## Build 3.4.1 — Pairs formats
+- 🔵 PAIR-ENGINE-001 4BBB Stableford pair engine known-answer test.
+- 🔵 PAIR-ENGINE-002 4BBB Stroke pair engine known-answer test.
+- 🔵 PAIR-ENGINE-003 Aggregate Stableford pair engine known-answer test.
+- 🔵 PAIR-ENGINE-004 Aggregate Stroke pair engine known-answer test.
+- 🔵 PAIR-ENGINE-005 4BBB Match Play relative-handicap engine static/known-answer test.
+- 🟠 PAIR-LIVE-001 Pair creation/removal/persistence in Manage Competition.
+- 🟠 PAIR-LIVE-002 4BBB Stableford live cards and leaderboard.
+- 🟠 PAIR-LIVE-003 4BBB Stroke live cards and leaderboard.
+- 🟠 PAIR-LIVE-004 Aggregate Stableford live cards and leaderboard.
+- 🟠 PAIR-LIVE-005 Aggregate Stroke live cards and leaderboard.
+- 🟠 PAIR-LIVE-006 4BBB Match Play exactly two pairs and live result.
+- 🟠 PAIR-LIVE-007 Blind Pairs draw/reveal/persistence.
+- 🟠 IND-REGRESSION-001 Re-run all nine Individual live known-answer tests on deployed 3.4.1.
+- 🔵 OOM-PAIR-ENGINE-001 Pair OOM engine splits team points equally between partners; field-size band uses player count.
+- 🟠 OOM-PAIR-LIVE-001 Verify pair OOM appears correctly after deployed competition completion.
+- 🟠 CLOUD-PAIR-001 Verify pairings/cards persist across two devices.
+
+Note: Green is not used for retained code paths without a real regression test. Unexercised deployed behaviours remain amber.

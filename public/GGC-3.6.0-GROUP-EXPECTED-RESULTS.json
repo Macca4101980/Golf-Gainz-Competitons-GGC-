@@ -1,0 +1,8 @@
+{
+  "build":"3.6.0",
+  "fixture":"Four scratch golfers on 18 par-4 holes; A=3, B=4, C=5, D=6 every hole",
+  "individualStablefordPerHole":{"A":3,"B":2,"C":1,"D":0},
+  "expectedTotals":{"best1":54,"best2":90,"best3":108,"cha-cha-cha":84,"irish-fourball":84,"bowmaker":90,"alliance":90,"yellow-ball":78},
+  "yellowBallRotation":"A,B,C,D repeating; yellow-ball points + best other score",
+  "uiChecks":["Group category appears after Individual and Pairs","Group format requires 3 or 4 golfers","Shared 3/4-player card uses Build 3.5.4 freeze-pane layout","One scorer can enter all group scores","Other selected golfers see Round in Progress","Group leaderboard ranks teams by calculated points","Submitted round leaves Home and remains in Competitions"]
+}

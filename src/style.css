@@ -186,3 +186,15 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
  .groupScore .playerHead b{font-size:.9rem}
  .groupScore .gHead small{font-size:.58rem}
 }
+
+/* Build 3.6.1 — visible gross / nett / Stableford scoring */
+.scoreReadout{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;min-width:0;padding-top:5px;white-space:nowrap}
+.scoreReadout input{flex:0 1 27px!important;width:27px!important;min-width:0!important;padding:2px 0!important;text-align:right!important}
+.netReadout{font-size:.78rem;font-weight:850;color:#d8ded9;line-height:1}
+.pointsReadout{font-size:.62rem;font-weight:850;color:#aeb8b0;line-height:1;margin-left:2px}
+@media(max-width:520px){
+ .scoreReadout{gap:1px}
+ .scoreReadout input{flex-basis:24px!important;width:24px!important;font-size:.98rem!important}
+ .netReadout{font-size:.72rem}
+ .pointsReadout{font-size:.56rem;margin-left:1px}
+}

@@ -152,3 +152,24 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🔵 Increased Team and player header text sizes after 3.5.3 over-compression.
 - 🔵 Stacked score / minus-plus controls retained.
 - 🟠 Requires live iPhone/PWA confirmation of sticky offsets, safe-area behaviour, Hole 1 visibility, and release at scorecard end.
+
+## Build 3.6.0 — Group Competition Category
+- 🔵 Added Group category to Create Competition.
+- 🔵 Added verified team Stableford engines: Best 1, Best 2, Best 3, Cha Cha Cha, Irish Fourball, Bowmaker, Alliance and Yellow Ball.
+- 🔵 Group formats require 3 or 4 golfers and use the shared multi-player scorecard/freeze-pane UI established in 3.5.4.
+- 🔵 Group leaderboard scores each round group as a team and OOM team points are shared across team members.
+- 🔵 Deterministic scratch test totals: Best1 54; Best2 90; Best3 108; Cha Cha Cha 84; Irish Fourball 84; Bowmaker 90; Alliance 90; Yellow Ball 78.
+- 🔵 Pairs Matchplay handicap regression corrected/checked against R&A Appendix C principle: allowance applied to unrounded Course Handicap before final rounding.
+- 🟢 Individual and Pairs scoring source retained; universal live-card/realtime protections retained.
+- 🟢 Build 3.5.4 freeze-pane scorecard CSS retained as the group-card baseline.
+- 🟠 Live iPhone/Supabase regression required for 3-player and 4-player group cards, multi-device scoring, dashboard lifecycle and team leaderboard rendering.
+- 🟠 Full Vite production compile could not be completed in the build environment because dependency installation timed out; scoring module syntax and deterministic scoring tests passed.
+
+## Build 3.6.1 — Visible handicap scoring
+- 🔵 Universal multi-player scorecard now shows gross and nett together as `Gross (Nett)` after a score is entered.
+- 🔵 Stableford-based Individual, Pairs and Group formats additionally show the hole result as `Pts = n` in the same score cell.
+- 🔵 Handicap shot dots remain visible above the score readout and continue to reflect the format's playing/match handicap.
+- 🔵 Gross Stroke remains gross-only; match/stroke formats show gross (nett) without an irrelevant Stableford points label.
+- 🟢 Existing 3.5.4 freeze-pane behaviour and stacked minus/plus controls retained unchanged.
+- 🟢 Group competition scoring engine and deterministic 3.6.0 expected totals retained unchanged.
+- 🟠 Live iPhone/PWA visual regression required for four-player fit at smallest screen width and long two-digit gross/net values.

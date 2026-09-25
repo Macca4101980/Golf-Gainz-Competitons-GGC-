@@ -30,3 +30,37 @@ export function formatResult(r,format){if(format==='stroke'||format==='max-score
 export function validateFormatStart(format,count){return null}
 export function normaliseBlindPairIds(pair){return Array.isArray(pair)?pair:Array.isArray(pair?.ids)?pair.ids:[]}
 export function oomPointsForField(n){if(n<5)return[];const first=n<=8?10:n<=12?12:n<=16?14:16;return Array.from({length:n},(_,i)=>Math.max(0,first-(i*2)))}
+
+// Legacy compatibility for competitions created as Singles Match Play before
+// the format catalogue was re-categorised. New Match Play competitions are
+// added with the Group formats; this keeps existing saved competitions usable.
+export function matchPlayResult(c,state){
+ const cards=(state.cards||[]).filter(card=>card.compId===c.id).slice(0,2);
+ if(cards.length!==2)return null;
+ const rows=cards.map(card=>scoreCard(card,c,state));
+ if(rows.some(r=>!r?.player))return null;
+ const course=state.courses.find(x=>x.id===cards[0].courseId||x.id===c.course);
+ const tee=course?.tees?.find(t=>t.name===(cards[0].tee||c.tee));
+ const hs=tee?.holes||[];
+ const selected=selectedIndexes(c,hs);
+ const phs=rows.map(r=>r.playingHandicap);
+ const low=Math.min(...phs);
+ const rel=phs.map(ph=>ph-low);
+ let diff=0,played=0;
+ for(const i of selected){
+   const ga=+(cards[0]?.gross?.[i]||0),gb=+(cards[1]?.gross?.[i]||0);
+   if(!ga||!gb)continue;
+   const si=hs[i]?.si||i+1;
+   const na=ga-holeStrokes(rel[0],si),nb=gb-holeStrokes(rel[1],si);
+   if(na<nb)diff++; else if(nb<na)diff--;
+   played++;
+ }
+ const total=selected.length,remaining=Math.max(0,total-played),lead=Math.abs(diff);
+ const complete=played===total||lead>remaining;
+ let label='AS';
+ if(diff!==0){
+   if(complete&&remaining>0)label=`${lead}&${remaining}`;
+   else label=`${lead} UP`;
+ }
+ return{rows,diff,played,remaining,complete,label,winner:diff>0?0:diff<0?1:null,relativeHandicaps:rel};
+}

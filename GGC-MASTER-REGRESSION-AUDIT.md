@@ -101,3 +101,12 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🟠 PAIRS-LIVE-001 — load Pairs Formats test pack on deployed app and confirm Group appears.
 - 🟠 PAIRS-LIVE-002 — verify all six Pairs leaderboards against expected calculations.
 - 🟠 IND-REGRESSION-001 — reload Individual test pack and confirm prior nine-format results remain unchanged.
+
+## Build 3.4.2 — Pair assignment + 4BBB Match Play
+- 🔵 Explicit four-player round selection and Pair 1 / Pair 2 assignment added to paired-format score screen.
+- 🔵 Saved pair membership drives real-name scorecards/leaderboards rather than Pair A1/A2 placeholders.
+- 🔵 4BBB Match Play handicap engine checked against R&A Appendix C: 90% of Course Handicap difference from lowest player; lowest = 0; final rounding once.
+- 🔵 Match scorecard uses relative match strokes by SI (including >18 via repeating SI allocation).
+- 🔵 Deterministic John 5 / Mick 8 / Tony 9 / Dave 10 test returns 0 / 3 / 4 / 5 match strokes.
+- 🔵 Deterministic all-par test: holes 1-3 halved, Tony & Dave win SI4 and SI5, match closes 2 & 1 after hole 17.
+- 🟠 Live mobile/Supabase test required: select four golfers, swap pairings, save, score all four, pick-up/blank-ball workflow, refresh persistence and leaderboard rendering.

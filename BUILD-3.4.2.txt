@@ -1,0 +1,8 @@
+GGC Build 3.4.2 — Pair Assignment + Four-Ball Match Play
+
+- Added explicit four-golfer round pairing on paired competition scorecards.
+- Pair 1 = selected golfers 1+2; Pair 2 = selected golfers 3+4.
+- Saving a round pairing adds those golfers to competition entries and stores real pair membership.
+- 4BBB Match Play scorecard now uses R&A Appendix C relative strokes: 90% of Course Handicap difference from the lowest player, rounded once at the final step.
+- Stroke allocation follows SI, including >18 strokes via the existing holeStrokes engine.
+- Added John/Mick vs Tony/Dave deterministic test pack and expected-results file.

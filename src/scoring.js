@@ -43,10 +43,17 @@ export function pairScore(pair,c,state){
  }
  const complete=holes.filter(Boolean).length; const lower=c.format==='4bbb-stroke'||c.format==='aggregate-stroke'; return {ids,complete,points,net,holes,rankValue:lower?net:points};
 }
+export function fourballMatchHandicaps(pairA,pairB,c,state){
+ const all=[...(pairA?.ids||[]),...(pairB?.ids||[])].filter(Boolean); const course=state.courses.find(x=>x.id===c.course); const tee=course?.tees.find(t=>t.name===c.tee); const hs=tee?.holes||[]; const par=hs.reduce((a,h)=>a+h.par,0)||72; const allowance=c.handicapAllowance??90;
+ // R&A Appendix C: Four-Ball match play = allowance % of the Course Handicap difference from the lowest player.
+ // Use unrounded Course Handicaps before the final WHS rounding step to avoid double-rounding.
+ const raw=Object.fromEntries(all.map(id=>{const p=state.players.find(x=>x.id===id);return [id,rawCourseHandicap(p?.hi,tee,par)]}));
+ if(!all.length)return {}; const low=Math.min(...Object.values(raw));
+ return Object.fromEntries(all.map(id=>[id,whsRound((raw[id]-low)*(allowance/100))]));
+}
 export function fourballMatchResult(pairA,pairB,c,state){
- const all=[...(pairA?.ids||[]),...(pairB?.ids||[])]; const course=state.courses.find(x=>x.id===c.course); const tee=course?.tees.find(t=>t.name===c.tee); const hs=tee?.holes||[]; const par=hs.reduce((a,h)=>a+h.par,0)||72; const allowance=c.handicapAllowance??90;
- const raw=Object.fromEntries(all.map(id=>{const p=state.players.find(x=>x.id===id);return [id,rawCourseHandicap(p?.hi,tee,par)]})); const low=Math.min(...Object.values(raw)); const rel=Object.fromEntries(all.map(id=>[id,whsRound((raw[id]-low)*(allowance/100))]));
- const gross=id=>state.cards.find(x=>x.compId===c.id&&x.playerId===id)?.gross||[]; let up=0,played=0; const holes=[];
- for(let i=0;i<hs.length;i++){const h=hs[i];const best=pair=>Math.min(...(pair.ids||[]).map(id=>{const g=+(gross(id)[i]||0);return g?g-holeStrokes(rel[id],h.si):999}));const a=best(pairA),b=best(pairB);if(a===999||b===999){holes.push(null);continue}played++;if(a<b)up++;else if(b<a)up--;holes.push({a,b,up});}
- const left=Math.max(0,hs.length-played);return {up,played,left,holes,relativeHandicaps:rel,text:up===0?'All Square':`${Math.abs(up)} UP`};
+ const all=[...(pairA?.ids||[]),...(pairB?.ids||[])]; const course=state.courses.find(x=>x.id===c.course); const tee=course?.tees.find(t=>t.name===c.tee); const hs=tee?.holes||[]; const rel=fourballMatchHandicaps(pairA,pairB,c,state);
+ const gross=id=>state.cards.find(x=>x.compId===c.id&&x.playerId===id)?.gross||[]; let up=0,played=0,decided=false,margin=0,holesLeftAtDecision=0; const holes=[];
+ for(let i=0;i<hs.length;i++){if(decided){holes.push(null);continue}const h=hs[i];const best=pair=>Math.min(...(pair.ids||[]).map(id=>{const g=+(gross(id)[i]||0);return g?g-holeStrokes(rel[id],h.si):999}));const a=best(pairA),b=best(pairB);if(a===999||b===999){holes.push(null);continue}played++;if(a<b)up++;else if(b<a)up--;const remaining=hs.length-(i+1);holes.push({a,b,up});if(Math.abs(up)>remaining){decided=true;margin=Math.abs(up);holesLeftAtDecision=remaining;}}
+ const left=Math.max(0,hs.length-played);const text=up===0?'All Square':decided&&holesLeftAtDecision>0?`${margin} & ${holesLeftAtDecision}`:`${Math.abs(up)} UP`;return {up,played,left,holes,relativeHandicaps:rel,text,decided,margin,holesLeftAtDecision};
 }

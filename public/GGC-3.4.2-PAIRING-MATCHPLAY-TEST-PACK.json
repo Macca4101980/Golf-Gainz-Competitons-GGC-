@@ -1,0 +1,305 @@
+{
+  "build": "3.4.2",
+  "purpose": "Explicit pair assignment and WHS Four-Ball Match Play regression test",
+  "society": {
+    "id": "pairing-match-test",
+    "name": "TEST \u00b7 Pair Assignment + Match Play",
+    "code": "GGC-MATCH",
+    "members": [
+      "mp-john",
+      "mp-mick",
+      "mp-tony",
+      "mp-dave"
+    ]
+  },
+  "players": [
+    {
+      "id": "mp-john",
+      "name": "John",
+      "hi": 5
+    },
+    {
+      "id": "mp-mick",
+      "name": "Mick",
+      "hi": 8
+    },
+    {
+      "id": "mp-tony",
+      "name": "Tony",
+      "hi": 9
+    },
+    {
+      "id": "mp-dave",
+      "name": "Dave",
+      "hi": 10
+    }
+  ],
+  "courses": [
+    {
+      "id": "match-test-course",
+      "name": "Match Play Logic Test Course",
+      "tees": [
+        {
+          "id": "match-white",
+          "name": "White",
+          "slope": 113,
+          "rating": 72,
+          "holes": [
+            {
+              "n": 1,
+              "par": 4,
+              "si": 1
+            },
+            {
+              "n": 2,
+              "par": 4,
+              "si": 2
+            },
+            {
+              "n": 3,
+              "par": 4,
+              "si": 3
+            },
+            {
+              "n": 4,
+              "par": 4,
+              "si": 4
+            },
+            {
+              "n": 5,
+              "par": 4,
+              "si": 5
+            },
+            {
+              "n": 6,
+              "par": 4,
+              "si": 6
+            },
+            {
+              "n": 7,
+              "par": 4,
+              "si": 7
+            },
+            {
+              "n": 8,
+              "par": 4,
+              "si": 8
+            },
+            {
+              "n": 9,
+              "par": 4,
+              "si": 9
+            },
+            {
+              "n": 10,
+              "par": 4,
+              "si": 10
+            },
+            {
+              "n": 11,
+              "par": 4,
+              "si": 11
+            },
+            {
+              "n": 12,
+              "par": 4,
+              "si": 12
+            },
+            {
+              "n": 13,
+              "par": 4,
+              "si": 13
+            },
+            {
+              "n": 14,
+              "par": 4,
+              "si": 14
+            },
+            {
+              "n": 15,
+              "par": 4,
+              "si": 15
+            },
+            {
+              "n": 16,
+              "par": 4,
+              "si": 16
+            },
+            {
+              "n": 17,
+              "par": 4,
+              "si": 17
+            },
+            {
+              "n": 18,
+              "par": 4,
+              "si": 18
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "competitions": [
+    {
+      "id": "test-4bbb-match-real-names",
+      "societyId": "pairing-match-test",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST \u00b7 John & Mick vs Tony & Dave",
+      "format": "4bbb-match",
+      "handicapAllowance": 90,
+      "course": "match-test-course",
+      "tee": "White",
+      "fee": 0,
+      "days": 7,
+      "holesMode": "18",
+      "starts": "2026-09-25T06:00:00.000Z",
+      "ends": "2026-10-02T20:00:00.000Z",
+      "entries": [
+        "mp-john",
+        "mp-mick",
+        "mp-tony",
+        "mp-dave"
+      ],
+      "pairs": [
+        {
+          "id": "john-mick",
+          "ids": [
+            "mp-john",
+            "mp-mick"
+          ]
+        },
+        {
+          "id": "tony-dave",
+          "ids": [
+            "mp-tony",
+            "mp-dave"
+          ]
+        }
+      ],
+      "status": "live"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card-mp-john",
+      "societyId": "pairing-match-test",
+      "compId": "test-4bbb-match-real-names",
+      "playerId": "mp-john",
+      "gross": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "courseId": "match-test-course",
+      "tee": "White",
+      "handicapIndexUsed": 5,
+      "submitted": true
+    },
+    {
+      "id": "card-mp-mick",
+      "societyId": "pairing-match-test",
+      "compId": "test-4bbb-match-real-names",
+      "playerId": "mp-mick",
+      "gross": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "courseId": "match-test-course",
+      "tee": "White",
+      "handicapIndexUsed": 8,
+      "submitted": true
+    },
+    {
+      "id": "card-mp-tony",
+      "societyId": "pairing-match-test",
+      "compId": "test-4bbb-match-real-names",
+      "playerId": "mp-tony",
+      "gross": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "courseId": "match-test-course",
+      "tee": "White",
+      "handicapIndexUsed": 9,
+      "submitted": true
+    },
+    {
+      "id": "card-mp-dave",
+      "societyId": "pairing-match-test",
+      "compId": "test-4bbb-match-real-names",
+      "playerId": "mp-dave",
+      "gross": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "courseId": "match-test-course",
+      "tee": "White",
+      "handicapIndexUsed": 10,
+      "submitted": true
+    }
+  ]
+}

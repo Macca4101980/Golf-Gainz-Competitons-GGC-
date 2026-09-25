@@ -1,0 +1,81 @@
+{
+  "build": "3.4.2",
+  "rulesBasis": "R&A Rules of Handicapping Appendix C: Four-Ball match play uses 90% of the Course Handicap difference from the lowest player; lowest plays off zero.",
+  "players": [
+    {
+      "name": "John",
+      "courseHandicap": 5,
+      "matchStrokes": 0,
+      "strokeIndexes": []
+    },
+    {
+      "name": "Mick",
+      "courseHandicap": 8,
+      "matchStrokes": 3,
+      "strokeIndexes": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "Tony",
+      "courseHandicap": 9,
+      "matchStrokes": 4,
+      "strokeIndexes": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "Dave",
+      "courseHandicap": 10,
+      "matchStrokes": 5,
+      "strokeIndexes": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "pairs": [
+    "John & Mick",
+    "Tony & Dave"
+  ],
+  "holeExpectations": [
+    {
+      "holes": "1-3",
+      "result": "HALVED",
+      "reason": "Pair A best net 3; Pair B best net 3"
+    },
+    {
+      "hole": 4,
+      "result": "Tony & Dave WIN",
+      "reason": "Pair A best net 4; Tony net 3"
+    },
+    {
+      "hole": 5,
+      "result": "Tony & Dave WIN",
+      "reason": "Pair A best net 4; Dave net 3"
+    },
+    {
+      "holes": "6-17",
+      "result": "HALVED; MATCH ENDS AFTER 17",
+      "reason": "Tony & Dave remain 2 up with only one hole left"
+    }
+  ],
+  "finalResult": "Tony & Dave 2 & 1",
+  "uiChecks": [
+    "Round screen can select four distinct golfers",
+    "Golfer 1+2 become Pair 1 and Golfer 3+4 become Pair 2",
+    "Saved pair names display as John & Mick and Tony & Dave",
+    "Scorecard shows MATCH 0/3/4/5 SHOTS, not ordinary 90% Playing Handicap",
+    "Mick receives strokes only on SI 1-3",
+    "All four players can be selected from SCORING FOR after pairs are saved",
+    "Leaderboard uses real player names"
+  ]
+}

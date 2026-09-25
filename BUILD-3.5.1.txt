@@ -1,0 +1,6 @@
+GGC Build 3.5.1 — Realtime State Protection
+
+Focus:
+- protects unfinished Create Competition drafts from random realtime/remount resets
+- merges live scorecards on cloud refresh instead of wholesale replacement
+- retains Build 3.5.0 universal 1–4 golfer group scoring and Pairs Matchplay work

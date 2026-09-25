@@ -1,0 +1,6 @@
+GGC Build 3.5.2 — Compact Group Scorecard
+- Four golfers fit on mobile without horizontal scrolling.
+- Pairs scorecard shows Team A / Team B headers.
+- Pairs Matchplay shows live match status above card.
+- Handicap shot dots retained with compact controls.
+- Visible build labels and PWA cache updated to 3.5.2.

@@ -118,3 +118,20 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🟠 Live Supabase multi-device test required: two scorers editing the same group round, dashboard propagation, refresh persistence and conflict behaviour.
 - 🟠 Mobile test required: four-column scorecard horizontal scrolling, shot dots and touch targets.
 - 🟠 Create Competition field-retention regression should be rechecked during live testing.
+
+## Build 3.5.1 — Realtime State Protection
+- 🔵 Create Competition draft is persisted independently in local storage while the form is open, so a component remount, realtime state refresh or page/PWA refresh cannot silently erase entered fields.
+- 🔵 Intentional close discards the unsaved competition draft; successful Create Competition clears it after committing the competition.
+- 🔵 Realtime cloud refresh now merges live scorecards by per-card `updatedAt` / `submittedAt` instead of replacing the entire local cards array.
+- 🔵 Realtime merge preserves audit records, competition entrants and round-group membership from both local and remote state.
+- 🔵 Visible build label, package version and service-worker cache updated to 3.5.1.
+- 🟠 Live Supabase multi-device test required: half-fill Create Competition and leave open through repeated realtime events; confirm every field remains unchanged.
+- 🟠 Live Supabase multi-device test required: enter scores on two devices in the same group round and confirm newer card edits survive incoming cloud refreshes.
+
+## Build 3.5.2 — Compact Group Scorecard
+- 🔵 Four-player scorecard compacted to fit a phone viewport without horizontal scrolling.
+- 🔵 Explicit Team A / Team B spanning headers added to paired formats.
+- 🔵 Pairs Matchplay live status strip added above card (AS / pair N UP, holes thru).
+- 🔵 Match-shot dots retained with compact +/- controls.
+- 🔵 Visible score-screen version and service-worker cache updated to 3.5.2.
+- 🟠 Live iPhone/PWA test required for four-column fit, tap targets, team grouping and match status progression.

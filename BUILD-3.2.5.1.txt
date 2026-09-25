@@ -1,0 +1,14 @@
+GGC Build 3.2.5.1 — Live-Test Corrections
+
+Fixes from deployed 3.2.5 testing:
+- Group member counts and Delete eligibility ignore stale/ghost member IDs that no longer resolve to golfer records.
+- Played With is populated from golfers who share competition entries with the signed-in golfer, plus saved contacts.
+- Removing a Played With golfer suppresses them until you play together again.
+- Removed duplicate Create / Join Group action from Me; Groups remains the place to create/join.
+
+Regression results before packaging:
+- 44 scoring/helper checks passed.
+- 17 static regression checks passed.
+- GROUP-DELETE-002 ghost-member behavioral model passed.
+- PLAYED-WITH-001 shared-competition behavioral model passed.
+- npm install timed out, so Vercel remains the production Vite compile test.

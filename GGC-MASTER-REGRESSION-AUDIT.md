@@ -90,3 +90,24 @@ Every new behaviour is added here and the full accumulated regression suite is r
 | 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged and outside 3.2.5. |
 | 🟠 | Simultaneous scoring | Existing whole-state last-write-wins limitation; deliberately deferred to Build 3.3 normalized data. |
 | ⚫ | New regressions detected by 3.2.5 automated/static suite | None detected. |
+
+## Build 3.2.5.1 — Live-Test Corrections
+
+| Status | Area | Result |
+|---|---|---|
+| 🔴 | 3.2.5 GROUP-DELETE-002 live test | Failed: Group detail showed 1 valid member but Group list/Delete still counted a stale/ghost member ID. Captured from live iPhone test. |
+| 🔵 | GROUP-DELETE-002 correction | Member counts and Delete eligibility now use valid member IDs that resolve to real golfer records. Synthetic ghost-member regression passed. |
+| 🔵 | PLAYED-WITH-001 correction | Played With now derives golfers from shared competition entries as well as saved contacts. Synthetic shared-competition regression passed. |
+| 🔵 | PLAYED-WITH-002 removal behaviour | Removed Played With golfers are suppressed via `hiddenContacts`; playing together again clears the suppression. Static regression passed. |
+| 🔵 | ME-UX-001 | Duplicate CREATE / JOIN GROUP action removed from Me; Groups retains the single Create / Join action. Static regression passed. |
+| 🟢 | GROUP-ROLE-001 / OWNER-001 / OWNER-002 | Ownership labels, Take Ownership, Owner leave protection and Owner removal protection retained in source regression. |
+| 🟢 | GROUP-DELETE-001 | Multi-member delete warning and block retained. |
+| 🟢 | Competition lifecycle | Draft / Scheduled / Live / Completed logic and Start Now / Schedule paths retained. |
+| 🟢 | Scoring/helper suite | 44 deterministic scoring/helper checks passed, including test-pack cards, OOM bands and Blind Pairs historical pair shapes. |
+| 🟢 | Multi-Group OOM / Realtime guard / PWA update | Existing paths retained by static regression. |
+| 🟠 | GROUP-DELETE-002 deployed iPhone | Needs live confirmation that the current sole-member Group shows 1 everywhere and can be deleted. |
+| 🟠 | PLAYED-WITH-001 deployed data | Needs live confirmation against the user's existing competition history. |
+| 🟠 | Production Vite compile | npm dependency install timed out in the build environment; Vercel remains the production compile/deploy check. |
+| 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged. |
+| 🟠 | Simultaneous scoring | Existing whole-state limitation; deliberately deferred to Build 3.3 normalized data. |
+| ⚫ | New regressions detected in 3.2.5.1 automated/static suite | None detected. |

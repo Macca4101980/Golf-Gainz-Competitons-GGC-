@@ -150,3 +150,23 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .miniStep{grid-template-columns:22px minmax(24px,1fr) 22px;gap:2px}.miniStep button{width:22px!important;min-width:22px!important;min-height:34px!important;font-size:.82rem}.miniStep input{font-size:1rem!important;padding:6px 0!important}
 .liveMatchStrip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 4px;padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#172019}.liveMatchStrip b{font-size:1rem}.liveMatchStrip span{font-size:.72rem;color:var(--muted);font-weight:800;white-space:nowrap}
 @media(max-width:520px){.groupGrid{grid-template-columns:38px repeat(var(--players),minmax(0,1fr));min-width:0}.miniStep{grid-template-columns:20px minmax(22px,1fr) 20px}.miniStep button{width:20px!important;min-width:20px!important}.gHead{padding:6px 1px}.playerHead b{font-size:.76rem}.gHead small{font-size:.5rem}}
+
+/* Build 3.5.3 stacked score controls + pinned match/team/player context */
+.groupScore .liveMatchStrip{position:sticky;top:0;z-index:30;margin-top:10px;background:#172019}
+.groupScore .teamBandCorner,.groupScore .teamBand{position:sticky;top:55px;z-index:25;background:#111812}
+.groupScore .gHead{position:sticky;top:83px;z-index:24;background:#172019}
+.groupScore .holeHead{z-index:26}
+.stackScore{display:grid;grid-template-rows:auto auto;gap:2px;min-width:0}
+.scoreTop{position:relative;display:flex;align-items:center;justify-content:center;min-height:30px;min-width:0}
+.scoreTop .shotDots{position:absolute;top:-1px;left:50%;transform:translateX(-50%);height:8px;line-height:7px;font-size:.62rem;letter-spacing:1px;white-space:nowrap;pointer-events:none}
+.scoreTop input{width:100%;min-width:0;border:0!important;background:transparent!important;text-align:center;padding:7px 1px 2px!important;margin:0!important;font-size:1.08rem!important;font-weight:950;box-shadow:none!important}
+.scoreButtons{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%}
+.scoreButtons button{width:100%!important;min-width:0!important;min-height:28px!important;margin:0!important;padding:0!important;border-radius:4px!important;font-size:.9rem!important}
+.groupCell{padding:3px 2px 4px}
+@media(max-width:520px){
+ .groupGrid{grid-template-columns:36px repeat(var(--players),minmax(0,1fr))}
+ .scoreTop input{font-size:1rem!important}
+ .scoreButtons button{min-height:27px!important}
+ .groupScore .teamBandCorner,.groupScore .teamBand{top:53px}
+ .groupScore .gHead{top:80px}
+}

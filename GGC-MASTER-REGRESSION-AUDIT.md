@@ -135,3 +135,10 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🔵 Match-shot dots retained with compact +/- controls.
 - 🔵 Visible score-screen version and service-worker cache updated to 3.5.2.
 - 🟠 Live iPhone/PWA test required for four-column fit, tap targets, team grouping and match status progression.
+
+## Build 3.5.3 — Stacked mobile score entry
+- 🔵 Universal group score cells changed from horizontal minus/score/plus to stacked score-over-buttons layout to use phone width more efficiently.
+- 🔵 Handicap shot dots remain attached to each golfer/hole score and no longer consume a separate horizontal control column.
+- 🔵 Pairs Matchplay live status, Team A/Team B bands and player headings are sticky while holes scroll.
+- 🔵 Four-player card remains single-screen width with no intended horizontal scrolling.
+- 🟠 Live iPhone/PWA test required for sticky offsets, four-player tap targets and holes 1–18 scrolling.

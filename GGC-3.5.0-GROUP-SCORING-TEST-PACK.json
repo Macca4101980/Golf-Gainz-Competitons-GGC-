@@ -1,0 +1,9 @@
+{
+  "build":"3.5.0",
+  "tests":[
+    {"id":"group-individual","format":"stableford","players":["Tony","Mick","John","Chris"],"expected":"One shared 4-column scorecard; each score saves to that golfer's individual card; all four see Round in Progress."},
+    {"id":"pairs-stableford","format":"4bbb-stableford","players":["Tony","Mick","John","Chris"],"pairs":[["Tony","Mick"],["John","Chris"]],"expected":"Columns visually grouped 2+2; Better Ball leaderboard uses the saved explicit pairs."},
+    {"id":"pairs-matchplay","format":"4bbb-match","courseHandicaps":[5,8,9,10],"expectedMatchShots":[0,3,4,5],"expected":"Shot dots follow SI; mathematically decided match opens win prompt with Save Round & Exit / Continue Playing."},
+    {"id":"dashboard-lifecycle","expected":["Not submitted: Round in Progress on each selected golfer dashboard","Submitted: removed from Home dashboard","Still accessible under Competitions"]}
+  ]
+}

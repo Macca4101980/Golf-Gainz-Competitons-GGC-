@@ -102,19 +102,19 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🟠 PAIRS-LIVE-002 — verify all six Pairs leaderboards against expected calculations.
 - 🟠 IND-REGRESSION-001 — reload Individual test pack and confirm prior nine-format results remain unchanged.
 
-## Build 3.4.2 — Pair assignment + 4BBB Match Play
-- 🔵 Explicit four-player round selection and Pair 1 / Pair 2 assignment added to paired-format score screen.
-- 🔵 Saved pair membership drives real-name scorecards/leaderboards rather than Pair A1/A2 placeholders.
-- 🔵 4BBB Match Play handicap engine checked against R&A Appendix C: 90% of Course Handicap difference from lowest player; lowest = 0; final rounding once.
-- 🔵 Match scorecard uses relative match strokes by SI (including >18 via repeating SI allocation).
-- 🔵 Deterministic John 5 / Mick 8 / Tony 9 / Dave 10 test returns 0 / 3 / 4 / 5 match strokes.
-- 🔵 Deterministic all-par test: holes 1-3 halved, Tony & Dave win SI4 and SI5, match closes 2 & 1 after hole 17.
-- 🟠 Live mobile/Supabase test required: select four golfers, swap pairings, save, score all four, pick-up/blank-ball workflow, refresh persistence and leaderboard rendering.
-
-
-## Build 3.4.3 — Pairs Matchplay / form persistence
-- 🔵 Display name changed from 4BBB Match Play to **Pairs Matchplay**.
-- 🔵 Competition setup draft is session-persisted so parent/cloud refreshes do not clear entered fields.
-- 🔵 Pairs Matchplay early-decision prompt added: winner + match result, then Save round & exit or Continue playing.
-- 🟠 Live browser test required for the early-decision prompt and form persistence.
-- 🟢 Existing 3.4.2 scoring engine retained: explicit four-player pair assignment, relative match strokes and frozen match result.
+## Build 3.5.0 — Universal Live Group Scorecard
+- 🔵 Visible build label and package version updated to 3.5.0.
+- 🔵 4BBB Match Play renamed to Pairs Matchplay in competition format and leaderboard UI.
+- 🔵 Universal round start supports selecting 1–4 golfers; one scorer can enter every selected golfer's card.
+- 🔵 Scorecard changed to holes as rows and golfers as columns, with +/- score controls and handicap-shot dots.
+- 🔵 Pairs formats visually group columns into Pair 1 / Pair 2 and persist explicit pair membership.
+- 🔵 Starting a group round immediately creates an in-progress card for every selected golfer, so the shared round can appear for each participant.
+- 🔵 Dashboard ROUND IN PROGRESS is now derived from an unsubmitted player card, not only the local device's active competition.
+- 🔵 Submitted player rounds are removed from the Home dashboard while remaining available under Competitions.
+- 🔵 Group submission submits all selected participant cards together and records the scorer in the audit trail.
+- 🔵 Live edits record player, hole, before/after score and scorer; cloud state remains the shared source for other devices.
+- 🔵 Pairs Matchplay uses 90% of Course Handicap difference from the lowest player and displays match-relative shot dots.
+- 🔵 Pairs Matchplay detects a mathematically decided match and offers SAVE ROUND & EXIT or CONTINUE PLAYING.
+- 🟠 Live Supabase multi-device test required: two scorers editing the same group round, dashboard propagation, refresh persistence and conflict behaviour.
+- 🟠 Mobile test required: four-column scorecard horizontal scrolling, shot dots and touch targets.
+- 🟠 Create Competition field-retention regression should be rechecked during live testing.

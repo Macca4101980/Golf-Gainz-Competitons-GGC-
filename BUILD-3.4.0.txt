@@ -1,0 +1,9 @@
+GGC Build 3.4.0 — Individual Competition Formats
+
+Adds the 9 agreed Individual formats:
+Stableford; Nett Stroke Play / Medal; Gross Stroke Play; Par / Bogey; Maximum Score; Modified Stableford; Flag Competition; Eclectic; Waltz.
+
+Adds configurable handicap allowance, Maximum Score rules, Modified Stableford points, Eclectic round/scoring setup, Flag finishing input, Waltz x1/x2/x3 scoring, plus-handicap SI18 correction, and updated regression test data.
+
+Automated scoring checks: 12/12 PASS.
+Browser/Vercel/Supabase behaviours remain AMBER until deployed live.

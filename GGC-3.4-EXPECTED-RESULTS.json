@@ -1,0 +1,512 @@
+{
+  "ind-stable": {
+    "format": "stableford",
+    "allowance": 95,
+    "results": [
+      {
+        "name": "Glen Plus",
+        "CH": -3,
+        "PH": -3,
+        "result": 51,
+        "gross": 54,
+        "net": 57,
+        "points": 51,
+        "bogey": 13,
+        "cappedGross": 54
+      },
+      {
+        "name": "Harper Five",
+        "CH": 5,
+        "PH": 5,
+        "result": 41,
+        "gross": 72,
+        "net": 67,
+        "points": 41,
+        "bogey": 4,
+        "cappedGross": 72
+      },
+      {
+        "name": "Alex Scratch",
+        "CH": -1,
+        "PH": -1,
+        "result": 34,
+        "gross": 73,
+        "net": 74,
+        "points": 34,
+        "bogey": -2,
+        "cappedGross": 73
+      },
+      {
+        "name": "Chris Twelve",
+        "CH": 14,
+        "PH": 13,
+        "result": 31,
+        "gross": 90,
+        "net": 77,
+        "points": 31,
+        "bogey": -4,
+        "cappedGross": 90
+      },
+      {
+        "name": "Beth Eight",
+        "CH": 9,
+        "PH": 8,
+        "result": 23,
+        "gross": 95,
+        "net": 87,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 95
+      },
+      {
+        "name": "Evan TwentyFour",
+        "CH": 28,
+        "PH": 26,
+        "result": 23,
+        "gross": 114,
+        "net": 88,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 114
+      },
+      {
+        "name": "Dana Eighteen",
+        "CH": 21,
+        "PH": 20,
+        "result": 19,
+        "gross": 109,
+        "net": 89,
+        "points": 19,
+        "bogey": -13,
+        "cappedGross": 109
+      },
+      {
+        "name": "Fran Thirty",
+        "CH": 35,
+        "PH": 33,
+        "result": 13,
+        "gross": 131,
+        "net": 98,
+        "points": 13,
+        "bogey": -17,
+        "cappedGross": 131
+      }
+    ]
+  },
+  "ind-nett": {
+    "format": "stroke",
+    "allowance": 95,
+    "results": [
+      {
+        "name": "Glen Plus",
+        "CH": -3,
+        "PH": -3,
+        "result": 57,
+        "gross": 54,
+        "net": 57,
+        "points": 51,
+        "bogey": 13,
+        "cappedGross": 54
+      },
+      {
+        "name": "Harper Five",
+        "CH": 5,
+        "PH": 5,
+        "result": 67,
+        "gross": 72,
+        "net": 67,
+        "points": 41,
+        "bogey": 4,
+        "cappedGross": 72
+      },
+      {
+        "name": "Alex Scratch",
+        "CH": -1,
+        "PH": -1,
+        "result": 74,
+        "gross": 73,
+        "net": 74,
+        "points": 34,
+        "bogey": -2,
+        "cappedGross": 73
+      },
+      {
+        "name": "Chris Twelve",
+        "CH": 14,
+        "PH": 13,
+        "result": 77,
+        "gross": 90,
+        "net": 77,
+        "points": 31,
+        "bogey": -4,
+        "cappedGross": 90
+      },
+      {
+        "name": "Beth Eight",
+        "CH": 9,
+        "PH": 8,
+        "result": 87,
+        "gross": 95,
+        "net": 87,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 95
+      },
+      {
+        "name": "Evan TwentyFour",
+        "CH": 28,
+        "PH": 26,
+        "result": 88,
+        "gross": 114,
+        "net": 88,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 114
+      },
+      {
+        "name": "Dana Eighteen",
+        "CH": 21,
+        "PH": 20,
+        "result": 89,
+        "gross": 109,
+        "net": 89,
+        "points": 19,
+        "bogey": -13,
+        "cappedGross": 109
+      },
+      {
+        "name": "Fran Thirty",
+        "CH": 35,
+        "PH": 33,
+        "result": 98,
+        "gross": 131,
+        "net": 98,
+        "points": 13,
+        "bogey": -17,
+        "cappedGross": 131
+      }
+    ]
+  },
+  "ind-gross": {
+    "format": "gross-stroke",
+    "allowance": 0,
+    "results": [
+      {
+        "name": "Glen Plus",
+        "CH": -3,
+        "PH": 0,
+        "result": 54,
+        "gross": 54,
+        "net": 54,
+        "points": 54,
+        "bogey": 16,
+        "cappedGross": 54
+      },
+      {
+        "name": "Harper Five",
+        "CH": 5,
+        "PH": 0,
+        "result": 72,
+        "gross": 72,
+        "net": 72,
+        "points": 36,
+        "bogey": 0,
+        "cappedGross": 72
+      },
+      {
+        "name": "Alex Scratch",
+        "CH": -1,
+        "PH": 0,
+        "result": 73,
+        "gross": 73,
+        "net": 73,
+        "points": 35,
+        "bogey": -1,
+        "cappedGross": 73
+      },
+      {
+        "name": "Chris Twelve",
+        "CH": 14,
+        "PH": 0,
+        "result": 90,
+        "gross": 90,
+        "net": 90,
+        "points": 18,
+        "bogey": -16,
+        "cappedGross": 90
+      },
+      {
+        "name": "Beth Eight",
+        "CH": 9,
+        "PH": 0,
+        "result": 95,
+        "gross": 95,
+        "net": 95,
+        "points": 16,
+        "bogey": -16,
+        "cappedGross": 95
+      },
+      {
+        "name": "Dana Eighteen",
+        "CH": 21,
+        "PH": 0,
+        "result": 109,
+        "gross": 109,
+        "net": 109,
+        "points": 3,
+        "bogey": -18,
+        "cappedGross": 109
+      },
+      {
+        "name": "Evan TwentyFour",
+        "CH": 28,
+        "PH": 0,
+        "result": 114,
+        "gross": 114,
+        "net": 114,
+        "points": 1,
+        "bogey": -18,
+        "cappedGross": 114
+      },
+      {
+        "name": "Fran Thirty",
+        "CH": 35,
+        "PH": 0,
+        "result": 131,
+        "gross": 131,
+        "net": 131,
+        "points": 0,
+        "bogey": -18,
+        "cappedGross": 131
+      }
+    ]
+  },
+  "ind-par": {
+    "format": "par-bogey",
+    "allowance": 95,
+    "results": [
+      {
+        "name": "Glen Plus",
+        "CH": -3,
+        "PH": -3,
+        "result": 13,
+        "gross": 54,
+        "net": 57,
+        "points": 51,
+        "bogey": 13,
+        "cappedGross": 54
+      },
+      {
+        "name": "Harper Five",
+        "CH": 5,
+        "PH": 5,
+        "result": 4,
+        "gross": 72,
+        "net": 67,
+        "points": 41,
+        "bogey": 4,
+        "cappedGross": 72
+      },
+      {
+        "name": "Alex Scratch",
+        "CH": -1,
+        "PH": -1,
+        "result": -2,
+        "gross": 73,
+        "net": 74,
+        "points": 34,
+        "bogey": -2,
+        "cappedGross": 73
+      },
+      {
+        "name": "Chris Twelve",
+        "CH": 14,
+        "PH": 13,
+        "result": -4,
+        "gross": 90,
+        "net": 77,
+        "points": 31,
+        "bogey": -4,
+        "cappedGross": 90
+      },
+      {
+        "name": "Beth Eight",
+        "CH": 9,
+        "PH": 8,
+        "result": -11,
+        "gross": 95,
+        "net": 87,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 95
+      },
+      {
+        "name": "Evan TwentyFour",
+        "CH": 28,
+        "PH": 26,
+        "result": -11,
+        "gross": 114,
+        "net": 88,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 114
+      },
+      {
+        "name": "Dana Eighteen",
+        "CH": 21,
+        "PH": 20,
+        "result": -13,
+        "gross": 109,
+        "net": 89,
+        "points": 19,
+        "bogey": -13,
+        "cappedGross": 109
+      },
+      {
+        "name": "Fran Thirty",
+        "CH": 35,
+        "PH": 33,
+        "result": -17,
+        "gross": 131,
+        "net": 98,
+        "points": 13,
+        "bogey": -17,
+        "cappedGross": 131
+      }
+    ]
+  },
+  "ind-max": {
+    "format": "max-score",
+    "allowance": 95,
+    "results": [
+      {
+        "name": "Glen Plus",
+        "CH": -3,
+        "PH": -3,
+        "result": 57,
+        "gross": 54,
+        "net": 57,
+        "points": 51,
+        "bogey": 13,
+        "cappedGross": 54
+      },
+      {
+        "name": "Harper Five",
+        "CH": 5,
+        "PH": 5,
+        "result": 67,
+        "gross": 72,
+        "net": 67,
+        "points": 41,
+        "bogey": 4,
+        "cappedGross": 72
+      },
+      {
+        "name": "Alex Scratch",
+        "CH": -1,
+        "PH": -1,
+        "result": 74,
+        "gross": 73,
+        "net": 74,
+        "points": 34,
+        "bogey": -2,
+        "cappedGross": 73
+      },
+      {
+        "name": "Chris Twelve",
+        "CH": 14,
+        "PH": 13,
+        "result": 77,
+        "gross": 90,
+        "net": 77,
+        "points": 31,
+        "bogey": -4,
+        "cappedGross": 90
+      },
+      {
+        "name": "Evan TwentyFour",
+        "CH": 28,
+        "PH": 26,
+        "result": 85,
+        "gross": 114,
+        "net": 85,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 111
+      },
+      {
+        "name": "Beth Eight",
+        "CH": 9,
+        "PH": 8,
+        "result": 86,
+        "gross": 95,
+        "net": 86,
+        "points": 23,
+        "bogey": -11,
+        "cappedGross": 94
+      },
+      {
+        "name": "Dana Eighteen",
+        "CH": 21,
+        "PH": 20,
+        "result": 89,
+        "gross": 109,
+        "net": 89,
+        "points": 19,
+        "bogey": -13,
+        "cappedGross": 109
+      },
+      {
+        "name": "Fran Thirty",
+        "CH": 35,
+        "PH": 33,
+        "result": 93,
+        "gross": 131,
+        "net": 93,
+        "points": 13,
+        "bogey": -17,
+        "cappedGross": 126
+      }
+    ]
+  },
+  "ind-match": {
+    "format": "matchplay",
+    "players": [
+      {
+        "name": "Glen Plus",
+        "PH": -3,
+        "relative": 0
+      },
+      {
+        "name": "Dana Eighteen",
+        "PH": 21,
+        "relative": 24
+      }
+    ],
+    "diff": 10,
+    "winner": "Glen Plus",
+    "played": 10
+  },
+  "plusChecks": [
+    {
+      "allowance": 95,
+      "CH": -3,
+      "PH": -3
+    },
+    {
+      "allowance": 90,
+      "CH": -3,
+      "PH": -3
+    },
+    {
+      "allowance": 75,
+      "CH": -3,
+      "PH": -3
+    },
+    {
+      "allowance": 10,
+      "CH": -3,
+      "PH": 0
+    }
+  ]
+}

@@ -1,113 +1,75 @@
-# GGC Master Regression Audit
+# GGC Master Regression Audit — Build 3.4 Individual Formats
 
-## Status key
-- 🔵 changed/fixed in this build and tested successfully
-- 🟢 previously working, unchanged, regression-tested and still passes
-- 🟠 untested / requires deployed or multi-device testing
-- 🔴 currently broken
-- ⚫ regression: previously working but a build broke it
+Status: 🔵 current-build change tested · 🟢 prior behaviour regression-tested · 🟠 requires deployed/live test · 🔴 current failure · ⚫ regression.
 
-## Build 3.2.3 — Multi-Group Views
+## Build 3.4 changes
+- 🔵 IND-FMT-001 — Individual category contains Stableford, Nett Stroke/Medal, Gross Stroke, Par/Bogey, Maximum Score and Singles Match Play.
+- 🔵 HCAP-ALLOW-001 — Format defaults: 95% for individual handicap stroke-play formats, 100% Singles Match Play, 0% Gross Stroke. Competition creator can override 0–100% where applicable.
+- 🔵 HCAP-PLUS-001 — allowance calculation moves plus Playing Handicaps towards zero; plus strokes are given back beginning at SI 18, then SI 17, etc.
+- 🔵 HCAP-SNAPSHOT-001 — cards retain Course Handicap and Playing Handicap snapshots once scoring begins.
+- 🔵 SCORE-STABLE-001 — Stableford known-answer test pack calculates hole strokes and points.
+- 🔵 SCORE-NETT-001 — Nett Stroke known-answer test pack calculates nett totals.
+- 🔵 SCORE-GROSS-001 — Gross Stroke ignores handicap and ranks gross total.
+- 🔵 SCORE-PAR-001 — Par/Bogey calculates W/H/L against nett par and ranks final +/-.
+- 🔵 SCORE-MAX-001 — Maximum Score supports fixed cap, double par and net double bogey; known-answer cap test passes.
+- 🔵 SCORE-MATCH-001 — Singles Match Play is restricted to two golfers, uses 100% default allowance, low Playing Handicap plays from zero, opponent receives the difference, and match ends when mathematically clinched.
+- 🔵 SCORE-EDIT-001 — changing format, handicap allowance, holes or Maximum Score setup after scoring begins warns and resets scorecards only after confirmation.
+- 🔵 TESTPACK-IND-001 — deterministic 8-golfer Individual Formats JSON pack included; includes a +2.4 golfer (stored internally as -2.4).
+- 🟠 LIVE-IND-001 — deployed scorecards/leaderboards/OOM to be checked against expected-results JSON/screenshots.
 
-| Status | Area | Result |
-|---|---|---|
-| 🔵 | OOM multi-Group view | OOM renders every shown Group independently. The working 3.2.2 OOM engine is byte-for-byte unchanged. |
-| 🔵 | Competitions multi-Group view | Competitions from all shown member Groups are grouped under their Group heading. |
-| 🔵 | Home live competitions | Live competitions aggregate across all shown Groups. |
-| 🔵 | Home Group sharing | Each shown Group has its own Share action. |
-| 🔵 | Me → My Groups filter | SHOWING/HIDDEN controls affect display only; they do not leave or delete membership. |
-| 🟢 | OOM crash protection | User live-tested 3.2.2: OOM no longer crashes. The calculation/render engine is unchanged here. |
-| 🟢 | Existing selected-Group OOM calculation | Exact 3.2.2 working calculation path retained and reused once per shown Group. |
-| 🟢 | Stableford | Deterministic 8-player regression passed. |
-| 🟢 | Nett Stroke | Deterministic 8-player regression passed. |
-| 🟢 | Gross Stroke | Deterministic 8-player regression passed. |
-| 🟢 | Par/Bogey | Deterministic 8-player regression passed. |
-| 🟢 | Blind Pairs compatibility | Historical array and object pair helpers passed. |
-| 🟢 | OOM field-size points | Regression passed. |
-| 🟢 | Plus handicaps | Signed plus-HI regression passed. |
-| 🟢 | Competition Group assignment | Existing Group selector retained. |
-| 🟢 | Closed competition scoring guard | Retained. |
-| 🟢 | Realtime echo guard | Retained. |
-| 🟢 | Group leave persistence code | Retained. |
-| 🟠 | Multi-Group OOM live | Verify two or more Groups appear and calculate independently after deploy. |
-| 🟠 | Multi-Group Competitions live | Verify correct Group headings/cards after deploy. |
-| 🟠 | Home Group Share live | Verify each Share action sends the intended Group code. |
-| 🟠 | Show/Hide persistence | Verify PWA reload. In 3.2.3 this preference is device-local, not membership data. |
-| 🟠 | Full create-to-OOM journey | Live test Group selection → create → score → leaderboard → complete → correct Group OOM. |
-| 🟠 | Auth / OTP / Passkey | Requires deployed device testing. |
-| 🟠 | Multi-device Realtime | Requires two devices. |
-| 🟠 | Simultaneous scoring | Known whole-state last-write-wins limitation; unchanged. |
-| 🔴 | Prize-money settlement engine | Still incomplete; outside this build. |
-| ⚫ | New regressions detected in automated/static suite | None detected. |
-| 🟠 | Production compile | Local Vite compile unavailable because dependencies are not installed; Vercel is the production compile test. |
+## Regression checks retained
+- 🟢 GROUP-ROLE-001 — owner/admin/member role UI paths retained.
+- 🟢 GROUP-OWNER-001/002 — owner transfer/leave protection and ownerless Take Ownership paths retained.
+- 🟢 GROUP-DELETE-001/002 — delete warning and sole-owner delete paths retained in source; sole-owner deletion was live-confirmed in 3.2.5.2.
+- 🟢 PLAYED-WITH-001/002/003 — Played With derives from shared competition participation and existing contact handling remains.
+- 🟢 OOM-UI-001 — multi-Group OOM rendering retained.
+- 🟢 OOM-BANDS-001 — 0–4 no points; 5–8 first=10; 9–12 first=12; 13–16 first=14.
+- 🟢 BLIND-PAIRS-LEGACY-001 — historical array and `{ids:[...]}` pair shapes remain accepted.
+- 🟢 COMP-LIFECYCLE-001 — Draft/Scheduled/Live/Completed/Cancelled lifecycle paths retained.
+- 🟢 REALTIME-001 — remote-state echo guard retained.
+- 🟢 PWA-SW-001 — service-worker update code retained; in-app prompt remains 🟠 for later investigation by prior agreement.
+- 🟠 AUTH/PASSKEY — requires live Supabase/device testing.
+- 🔴 MONEY-SETTLEMENT — complete prize-money settlement engine remains outside this build.
+- 🔴 SIMULTANEOUS-SCORING — whole-state cloud blob concurrency remains; planned normalized-data build.
+- ⚫ New regressions detected by automated/static audit: none.
 
-## Build 3.2.4 — Safe PWA Updates
+## Automated evidence
+- 42/42 individual scoring + retained helper assertions PASS.
+- 28/28 static accumulated regression checks PASS.
+- `src/scoring.js` JavaScript syntax check PASS.
+- Production Vite compile not executed locally because dependency installation timed out; Vercel deployment remains the production compile test.
 
-| Status | Area | Result |
-|---|---|---|
-| 🔵 | PWA-UPDATE-001 detection | Checks for a new service worker on app focus, foreground return and every 30 minutes. |
-| 🔵 | PWA-UPDATE-001 safe activation | New worker waits; GGC does **not** auto-reload while a golfer may be scoring. |
-| 🔵 | PWA-UPDATE-001 prompt | UPDATE NOW activates the waiting build and reloads; LATER leaves the current session running. |
-| 🟢 | 3.2.3 multi-Group OOM code | Retained; existing OOM engine preserved. |
-| 🟢 | 3.2.3 multi-Group Competitions code | Retained. |
-| 🟢 | 3.2.3 Show/Hide filter code | Retained. |
-| 🟢 | Stableford / Nett Stroke / Gross Stroke / Par-Bogey | Deterministic 8-player regression passed again. |
-| 🟢 | Blind Pairs / OOM bands / plus handicaps | Deterministic regression passed again. |
-| 🟢 | Realtime echo guard / closed scoring guard | Retained. |
-| 🟠 | PWA update on real iPhone | Must be proven with 3.2.4 installed and a later deployment available. |
-| 🟠 | Update while a card is in progress | Live test: ignore prompt → continue/submit card → update afterwards. |
-| 🟠 | Production Vite compile | Vercel remains the production compile/deploy check. |
-| 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged. |
-| ⚫ | New regressions detected by 3.2.4 automated/static suite | None detected. |
+## Build 3.4.0 — Individual Competition Formats
 
-## Permanent release rule
-Every new behaviour is added here and the full accumulated regression suite is rerun. Any previously working behaviour that fails becomes ⚫ until fixed and retested.
+Status rule: BLUE = changed this build and tested successfully; GREEN = unchanged and regression-tested; AMBER = requires deployed/live testing; RED = broken; BLACK = regression.
 
-## Build 3.2.5 — Group Ownership + Competition Lifecycle
+### Automated / static checks
+- 🔵 IND-FMT-001 — Nine agreed Individual formats are available in Create Competition.
+- 🔵 IND-SCORE-001 — Stableford known-answer scoring passed.
+- 🔵 IND-SCORE-002 — Nett Medal known-answer scoring passed.
+- 🔵 IND-SCORE-003 — Gross Stroke known-answer scoring passed.
+- 🔵 IND-SCORE-004 — Par/Bogey known-answer scoring passed.
+- 🔵 IND-SCORE-005 — Maximum Score fixed-cap known-answer scoring passed.
+- 🔵 IND-SCORE-006 — Modified Stableford configurable-table engine passed.
+- 🔵 IND-SCORE-007 — Flag progress ranking engine passed.
+- 🔵 IND-SCORE-008 — Eclectic best-hole aggregation passed.
+- 🔵 IND-SCORE-009 — Waltz x1/x2/x3 engine passed.
+- 🔵 HCAP-PLUS-001 — +2.4 / 95% rounds Playing Handicap toward zero to +2.
+- 🔵 HCAP-PLUS-002 — plus handicap gives back first stroke at SI18, not SI1.
+- 🟢 GROUP-DELETE-STATIC — Build remains based on 3.2.5.2 group lifecycle/deletion correction lineage.
+- 🟢 OOM-STATIC — Existing multi-Group OOM code path retained.
+- 🟢 REALTIME-STATIC — Existing realtime guard/cloud persistence code retained.
 
-| Status | Area | Result |
-|---|---|---|
-| 🔵 | GROUP-ROLE-001 | Group member cards render OWNER / ADMIN / MEMBER from stored IDs; invalid/missing owner is not falsely labelled Owner. Static regression passed. |
-| 🔵 | GROUP-OWNER-001 | Owner cannot Leave and Owner cannot be removed; ownership must be transferred first. Static regression passed. |
-| 🔵 | GROUP-OWNER-002 | A genuinely ownerless/invalid-owner legacy Group offers TAKE OWNERSHIP to any authenticated current member; claim persists immediately. Static regression passed. |
-| 🔵 | GROUP-DELETE-001 | Owner pressing Delete while other members remain receives the agreed warning and deletion is blocked. Sole-member Owner retains normal destructive confirmation. Static regression passed. |
-| 🔵 | COMP-LIFECYCLE-001 | New competitions can be Draft, Start Now, or Scheduled. Draft scoring is locked. Static transition tests passed. |
-| 🔵 | COMP-LIFECYCLE-002 | Scheduled status derives from timestamps: before start = Scheduled, start→end = Live, after end = Completed. Deterministic transition tests passed. |
-| 🔵 | COMP-LIFECYCLE-003 | Duration starts from actual/scheduled launch, not creation time. 1/2/3/7-day and Custom duration supported. Static regression passed. |
-| 🔵 | COMP-LIFECYCLE-004 | GO LIVE NOW resets the competition start to now and its end to now + configured duration. Static regression passed. |
-| 🔵 | COMP-LIFECYCLE-005 | Effective Completed status closes score editing/submission and is eligible for OOM calculation. Static regression passed. |
-| 🟢 | Stableford / Nett Stroke / Gross Stroke / Par-Bogey | Deterministic scoring regression passed again. |
-| 🟢 | Blind Pairs historical shapes | Array and `{ids:[...]}` compatibility regression passed again. |
-| 🟢 | OOM field-size bands | 5–8 / 9–12 / 13–16 bands regression passed again. |
-| 🟢 | Plus handicaps | Signed plus-handicap maths regression passed again. |
-| 🟢 | Multi-Group OOM / Competitions | Existing 3.2.3 paths retained by static regression. |
-| 🟢 | Realtime echo guard | Existing 3.13.7 guard retained. |
-| 🟢 | PWA safe update system | 3.2.4 waiting-worker / UPDATE NOW mechanism retained; cache advanced to 3.2.5. |
-| 🟠 | GROUP-OWNER live cloud race | Claim ownership should be tested on deployed app; whole-state simultaneous-write limitation remains until 3.3. |
-| 🟠 | Scheduled auto-launch on deployed iPhone | Verify a short future schedule changes Scheduled → Live without app restart and later closes. |
-| 🟠 | PWA 3.2.4 → 3.2.5 update | This deployment is the first real opportunity to prove UPDATE NOW / LATER on iPhone. |
-| 🟠 | Production Vite compile | JSX syntax transpile passed locally; Vercel remains the production Vite compile/deploy check. |
-| 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged and outside 3.2.5. |
-| 🟠 | Simultaneous scoring | Existing whole-state last-write-wins limitation; deliberately deferred to Build 3.3 normalized data. |
-| ⚫ | New regressions detected by 3.2.5 automated/static suite | None detected. |
+### Live/deployed checks still required
+- 🟠 IND-LIVE-001 — Create/open/score/submit each of the nine formats on deployed app.
+- 🟠 IND-LIVE-002 — Override handicap allowance and confirm PH/leaderboard on device.
+- 🟠 IND-LIVE-003 — Maximum Score fixed/double-par/net-double-bogey UI.
+- 🟠 IND-LIVE-004 — Modified Stableford points editing and leaderboard.
+- 🟠 IND-LIVE-005 — Flag finish entry and ordering.
+- 🟠 IND-LIVE-006 — Eclectic round switching/persistence/best-hole leaderboard.
+- 🟠 IND-LIVE-007 — Waltz multiplier display and totals.
+- 🟠 OOM-LIVE-001 — Complete each format and verify OOM award and Group isolation.
+- 🟠 CLOUD-LIVE-001 — Two-device Supabase save/reload/edit behaviour.
+- 🟠 PWA-UPDATE-001 — Update prompt remains parked by user request.
 
-## Build 3.2.5.1 — Live-Test Corrections
-
-| Status | Area | Result |
-|---|---|---|
-| 🔴 | 3.2.5 GROUP-DELETE-002 live test | Failed: Group detail showed 1 valid member but Group list/Delete still counted a stale/ghost member ID. Captured from live iPhone test. |
-| 🔵 | GROUP-DELETE-002 correction | Member counts and Delete eligibility now use valid member IDs that resolve to real golfer records. Synthetic ghost-member regression passed. |
-| 🔵 | PLAYED-WITH-001 correction | Played With now derives golfers from shared competition entries as well as saved contacts. Synthetic shared-competition regression passed. |
-| 🔵 | PLAYED-WITH-002 removal behaviour | Removed Played With golfers are suppressed via `hiddenContacts`; playing together again clears the suppression. Static regression passed. |
-| 🔵 | ME-UX-001 | Duplicate CREATE / JOIN GROUP action removed from Me; Groups retains the single Create / Join action. Static regression passed. |
-| 🟢 | GROUP-ROLE-001 / OWNER-001 / OWNER-002 | Ownership labels, Take Ownership, Owner leave protection and Owner removal protection retained in source regression. |
-| 🟢 | GROUP-DELETE-001 | Multi-member delete warning and block retained. |
-| 🟢 | Competition lifecycle | Draft / Scheduled / Live / Completed logic and Start Now / Schedule paths retained. |
-| 🟢 | Scoring/helper suite | 44 deterministic scoring/helper checks passed, including test-pack cards, OOM bands and Blind Pairs historical pair shapes. |
-| 🟢 | Multi-Group OOM / Realtime guard / PWA update | Existing paths retained by static regression. |
-| 🟠 | GROUP-DELETE-002 deployed iPhone | Needs live confirmation that the current sole-member Group shows 1 everywhere and can be deleted. |
-| 🟠 | PLAYED-WITH-001 deployed data | Needs live confirmation against the user's existing competition history. |
-| 🟠 | Production Vite compile | npm dependency install timed out in the build environment; Vercel remains the production compile/deploy check. |
-| 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged. |
-| 🟠 | Simultaneous scoring | Existing whole-state limitation; deliberately deferred to Build 3.3 normalized data. |
-| ⚫ | New regressions detected in 3.2.5.1 automated/static suite | None detected. |
+No item is marked GREEN solely from code inspection; live-only behaviours remain AMBER.

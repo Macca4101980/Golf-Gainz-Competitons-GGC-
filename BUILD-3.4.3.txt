@@ -1,0 +1,7 @@
+GGC Build 3.4.3 — Pairs Matchplay Test Rebuild
+- Renamed 4BBB Match Play display name to Pairs Matchplay.
+- Create/Edit Competition draft fields persist through parent/cloud remounts during setup.
+- Draft clears only on intentional close or successful save.
+- Pairs Matchplay detects a mathematically decided match and prompts: winner/result, Save round & exit or Continue playing.
+- Match result remains frozen at the point it is decided by the scoring engine.
+- Retains explicit four-player selection and pair assignment from 3.4.2.

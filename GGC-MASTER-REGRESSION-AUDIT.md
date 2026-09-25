@@ -110,3 +110,11 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🔵 Deterministic John 5 / Mick 8 / Tony 9 / Dave 10 test returns 0 / 3 / 4 / 5 match strokes.
 - 🔵 Deterministic all-par test: holes 1-3 halved, Tony & Dave win SI4 and SI5, match closes 2 & 1 after hole 17.
 - 🟠 Live mobile/Supabase test required: select four golfers, swap pairings, save, score all four, pick-up/blank-ball workflow, refresh persistence and leaderboard rendering.
+
+
+## Build 3.4.3 — Pairs Matchplay / form persistence
+- 🔵 Display name changed from 4BBB Match Play to **Pairs Matchplay**.
+- 🔵 Competition setup draft is session-persisted so parent/cloud refreshes do not clear entered fields.
+- 🔵 Pairs Matchplay early-decision prompt added: winner + match result, then Save round & exit or Continue playing.
+- 🟠 Live browser test required for the early-decision prompt and form persistence.
+- 🟢 Existing 3.4.2 scoring engine retained: explicit four-player pair assignment, relative match strokes and frozen match result.

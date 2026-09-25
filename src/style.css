@@ -151,7 +151,7 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .liveMatchStrip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 4px;padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#172019}.liveMatchStrip b{font-size:1rem}.liveMatchStrip span{font-size:.72rem;color:var(--muted);font-weight:800;white-space:nowrap}
 @media(max-width:520px){.groupGrid{grid-template-columns:38px repeat(var(--players),minmax(0,1fr));min-width:0}.miniStep{grid-template-columns:20px minmax(22px,1fr) 20px}.miniStep button{width:20px!important;min-width:20px!important}.gHead{padding:6px 1px}.playerHead b{font-size:.76rem}.gHead small{font-size:.5rem}}
 
-/* Build 3.5.3 stacked score controls + pinned match/team/player context */
+/* Build 3.5.4 stacked score controls + pinned match/team/player context */
 .groupScore .liveMatchStrip{position:sticky;top:0;z-index:30;margin-top:10px;background:#172019}
 .groupScore .teamBandCorner,.groupScore .teamBand{position:sticky;top:55px;z-index:25;background:#111812}
 .groupScore .gHead{position:sticky;top:83px;z-index:24;background:#172019}
@@ -169,4 +169,20 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
  .scoreButtons button{min-height:27px!important}
  .groupScore .teamBandCorner,.groupScore .teamBand{top:53px}
  .groupScore .gHead{top:80px}
+}
+\n\n/* Build 3.5.4 — true freeze-pane scorecard header */
+.scoreStickyRegion{position:relative;overflow:visible;margin-top:10px}
+.groupScore .groupCardWrap{overflow:visible!important;margin-top:8px}
+.groupScore .groupGrid{overflow:visible!important;border-radius:14px 14px 0 0}
+.groupScore .liveMatchStrip{position:sticky;top:0;z-index:60;margin:0 0 8px;background:#172019}
+.groupScore .teamBandCorner,.groupScore .teamBand{position:sticky;top:58px;z-index:55;background:#111812;font-size:.78rem;padding:7px 3px}
+.groupScore .gHead{position:sticky;top:89px;z-index:54;background:#172019;padding:8px 2px}
+.groupScore .holeHead{z-index:56}
+.groupScore .playerHead b{font-size:.94rem}
+.groupScore .gHead small{font-size:.62rem;margin-top:4px}
+@media(max-width:520px){
+ .groupScore .teamBandCorner,.groupScore .teamBand{top:56px;font-size:.72rem;padding:6px 2px}
+ .groupScore .gHead{top:84px;padding:7px 1px}
+ .groupScore .playerHead b{font-size:.9rem}
+ .groupScore .gHead small{font-size:.58rem}
 }

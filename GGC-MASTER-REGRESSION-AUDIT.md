@@ -136,9 +136,19 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🔵 Visible score-screen version and service-worker cache updated to 3.5.2.
 - 🟠 Live iPhone/PWA test required for four-column fit, tap targets, team grouping and match status progression.
 
-## Build 3.5.3 — Stacked mobile score entry
+## Build 3.5.4 — Stacked mobile score entry
 - 🔵 Universal group score cells changed from horizontal minus/score/plus to stacked score-over-buttons layout to use phone width more efficiently.
 - 🔵 Handicap shot dots remain attached to each golfer/hole score and no longer consume a separate horizontal control column.
 - 🔵 Pairs Matchplay live status, Team A/Team B bands and player headings are sticky while holes scroll.
 - 🔵 Four-player card remains single-screen width with no intended horizontal scrolling.
 - 🟠 Live iPhone/PWA test required for sticky offsets, four-player tap targets and holes 1–18 scrolling.
+
+
+## Build 3.5.4 — Freeze-pane group scorecard
+- 🔵 Scorecard match/team/player context now uses true CSS sticky positioning within a bounded scorecard region.
+- 🔵 Header scrolls normally until it reaches the top, then remains pinned while hole rows pass behind it.
+- 🔵 Sticky header releases when the scorecard region ends so end-of-round controls can scroll normally.
+- 🔵 Removed overflow ancestors that prevented sticky positioning on iOS Safari/PWA.
+- 🔵 Increased Team and player header text sizes after 3.5.3 over-compression.
+- 🔵 Stacked score / minus-plus controls retained.
+- 🟠 Requires live iPhone/PWA confirmation of sticky offsets, safe-area behaviour, Hole 1 visibility, and release at scorecard end.

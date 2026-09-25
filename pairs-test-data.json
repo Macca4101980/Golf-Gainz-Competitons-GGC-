@@ -1,0 +1,957 @@
+{
+  "build": "3.4.1.1",
+  "purpose": "Pairs competition format live/regression test pack with realistic club-golf scores",
+  "society": {
+    "id": "test-pairs-group",
+    "name": "GGC Pairs 3.4.1 Test Group",
+    "code": "GGC-P341",
+    "members": [
+      "pair-a1",
+      "pair-a2",
+      "pair-b1",
+      "pair-b2"
+    ]
+  },
+  "players": [
+    {
+      "id": "pair-a1",
+      "name": "Pair A1",
+      "hi": 5.4
+    },
+    {
+      "id": "pair-a2",
+      "name": "Pair A2",
+      "hi": 12.8
+    },
+    {
+      "id": "pair-b1",
+      "name": "Pair B1",
+      "hi": 7.1
+    },
+    {
+      "id": "pair-b2",
+      "name": "Pair B2",
+      "hi": 16.2
+    }
+  ],
+  "competitions": [
+    {
+      "id": "test-pairs-4bbb-stableford",
+      "societyId": "test-pairs-group",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST 4BBB STABLEFORD",
+      "format": "4bbb-stableford",
+      "course": "harlestone",
+      "tee": "White",
+      "handicapAllowance": 85,
+      "holesMode": "18",
+      "days": 7,
+      "fee": 0,
+      "status": "live",
+      "entries": [
+        "pair-a1",
+        "pair-a2",
+        "pair-b1",
+        "pair-b2"
+      ],
+      "pairs": [
+        {
+          "id": "pair-a",
+          "ids": [
+            "pair-a1",
+            "pair-a2"
+          ]
+        },
+        {
+          "id": "pair-b",
+          "ids": [
+            "pair-b1",
+            "pair-b2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-pairs-4bbb-stroke",
+      "societyId": "test-pairs-group",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST 4BBB STROKE PLAY",
+      "format": "4bbb-stroke",
+      "course": "harlestone",
+      "tee": "White",
+      "handicapAllowance": 85,
+      "holesMode": "18",
+      "days": 7,
+      "fee": 0,
+      "status": "live",
+      "entries": [
+        "pair-a1",
+        "pair-a2",
+        "pair-b1",
+        "pair-b2"
+      ],
+      "pairs": [
+        {
+          "id": "pair-a",
+          "ids": [
+            "pair-a1",
+            "pair-a2"
+          ]
+        },
+        {
+          "id": "pair-b",
+          "ids": [
+            "pair-b1",
+            "pair-b2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-pairs-aggregate-stableford",
+      "societyId": "test-pairs-group",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST AGGREGATE STABLEFORD",
+      "format": "aggregate-stableford",
+      "course": "harlestone",
+      "tee": "White",
+      "handicapAllowance": 95,
+      "holesMode": "18",
+      "days": 7,
+      "fee": 0,
+      "status": "live",
+      "entries": [
+        "pair-a1",
+        "pair-a2",
+        "pair-b1",
+        "pair-b2"
+      ],
+      "pairs": [
+        {
+          "id": "pair-a",
+          "ids": [
+            "pair-a1",
+            "pair-a2"
+          ]
+        },
+        {
+          "id": "pair-b",
+          "ids": [
+            "pair-b1",
+            "pair-b2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-pairs-aggregate-stroke",
+      "societyId": "test-pairs-group",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST AGGREGATE STROKE PLAY",
+      "format": "aggregate-stroke",
+      "course": "harlestone",
+      "tee": "White",
+      "handicapAllowance": 95,
+      "holesMode": "18",
+      "days": 7,
+      "fee": 0,
+      "status": "live",
+      "entries": [
+        "pair-a1",
+        "pair-a2",
+        "pair-b1",
+        "pair-b2"
+      ],
+      "pairs": [
+        {
+          "id": "pair-a",
+          "ids": [
+            "pair-a1",
+            "pair-a2"
+          ]
+        },
+        {
+          "id": "pair-b",
+          "ids": [
+            "pair-b1",
+            "pair-b2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-pairs-4bbb-match",
+      "societyId": "test-pairs-group",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST 4BBB MATCH PLAY",
+      "format": "4bbb-match",
+      "course": "harlestone",
+      "tee": "White",
+      "handicapAllowance": 90,
+      "holesMode": "18",
+      "days": 7,
+      "fee": 0,
+      "status": "live",
+      "entries": [
+        "pair-a1",
+        "pair-a2",
+        "pair-b1",
+        "pair-b2"
+      ],
+      "pairs": [
+        {
+          "id": "pair-a",
+          "ids": [
+            "pair-a1",
+            "pair-a2"
+          ]
+        },
+        {
+          "id": "pair-b",
+          "ids": [
+            "pair-b1",
+            "pair-b2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test-pairs-blind-pairs",
+      "societyId": "test-pairs-group",
+      "createdBy": "__CURRENT_USER__",
+      "name": "TEST BLIND PAIRS",
+      "format": "blind-pairs",
+      "course": "harlestone",
+      "tee": "White",
+      "handicapAllowance": 95,
+      "holesMode": "18",
+      "days": 7,
+      "fee": 0,
+      "status": "live",
+      "entries": [
+        "pair-a1",
+        "pair-a2",
+        "pair-b1",
+        "pair-b2"
+      ],
+      "blindDraw": {
+        "at": "2026-09-25T12:00:00.000Z",
+        "pairs": [
+          [
+            "pair-a1",
+            "pair-a2"
+          ],
+          [
+            "pair-b1",
+            "pair-b2"
+          ]
+        ]
+      }
+    }
+  ],
+  "cards": [
+    {
+      "id": "card-4bbb-stableford-pair-a1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stableford",
+      "playerId": "pair-a1",
+      "gross": [
+        5,
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stableford-pair-a2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stableford",
+      "playerId": "pair-a2",
+      "gross": [
+        4,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        4,
+        5,
+        5,
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stableford-pair-b1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stableford",
+      "playerId": "pair-b1",
+      "gross": [
+        4,
+        3,
+        6,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        6,
+        3,
+        5,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stableford-pair-b2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stableford",
+      "playerId": "pair-b2",
+      "gross": [
+        5,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        5,
+        5,
+        5,
+        6,
+        7,
+        4,
+        5,
+        6,
+        4,
+        5,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stroke-pair-a1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stroke",
+      "playerId": "pair-a1",
+      "gross": [
+        5,
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stroke-pair-a2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stroke",
+      "playerId": "pair-a2",
+      "gross": [
+        4,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        4,
+        5,
+        5,
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stroke-pair-b1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stroke",
+      "playerId": "pair-b1",
+      "gross": [
+        4,
+        3,
+        6,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        6,
+        3,
+        5,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-stroke-pair-b2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-stroke",
+      "playerId": "pair-b2",
+      "gross": [
+        5,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        5,
+        5,
+        5,
+        6,
+        7,
+        4,
+        5,
+        6,
+        4,
+        5,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stableford-pair-a1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stableford",
+      "playerId": "pair-a1",
+      "gross": [
+        5,
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stableford-pair-a2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stableford",
+      "playerId": "pair-a2",
+      "gross": [
+        4,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        4,
+        5,
+        5,
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stableford-pair-b1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stableford",
+      "playerId": "pair-b1",
+      "gross": [
+        4,
+        3,
+        6,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        6,
+        3,
+        5,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stableford-pair-b2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stableford",
+      "playerId": "pair-b2",
+      "gross": [
+        5,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        5,
+        5,
+        5,
+        6,
+        7,
+        4,
+        5,
+        6,
+        4,
+        5,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stroke-pair-a1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stroke",
+      "playerId": "pair-a1",
+      "gross": [
+        5,
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stroke-pair-a2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stroke",
+      "playerId": "pair-a2",
+      "gross": [
+        4,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        4,
+        5,
+        5,
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stroke-pair-b1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stroke",
+      "playerId": "pair-b1",
+      "gross": [
+        4,
+        3,
+        6,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        6,
+        3,
+        5,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-aggregate-stroke-pair-b2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-aggregate-stroke",
+      "playerId": "pair-b2",
+      "gross": [
+        5,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        5,
+        5,
+        5,
+        6,
+        7,
+        4,
+        5,
+        6,
+        4,
+        5,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-match-pair-a1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-match",
+      "playerId": "pair-a1",
+      "gross": [
+        5,
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-match-pair-a2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-match",
+      "playerId": "pair-a2",
+      "gross": [
+        4,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        4,
+        5,
+        5,
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-match-pair-b1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-match",
+      "playerId": "pair-b1",
+      "gross": [
+        4,
+        3,
+        6,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        6,
+        3,
+        5,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-4bbb-match-pair-b2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-4bbb-match",
+      "playerId": "pair-b2",
+      "gross": [
+        5,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        5,
+        5,
+        5,
+        6,
+        7,
+        4,
+        5,
+        6,
+        4,
+        5,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-blind-pairs-pair-a1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-blind-pairs",
+      "playerId": "pair-a1",
+      "gross": [
+        5,
+        3,
+        5,
+        4,
+        3,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-blind-pairs-pair-a2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-blind-pairs",
+      "playerId": "pair-a2",
+      "gross": [
+        4,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        4,
+        5,
+        5,
+        6,
+        6,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-blind-pairs-pair-b1",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-blind-pairs",
+      "playerId": "pair-b1",
+      "gross": [
+        4,
+        3,
+        6,
+        4,
+        4,
+        5,
+        5,
+        4,
+        4,
+        5,
+        5,
+        6,
+        3,
+        5,
+        5,
+        3,
+        4,
+        4
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    },
+    {
+      "id": "card-blind-pairs-pair-b2",
+      "societyId": "test-pairs-group",
+      "compId": "test-pairs-blind-pairs",
+      "playerId": "pair-b2",
+      "gross": [
+        5,
+        4,
+        6,
+        5,
+        3,
+        6,
+        5,
+        5,
+        5,
+        5,
+        6,
+        7,
+        4,
+        5,
+        6,
+        4,
+        5,
+        5
+      ],
+      "courseId": "harlestone",
+      "tee": "White",
+      "submitted": true
+    }
+  ],
+  "manualChecks": [
+    "All six Pairs competitions should appear in this Group.",
+    "Pair A = Pair A1 & Pair A2; Pair B = Pair B1 & Pair B2.",
+    "Scores are deliberately realistic rather than extreme edge-case cards.",
+    "4BBB Match Play should show a two-pair head-to-head result.",
+    "Blind Pairs is pre-drawn so its leaderboard can be checked immediately."
+  ]
+}

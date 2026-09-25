@@ -1,0 +1,7 @@
+GGC Build 3.4.1.1
+
+Deployment correction for Pairs testing.
+- Visible build label updated to 3.4.1.1.
+- Added activatable Pairs Formats regression test Group.
+- Retained Individual Formats test pack.
+- No scoring-engine changes from 3.4.1.

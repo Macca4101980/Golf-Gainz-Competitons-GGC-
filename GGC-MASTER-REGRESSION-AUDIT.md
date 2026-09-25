@@ -93,3 +93,11 @@ No item is marked GREEN solely from code inspection; live-only behaviours remain
 - 🟠 CLOUD-PAIR-001 Verify pairings/cards persist across two devices.
 
 Note: Green is not used for retained code paths without a real regression test. Unexercised deployed behaviours remain amber.
+
+
+## Build 3.4.1.1 — Pairs test activation correction
+- 🔵 BUILD-ID-001 — visible header identifies Build 3.4.1.1 (static verified).
+- 🔵 PAIRS-TESTDATA-001 — activatable Pairs test data is packaged at `/pairs-test-data.json` and contains six Pairs competitions.
+- 🟠 PAIRS-LIVE-001 — load Pairs Formats test pack on deployed app and confirm Group appears.
+- 🟠 PAIRS-LIVE-002 — verify all six Pairs leaderboards against expected calculations.
+- 🟠 IND-REGRESSION-001 — reload Individual test pack and confirm prior nine-format results remain unchanged.

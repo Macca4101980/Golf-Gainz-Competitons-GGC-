@@ -62,3 +62,31 @@
 
 ## Permanent release rule
 Every new behaviour is added here and the full accumulated regression suite is rerun. Any previously working behaviour that fails becomes ⚫ until fixed and retested.
+
+## Build 3.2.5 — Group Ownership + Competition Lifecycle
+
+| Status | Area | Result |
+|---|---|---|
+| 🔵 | GROUP-ROLE-001 | Group member cards render OWNER / ADMIN / MEMBER from stored IDs; invalid/missing owner is not falsely labelled Owner. Static regression passed. |
+| 🔵 | GROUP-OWNER-001 | Owner cannot Leave and Owner cannot be removed; ownership must be transferred first. Static regression passed. |
+| 🔵 | GROUP-OWNER-002 | A genuinely ownerless/invalid-owner legacy Group offers TAKE OWNERSHIP to any authenticated current member; claim persists immediately. Static regression passed. |
+| 🔵 | GROUP-DELETE-001 | Owner pressing Delete while other members remain receives the agreed warning and deletion is blocked. Sole-member Owner retains normal destructive confirmation. Static regression passed. |
+| 🔵 | COMP-LIFECYCLE-001 | New competitions can be Draft, Start Now, or Scheduled. Draft scoring is locked. Static transition tests passed. |
+| 🔵 | COMP-LIFECYCLE-002 | Scheduled status derives from timestamps: before start = Scheduled, start→end = Live, after end = Completed. Deterministic transition tests passed. |
+| 🔵 | COMP-LIFECYCLE-003 | Duration starts from actual/scheduled launch, not creation time. 1/2/3/7-day and Custom duration supported. Static regression passed. |
+| 🔵 | COMP-LIFECYCLE-004 | GO LIVE NOW resets the competition start to now and its end to now + configured duration. Static regression passed. |
+| 🔵 | COMP-LIFECYCLE-005 | Effective Completed status closes score editing/submission and is eligible for OOM calculation. Static regression passed. |
+| 🟢 | Stableford / Nett Stroke / Gross Stroke / Par-Bogey | Deterministic scoring regression passed again. |
+| 🟢 | Blind Pairs historical shapes | Array and `{ids:[...]}` compatibility regression passed again. |
+| 🟢 | OOM field-size bands | 5–8 / 9–12 / 13–16 bands regression passed again. |
+| 🟢 | Plus handicaps | Signed plus-handicap maths regression passed again. |
+| 🟢 | Multi-Group OOM / Competitions | Existing 3.2.3 paths retained by static regression. |
+| 🟢 | Realtime echo guard | Existing 3.13.7 guard retained. |
+| 🟢 | PWA safe update system | 3.2.4 waiting-worker / UPDATE NOW mechanism retained; cache advanced to 3.2.5. |
+| 🟠 | GROUP-OWNER live cloud race | Claim ownership should be tested on deployed app; whole-state simultaneous-write limitation remains until 3.3. |
+| 🟠 | Scheduled auto-launch on deployed iPhone | Verify a short future schedule changes Scheduled → Live without app restart and later closes. |
+| 🟠 | PWA 3.2.4 → 3.2.5 update | This deployment is the first real opportunity to prove UPDATE NOW / LATER on iPhone. |
+| 🟠 | Production Vite compile | JSX syntax transpile passed locally; Vercel remains the production Vite compile/deploy check. |
+| 🔴 | Prize-money settlement engine | Existing known incomplete area; unchanged and outside 3.2.5. |
+| 🟠 | Simultaneous scoring | Existing whole-state last-write-wins limitation; deliberately deferred to Build 3.3 normalized data. |
+| ⚫ | New regressions detected by 3.2.5 automated/static suite | None detected. |

@@ -1,0 +1,24 @@
+GGC Build 3.2.5 — Group Ownership + Competition Lifecycle
+
+Included:
+- OWNER / ADMIN / MEMBER role visibility retained and owner validity checked.
+- Ownerless legacy Groups can be claimed by any current authenticated member.
+- Owner cannot leave or be removed until ownership is transferred.
+- Group deletion is blocked while other members remain, with explanatory warning.
+- Draft / Scheduled / Live / Completed / Cancelled competition lifecycle.
+- Start Now or scheduled date/time launch.
+- 1 / 2 / 3 / 7 day and custom duration from launch time, not creation time.
+- Scheduled competitions become effectively Live at start and Completed at end.
+- Go Live Now and manual End Competition retained.
+- Scoring and OOM use effective lifecycle status.
+- 30-second UI clock refresh allows open PWAs to reflect lifecycle transitions.
+- Build 3.2.4 safe PWA update system retained; service-worker cache bumped to 3.2.5.
+
+Verification:
+- 11 deterministic scoring/helper regression checks passed.
+- 4 deterministic lifecycle transition checks passed.
+- 18 source/static regression checks passed.
+- JSX syntax transpile passed using TypeScript parser.
+- Full production Vite compile remains a Vercel deployment check.
+
+Next planned major build: 3.3 normalized data + safer simultaneous scoring.

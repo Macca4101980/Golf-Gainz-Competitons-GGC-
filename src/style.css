@@ -133,3 +133,5 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .updateBanner{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:500;display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 14px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:#101912;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .updateBanner div{display:grid;gap:3px}.updateBanner b{font-size:.84rem}.updateBanner span{font-size:.76rem;color:var(--muted);line-height:1.25}.updateBanner button{width:auto!important;margin:0!important;min-height:42px;padding:0 12px!important}.updateBanner .updateLater{background:transparent!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important}
 @media(max-width:560px){.updateBanner{grid-template-columns:1fr auto}.updateBanner .updateLater{grid-column:2}.updateBanner span{max-width:220px}}
+/* Build 3.2.5: competition lifecycle + ownerless Group recovery */
+.pill.scheduled{border-style:dashed}.pill.draft{opacity:.82}.ownerless{margin:12px 0}.ownerless b{display:block;margin-bottom:6px}.ownerless .primary{margin-top:8px}

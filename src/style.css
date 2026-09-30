@@ -159,3 +159,8 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .leagueWeekInputWrap{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden}
 .leagueWeekInputWrap input[type="datetime-local"]{display:block;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding-left:13px!important;padding-right:13px!important}
 @media(max-width:520px){.leagueWeekDates,.leagueWeekField,.leagueWeekInputWrap{width:100%;max-width:100%;min-width:0}.leagueWeekInputWrap input[type="datetime-local"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}}
+
+
+/* Build 3.7.14 — restore symmetrical iOS date field corners */
+.leagueWeekInputWrap{border-radius:10px!important;overflow:hidden!important}
+.leagueWeekInputWrap input[type="datetime-local"]{-webkit-appearance:none!important;appearance:none!important;border-radius:10px!important;overflow:hidden!important;clip-path:inset(0 round 10px)}

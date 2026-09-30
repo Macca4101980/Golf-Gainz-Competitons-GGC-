@@ -191,3 +191,10 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 League competition setup inherits the League name; the duplicate editable Competition base name field is removed in League batch mode.
 - 🟠 Live multi-device claim flow requires production testing with two separate authenticated accounts.
 - 🟠 League team badges and placeholder pairing require production mobile UI testing.
+
+
+## Build 3.8.1 — Placeholder golfer maintenance
+- 🔵 Placeholder golfers can be renamed after creation.
+- 🔵 Placeholder golfers can be deleted after confirmation.
+- 🔵 Deleting a placeholder cleans its Group/League membership, League team assignment, competition entry/invite/pair references, scorecards and contact references so an orphan placeholder is not left behind.
+- 🟠 Production mobile UI and cloud-sync deletion require live testing.

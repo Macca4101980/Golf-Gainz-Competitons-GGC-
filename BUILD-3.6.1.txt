@@ -1,0 +1,11 @@
+GGC Build 3.6.1 — Guest Round + Group Formats Fix
+
+Fixes:
+- Guest golfers remain in live player state during realtime cloud merges.
+- Guest golfers added to a competition immediately appear in live entrant, pairing and round/group selectors.
+- Manage Competition uses the current competition state rather than a stale modal snapshot.
+- Saving Manage Competition no longer overwrites newly-added guest entrants with an older entrant list.
+- Initial cloud/profile hydration merges with local state rather than blindly replacing newer local additions.
+- Guest name placeholder changed from “e.g. Hooky” to “Name”.
+- Group competition category restored in Create Competition, including Scramble/Texas Scramble, Florida Scramble, Shamble, Best 1/2/3, Cha Cha Cha, Irish Fourball, Bowmaker, Alliance and Yellow Ball.
+- Existing verified-scoring safeguard retained for formats whose scoring engine is not yet enabled.

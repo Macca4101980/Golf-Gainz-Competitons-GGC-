@@ -221,3 +221,12 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 Import is idempotent by stable golfer/team IDs and a League bootstrap key, so rerunning updates the roster instead of duplicating it.
 - 🔵 Existing claim tokens/account links and any existing uploaded badgeImage values are preserved when the bootstrap is rerun.
 - 🟠 Production cloud import requires live testing before the temporary control is removed.
+
+
+## Build 3.8.6 — League roster sync across all weeks
+- 🔵 League members are carried into every newly created League week automatically.
+- 🔵 Adding an unclaimed golfer from any linked League competition adds that golfer to the League roster and every existing linked week.
+- 🔵 Adding/removing a golfer in League setup synchronises that golfer across all existing linked League competitions.
+- 🔵 Claiming an unclaimed golfer continues to remap the same identity across League membership, all competition entries, teams, pairs, groups and cards; one claim link is sufficient.
+- 🔵 League team pairings are now passed into newly created weekly competitions rather than being discarded during batch creation.
+- 🟠 Live-test an existing 10-week League after adding one golfer and claiming that profile from a second account/device.

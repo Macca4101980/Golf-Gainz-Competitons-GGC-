@@ -1,0 +1,15 @@
+GGC Build 3.6.0
+
+Base: Build 3.5.2 compact universal group scorecard + Build 3.5.1 realtime/draft protection.
+
+Adds:
+- Guest Golfers (competition-only; no OOM / Played With history)
+- Group Rename for Group Admin/Owner
+- Completed Results payouts (overall 1st/2nd/3rd + configured Front/Back 9 side pots)
+- 2s Club setup, pot calculation and completed-results split
+
+Regression:
+- 39 automated/static checks passed, 0 failed.
+- No protected 3.5.x static regressions detected.
+- Live cloud/PWA/mobile checks remain amber until deployed and exercised.
+- Local npm dependency installation timed out, so production Vite compile remains a deployment check.

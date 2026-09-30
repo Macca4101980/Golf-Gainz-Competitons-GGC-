@@ -136,40 +136,46 @@ Note: Green is not used for retained code paths without a real regression test. 
 - 🔵 Visible score-screen version and service-worker cache updated to 3.5.2.
 - 🟠 Live iPhone/PWA test required for four-column fit, tap targets, team grouping and match status progression.
 
-## Build 3.5.4 — Stacked mobile score entry
-- 🔵 Universal group score cells changed from horizontal minus/score/plus to stacked score-over-buttons layout to use phone width more efficiently.
-- 🔵 Handicap shot dots remain attached to each golfer/hole score and no longer consume a separate horizontal control column.
-- 🔵 Pairs Matchplay live status, Team A/Team B bands and player headings are sticky while holes scroll.
-- 🔵 Four-player card remains single-screen width with no intended horizontal scrolling.
-- 🟠 Live iPhone/PWA test required for sticky offsets, four-player tap targets and holes 1–18 scrolling.
+## Build 3.6.0 — Guests, Group Rename, Results Payouts & 2s Club on 3.5.2 lineage
 
+### Changed/fixed this build
+- 🔵 BUILD-ID-003 — visible header, score screen, package and PWA cache identify Build 3.6.0.
+- 🔵 GROUP-RENAME-001 — Group Owner/Admin can rename a Group without changing its ID; competitions/cards remain related by Group ID and the rename is audited.
+- 🔵 GUEST-001 — competition manager can add a competition-only Guest Golfer with name + Handicap Index.
+- 🔵 GUEST-002 — guests can be selected on the universal 1–4 golfer group scorecard and scored normally.
+- 🔵 GUEST-003 — guests are excluded from Order of Merit and Played With history.
+- 🔵 GUEST-004 — guests remain visible in competition results and are labelled Guest.
+- 🔵 MONEY-001 — main prize pot uses competition fee × actual entrant count.
+- 🔵 MONEY-002 — completed results display configured overall 1st/2nd/3rd payouts.
+- 🔵 MONEY-003 — pair payouts show team prize and per-player share.
+- 🔵 MONEY-004 — configured Front 9 / Back 9 side pots calculate from entrant-funded pot and tied winners split equally.
+- 🔵 TWOS-001 — competition setup includes 2s Club toggle and £ per golfer.
+- 🔵 TWOS-002 — 2s pot uses 2s fee × actual entrant count, including guests.
+- 🔵 TWOS-003 — every gross 2 earns one equal share; multiple 2s by one golfer earn multiple shares.
+- 🔵 TWOS-004 — completed results show golfer, hole(s), winnings, and an unclaimed pot when there are no 2s.
 
-## Build 3.5.4 — Freeze-pane group scorecard
-- 🔵 Scorecard match/team/player context now uses true CSS sticky positioning within a bounded scorecard region.
-- 🔵 Header scrolls normally until it reaches the top, then remains pinned while hole rows pass behind it.
-- 🔵 Sticky header releases when the scorecard region ends so end-of-round controls can scroll normally.
-- 🔵 Removed overflow ancestors that prevented sticky positioning on iOS Safari/PWA.
-- 🔵 Increased Team and player header text sizes after 3.5.3 over-compression.
-- 🔵 Stacked score / minus-plus controls retained.
-- 🟠 Requires live iPhone/PWA confirmation of sticky offsets, safe-area behaviour, Hole 1 visibility, and release at scorecard end.
+### Full accumulated automated/static regression rerun
+- 🟢 IND-SCORE-001..009 — all nine Individual known-answer scoring tests passed.
+- 🟢 PAIR-SCORE-001..006 — 4BBB Stableford, 4BBB Stroke, Aggregate Stableford, Aggregate Stroke, Pairs Matchplay and Blind Pairs known-answer tests passed.
+- 🟢 REALTIME-STATIC — 3.5.1 `mergeLiveState` card/audit/entrant/round-group protection retained.
+- 🟢 COMP-DRAFT-STATIC — 3.5.1 Create Competition local draft protection retained and extended to 2s Club fields.
+- 🟢 GROUP-CARD-STATIC — 3.5.x universal 1–4 golfer scorecard retained.
+- 🟢 DASHBOARD-STATIC — submitted-card dashboard filtering retained.
+- 🟢 TEAM-HEADER-STATIC — Team A / Team B compact pair headers retained.
+- 🟢 ROUND-GROUP-STATIC — round-group persistence retained.
+- 🟢 GROUP-AUDIT-STATIC — live group score edit/submit audit paths retained.
+- 🟢 PWA-UPDATE-STATIC — safe update banner retained; service-worker cache advanced to 3.6.0.
+- ⚫ New automated/static regressions detected: none.
 
-## Build 3.6.0 — Group Competition Category
-- 🔵 Added Group category to Create Competition.
-- 🔵 Added verified team Stableford engines: Best 1, Best 2, Best 3, Cha Cha Cha, Irish Fourball, Bowmaker, Alliance and Yellow Ball.
-- 🔵 Group formats require 3 or 4 golfers and use the shared multi-player scorecard/freeze-pane UI established in 3.5.4.
-- 🔵 Group leaderboard scores each round group as a team and OOM team points are shared across team members.
-- 🔵 Deterministic scratch test totals: Best1 54; Best2 90; Best3 108; Cha Cha Cha 84; Irish Fourball 84; Bowmaker 90; Alliance 90; Yellow Ball 78.
-- 🔵 Pairs Matchplay handicap regression corrected/checked against R&A Appendix C principle: allowance applied to unrounded Course Handicap before final rounding.
-- 🟢 Individual and Pairs scoring source retained; universal live-card/realtime protections retained.
-- 🟢 Build 3.5.4 freeze-pane scorecard CSS retained as the group-card baseline.
-- 🟠 Live iPhone/Supabase regression required for 3-player and 4-player group cards, multi-device scoring, dashboard lifecycle and team leaderboard rendering.
-- 🟠 Full Vite production compile could not be completed in the build environment because dependency installation timed out; scoring module syntax and deterministic scoring tests passed.
+Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 
-## Build 3.6.1 — Visible handicap scoring
-- 🔵 Universal multi-player scorecard now shows gross and nett together as `Gross (Nett)` after a score is entered.
-- 🔵 Stableford-based Individual, Pairs and Group formats additionally show the hole result as `Pts = n` in the same score cell.
-- 🔵 Handicap shot dots remain visible above the score readout and continue to reflect the format's playing/match handicap.
-- 🔵 Gross Stroke remains gross-only; match/stroke formats show gross (nett) without an irrelevant Stableford points label.
-- 🟢 Existing 3.5.4 freeze-pane behaviour and stacked minus/plus controls retained unchanged.
-- 🟢 Group competition scoring engine and deterministic 3.6.0 expected totals retained unchanged.
-- 🟠 Live iPhone/PWA visual regression required for four-player fit at smallest screen width and long two-digit gross/net values.
+### Live/deployed checks still required
+- 🟠 GROUP-RENAME-LIVE-001 — rename a deployed Group and verify competitions/cards remain attached after reload on another device.
+- 🟠 GUEST-LIVE-001 — add guests, include them in a 1–4 golfer live group card, submit, reload and verify persistence.
+- 🟠 GUEST-LIVE-002 — confirm guests never appear in Played With or OOM on deployed data.
+- 🟠 MONEY-LIVE-001 — complete a competition and verify displayed 1st/2nd/3rd and Front/Back 9 payouts against the configured fee/split.
+- 🟠 TWOS-LIVE-001 — record multiple gross 2s, including two by one golfer, and verify the completed-results split.
+- 🟠 REALTIME-LIVE-001 — two-device simultaneous scoring/realtime merge test remains required.
+- 🟠 COMPDRAFT-LIVE-001 — leave Create Competition open through realtime events/PWA refresh and verify all fields, including 2s Club, survive.
+- 🟠 MOBILE-LIVE-001 — iPhone/PWA four-player compact scorecard, Team A/B headers and Pairs Matchplay strip remain device checks.
+- 🟠 PROD-COMPILE-001 — local dependency installation exceeded the execution window, so the Vite production compile was not completed here; deployment compile remains required.

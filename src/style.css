@@ -150,3 +150,12 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 .miniStep{grid-template-columns:22px minmax(24px,1fr) 22px;gap:2px}.miniStep button{width:22px!important;min-width:22px!important;min-height:34px!important;font-size:.82rem}.miniStep input{font-size:1rem!important;padding:6px 0!important}
 .liveMatchStrip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 4px;padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#172019}.liveMatchStrip b{font-size:1rem}.liveMatchStrip span{font-size:.72rem;color:var(--muted);font-weight:800;white-space:nowrap}
 @media(max-width:520px){.groupGrid{grid-template-columns:38px repeat(var(--players),minmax(0,1fr));min-width:0}.miniStep{grid-template-columns:20px minmax(22px,1fr) 20px}.miniStep button{width:20px!important;min-width:20px!important}.gHead{padding:6px 1px}.playerHead b{font-size:.76rem}.gHead small{font-size:.5rem}}
+
+
+/* Build 3.7.13 — League week date inputs: strict mobile containment */
+.leagueWeekDates{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden}
+.leagueWeekField{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:16px 0}
+.leagueWeekField>span{display:block;margin-bottom:7px}
+.leagueWeekInputWrap{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden}
+.leagueWeekInputWrap input[type="datetime-local"]{display:block;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding-left:13px!important;padding-right:13px!important}
+@media(max-width:520px){.leagueWeekDates,.leagueWeekField,.leagueWeekInputWrap{width:100%;max-width:100%;min-width:0}.leagueWeekInputWrap input[type="datetime-local"]{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}}

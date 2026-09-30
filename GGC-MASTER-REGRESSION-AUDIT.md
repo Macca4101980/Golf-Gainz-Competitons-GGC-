@@ -179,3 +179,15 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 COMPDRAFT-LIVE-001 — leave Create Competition open through realtime events/PWA refresh and verify all fields, including 2s Club, survive.
 - 🟠 MOBILE-LIVE-001 — iPhone/PWA four-player compact scorecard, Team A/B headers and Pairs Matchplay strip remain device checks.
 - 🟠 PROD-COMPILE-001 — local dependency installation exceeded the execution window, so the Vite production compile was not completed here; deployment compile remains required.
+
+
+## Build 3.8.0 — Placeholder golfers, claim links & League teams
+- 🔵 Admin can create a named placeholder golfer inside a League before that golfer has a GGC account.
+- 🔵 Placeholder is immediately added to the Group and League and can be used in team setup.
+- 🔵 Placeholder has a private single-use-style claim token and WhatsApp/native share flow.
+- 🔵 Claim signup inherits the placeholder name and asks the golfer to confirm Handicap Index.
+- 🔵 Claim remaps Group, League, League-team, competition, pair/group-card and scorecard references to the authenticated GGC player ID rather than creating a duplicate golfer.
+- 🔵 League teams support two golfers, a team name and a selectable badge.
+- 🔵 League competition setup inherits the League name; the duplicate editable Competition base name field is removed in League batch mode.
+- 🟠 Live multi-device claim flow requires production testing with two separate authenticated accounts.
+- 🟠 League team badges and placeholder pairing require production mobile UI testing.

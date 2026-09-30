@@ -198,3 +198,13 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 Placeholder golfers can be deleted after confirmation.
 - 🔵 Deleting a placeholder cleans its Group/League membership, League team assignment, competition entry/invite/pair references, scorecards and contact references so an orphan placeholder is not left behind.
 - 🟠 Production mobile UI and cloud-sync deletion require live testing.
+
+
+## Build 3.8.2 — Unified unclaimed golfers
+- 🔵 League placeholder creation now requires Name + Handicap Index.
+- 🔵 Competition Guest creation now creates the same claimable Unclaimed Golfer type rather than a competition-only guest.
+- 🔵 Unclaimed golfers created from a Competition are added to the owning Group and can be shared a private claim invite.
+- 🔵 Existing legacy guest/placeholder records are recognised as unclaimed golfers for compatibility.
+- 🔵 Claiming an unclaimed golfer preserves their existing player references/history and converts them into a normal GGC member.
+- 🔵 League unclaimed golfers display and allow editing of Handicap Index.
+- 🟠 Full production regression of legacy Guest records and multi-account claiming requires live testing.

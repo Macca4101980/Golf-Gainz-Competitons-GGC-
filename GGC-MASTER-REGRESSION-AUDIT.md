@@ -208,3 +208,8 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 Claiming an unclaimed golfer preserves their existing player references/history and converts them into a normal GGC member.
 - 🔵 League unclaimed golfers display and allow editing of Handicap Index.
 - 🟠 Full production regression of legacy Guest records and multi-account claiming requires live testing.
+
+
+## Build 3.8.3 — Add Golfer black-screen hotfix
+- 🔵 Fixed League Add Golfer render crash caused by calling an undefined Handicap Index formatter immediately after the new golfer was added.
+- 🟠 Re-test Add Golfer on deployed mobile build and verify golfer persists after reload.

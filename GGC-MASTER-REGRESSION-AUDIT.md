@@ -230,3 +230,16 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 Claiming an unclaimed golfer continues to remap the same identity across League membership, all competition entries, teams, pairs, groups and cards; one claim link is sufficient.
 - 🔵 League team pairings are now passed into newly created weekly competitions rather than being discarded during batch creation.
 - 🟠 Live-test an existing 10-week League after adding one golfer and claiming that profile from a second account/device.
+
+
+## Build 3.9.0 — Winter League handicap + OOM engine
+- 🔵 Winter League weekly score uses hole-by-hole Better Ball Stableford; one submitted partner card remains a valid team score.
+- 🔵 Winter League scoring uses 90% Playing Handicap before Winter League reductions.
+- 🔵 Team handicap reduction triggers at 37 points: 37 = 0.5, 38 = 1.0, 39 = 1.5 and continues by 0.5 per point, applied equally to both partners and carried forward only downward.
+- 🔵 Cancelled League competitions are excluded from handicap progression and OOM calculations.
+- 🔵 Overall Winter League table uses best 8 counting scores by default and recalculates from submitted cards.
+- 🔵 Weekly ties use last 9, 6, 3, 1 Better Ball point countback.
+- 🔵 Overall ties use the last three counting cards, then last two, then last one.
+- 🔵 League screen shows position, team/badge, played, counting scores, total points and current Winter League team reduction.
+- 🔵 Weekly results panel shows top three and the handicap cut generated that week.
+- 🟠 Requires live regression with known Winter League cards before marking the full 10-week season verified.

@@ -213,3 +213,11 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 ## Build 3.8.3 — Add Golfer black-screen hotfix
 - 🔵 Fixed League Add Golfer render crash caused by calling an undefined Handicap Index formatter immediately after the new golfer was added.
 - 🟠 Re-test Add Golfer on deployed mobile build and verify golfer persists after reload.
+
+
+## Build 3.8.4 — Temporary Winter League roster bootstrap
+- 🔵 Added temporary IMPORT 26/27 WINTER LEAGUE ROSTER control beside the regression test-pack controls.
+- 🔵 Imports the GitHub roster into the currently selected Group as 30 unclaimed golfers and 15 League teams.
+- 🔵 Import is idempotent by stable golfer/team IDs and a League bootstrap key, so rerunning updates the roster instead of duplicating it.
+- 🔵 Existing claim tokens/account links and any existing uploaded badgeImage values are preserved when the bootstrap is rerun.
+- 🟠 Production cloud import requires live testing before the temporary control is removed.

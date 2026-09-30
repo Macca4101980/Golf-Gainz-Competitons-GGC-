@@ -135,3 +135,7 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 @media(max-width:560px){.updateBanner{grid-template-columns:1fr auto}.updateBanner .updateLater{grid-column:2}.updateBanner span{max-width:220px}}
 /* Build 3.2.5: competition lifecycle + ownerless Group recovery */
 .pill.scheduled{border-style:dashed}.pill.draft{opacity:.82}.ownerless{margin:12px 0}.ownerless b{display:block;margin-bottom:6px}.ownerless .primary{margin-top:8px}
+
+/* Build 3.7.9 — League setup containment */
+.leagueSetupOverlay{width:100%;max-width:100%;overflow-x:hidden}.leagueSetupPanel{width:100%;max-width:100%;box-sizing:border-box}.leagueSetupPanel .card{width:100%;max-width:100%;box-sizing:border-box;overflow:hidden}.leagueWeekField{display:block;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden}.leagueWeekField span{display:block;margin-bottom:8px}.leagueWeekField input[type="datetime-local"]{display:block;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding-left:16px!important;padding-right:16px!important}
+@media(max-width:560px){.leagueSetupPanel{padding-left:0;padding-right:0}.leagueSetupPanel .card{padding-left:16px!important;padding-right:16px!important}.leagueWeekField input[type="datetime-local"]{font-size:16px!important}}

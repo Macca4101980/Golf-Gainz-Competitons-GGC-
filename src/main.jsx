@@ -63,7 +63,7 @@ function getOomEvent(state,c,mode='position',settings={}){
   let rows=cards.filter(x=>x&&x.compId===c.id).map(x=>{try{return scoreCard(x,c,state)}catch{return null}}).filter(x=>x?.player&&!x.player.guest&&x.complete>0);
   const rule=FORMAT_RULES[c.format]||FORMAT_RULES.stableford;rows.sort(rule.lowerWins?(a,b)=>Number(a.rankValue)-Number(b.rankValue):(a,b)=>Number(b.rankValue)-Number(a.rankValue));
   if(mode==='stableford-total')return{comp:c,field:rows.length,awards:rows.map(r=>award(r.player.id,r.points,r.player.name)),lowerWins:false};
-  if(mode==='nett-par'){const par=oomCoursePar(state,c);return{comp:c,field:rows.length,awards:rows.map(r=>award(r.player.id,r.net-par,r.player.name)),lowerWins:true};
+  if(mode==='nett-par'){const par=oomCoursePar(state,c);return{comp:c,field:rows.length,awards:rows.map(r=>award(r.player.id,r.net-par,r.player.name)),lowerWins:true}}
   if(mode==='matchplay'){
    const outcome=c.matchResult||c.matchplayResult||null,awards=[];
    if(outcome?.winnerId){const ids=[outcome.winnerId,outcome.loserId].filter(Boolean);ids.forEach(id=>awards.push(award(id,id===outcome.winnerId?settings.matchWin:settings.matchLoss,'Matchplay',{win:id===outcome.winnerId?1:0,half:0,loss:id===outcome.winnerId?0:1})))}

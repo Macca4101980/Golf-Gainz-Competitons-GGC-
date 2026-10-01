@@ -243,3 +243,19 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 League screen shows position, team/badge, played, counting scores, total points and current Winter League team reduction.
 - 🔵 Weekly results panel shows top three and the handicap cut generated that week.
 - 🟠 Requires live regression with known Winter League cards before marking the full 10-week season verified.
+
+
+## Build 3.9.3 — Configurable League Handicap Management + badge storage
+- 🔵 LEAGUE-HCAP-001 — League handicap mode is configurable: fixed, individual performance, team performance, or manual only.
+- 🔵 LEAGUE-HCAP-002 — Starting allowance is League-owned and propagates to already-created linked competitions.
+- 🔵 LEAGUE-HCAP-003 — Stableford target, cut per point, down-only vs up/down, and shots-back rate are configurable.
+- 🔵 LEAGUE-HCAP-004 — Default/Winter League preset remains 90%, team score, target 36, 0.5 cut per point above target, reductions only.
+- 🔵 LEAGUE-HCAP-005 — Handicap progression is recomputed in chronological week order from stored cards, so historical score/rule edits cascade forward.
+- 🔵 LEAGUE-HCAP-006 — League adjustments are separate from normal GGC Handicap Index.
+- 🔵 LEAGUE-HCAP-007 — Fractional League adjustments are accumulated, then effective Playing Handicap is WHS-rounded before hole stroke allocation.
+- 🔵 LEAGUE-HCAP-008 — Automated rule tests cover 37/38/39 Winter League cuts, fixed/manual modes, down-only, up/down and legacy settings migration.
+- 🔵 BADGE-STORAGE-001 — New/replaced team badges upload as image files to Supabase Storage; GGC state stores the image URL rather than Base64 payload.
+- 🟠 BADGE-STORAGE-LIVE-001 — Supabase team-badges bucket/policies and authenticated upload/public read require staging verification before production.
+- 🟠 LEAGUE-HCAP-LIVE-001 — Existing 10-week Winter League requires staging verification that settings and historical changes cascade through all linked competitions.
+- 🟠 MOBILE-LIVE-393 — iPhone layout/touch regression required for Handicap Management controls.
+- ⚫ New regressions detected: none at static implementation stage.

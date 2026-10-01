@@ -286,3 +286,20 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔴 MONEY-SETTLEMENT — full settlement/owed/paid engine remains outside current build.
 - 🔴 SIMULTANEOUS-SCORING — whole-state cloud blob concurrency remains a known architectural limitation; normalized-data build still required.
 - ⚫ New static/automated regressions detected in this rerun: none after compile fixes.
+
+
+## Build 3.9.4 — live regression repair batch
+- 🔵 STATE-394-001 — authenticated app remains mounted during profile/token refresh so nested Settings/League UI is not discarded.
+- 🔵 STATE-394-002 — Settings section and League editor context persist across remount/reload boundaries.
+- 🔵 GROUP-394-001 — Start-group golfer draft persists in session storage until the group round is started/submitted.
+- 🔵 CLOUD-394-001 — competition realtime merge now selects the newer competition base and unions entries/invites/round groups.
+- 🔵 LEAGUE-394-001 — adding/removing a golfer to/from a League also adds/removes linked competition invites.
+- 🔵 SCORECARD-394-001 — four-player card restores gross, nett in brackets, Stableford points and controls below the score.
+- 🔵 SCORECARD-394-002 — player headers are sticky and entered scores have explicit high-contrast state.
+- 🔵 SCORECARD-394-003 — birdie/eagle/bogey/double-bogey gross-score notation added.
+- 🔵 NAV-394-001 — bottom navigation uses consistent Lucide icons and fixed icon dimensions.
+- 🔵 COPY-394-001 — competition name placeholder changed to “Enter your competition name”.
+- 🔵 BUILD-394-001 — scorecard and start-group build labels updated to 3.9.4.
+- 🟠 LIVE-394-001 — iPhone regression required for Settings/League stay-in-place behaviour, badge picker return, group golfer persistence, sticky scorecard header and four-column fit.
+- 🟠 INVITE-394-001 — second-account verification required that a newly added League golfer sees the linked competition invitation(s).
+- 🟠 CLOUD-394-002 — second-device concurrent cloud verification remains required before production.

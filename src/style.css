@@ -222,3 +222,9 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 .scoreButtons{display:flex;gap:3px;justify-content:center;margin-top:4px}
 .scoreButtons button{width:28px!important;height:26px!important;min-height:26px!important;padding:0!important;font-size:17px!important}
 .groupCell{min-height:92px!important;padding:4px 2px!important}
+
+/* 3.9.4 sticky golfer header fix — no overflow ancestor may trap position:sticky */
+.groupScore .groupCardWrap{overflow:visible!important}
+.groupScore .groupGrid{overflow:visible!important}
+.groupScore .gHead{position:sticky!important;top:64px!important;z-index:40!important;background:#172019!important}
+.groupScore .holeHead{z-index:41!important}

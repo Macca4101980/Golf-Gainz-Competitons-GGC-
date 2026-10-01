@@ -4,6 +4,7 @@ import{createClient}from'@supabase/supabase-js';
 import{Plus,Users,Flag,Wallet,Settings,Home,ChevronRight,UserRound,Save,X,Share2,Copy,LogIn,Building2,Trophy,ArrowLeft,CheckCircle2,Trash2,Mail,LogOut,UserPlus}from'lucide-react';
 import'./style.css';
 import Leagues from './CompetitionGroups.jsx';
+import{winterLeagueTable,leagueHandicapSettings}from'./winterLeague.js';
 import{FORMAT_RULES,scoreCard,formatResult,validateFormatStart,oomPointsForField,normaliseBlindPairIds,courseHandicap,playingHandicap,pairScore,fourballMatchResult,fourballMatchHandicaps}from'./scoring.js';
 const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const K='ggc-build2';
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;

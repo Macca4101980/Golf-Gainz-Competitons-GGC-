@@ -314,3 +314,8 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 GROUPS-395-001 — duplicate League editor removed from the everyday Groups screen; administration remains in Settings → Leagues.
 - 🔵 BUILD-395-001 — scorecard labels/package identify build 3.9.5.
 - 🟠 LIVE-395-001 — production iPhone verification required for 25/26 Results, Week 1–10 leaderboards and mobile League rows.
+
+### 3.9.5 cloud state safety gate
+- 🔵 Automatic cloud writes are blocked until the authenticated client's first cloud hydration has completed.
+- 🔵 Empty/default client state is write-protected and cannot replace the shared cloud state.
+- 🟠 Live regression gate: fresh browser/session must load cloud before any save; auth refresh must preserve state; offline/empty startup must not overwrite cloud; second device must merge without data loss.

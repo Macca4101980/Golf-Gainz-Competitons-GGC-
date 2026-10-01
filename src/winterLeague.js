@@ -28,7 +28,7 @@ export function winterLeagueTable(league,state){
  const settings=leagueHandicapSettings(league);const comps=(state.comps||[]).filter(c=>c.leagueId===league.id&&c.status!=='cancelled').sort((a,b)=>new Date(a.starts||0)-new Date(b.starts||0));
  const teams=(league.teams||[]).map(t=>({...t,weeks:[],adjustments:Object.fromEntries((t.memberIds||[]).map(id=>[id,manualFor(league,id,comps[0]?.starts)]))}));
  const weekly=[];
- for(const c of comps){const rows=[];for(const t of teams){const before={...t.adjustments};const r=betterBall(t.memberIds||[],c,state,t.adjustments,settings);if(r){
+ for(const c of comps){const rows=[];for(const t of teams){const before={...t.adjustments};const historical=Number.isFinite(c?.historicalTeamScores?.[t.id])?{points:+c.historicalTeamScores[t.id],holes:[],playersPlayed:+c.historicalTeamScores[t.id]>0?2:0,complete:+c.historicalTeamScores[t.id]>0?18:0,playerResults:[]}:null;const r=historical||betterBall(t.memberIds||[],c,state,t.adjustments,settings);if(r){
    const changes={};if(settings.mode==='team'){const d=handicapAdjustment(r.points,settings),ids=t.memberIds||[],perPlayer=settings.teamAdjustment==='each'?d:(ids.length?d/ids.length:d);for(const id of ids)changes[id]=perPlayer}
    else if(settings.mode==='individual'){for(const pr of r.playerResults){const id=pr.playerId;changes[id]=handicapAdjustment(pr.points,settings)}}
    else for(const id of t.memberIds||[])changes[id]=0;

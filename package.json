@@ -1,11 +1,12 @@
 {
   "name": "golf-gainz-comps",
   "private": true,
-  "version": "3.9.2",
+  "version": "3.9.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test test/*.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

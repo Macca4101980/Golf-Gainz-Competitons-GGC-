@@ -1,6 +1,6 @@
 import{playingHandicap,scoreCard,whsRound}from'./scoring.js';
 
-export const WL_DEFAULTS={mode:'team',allowance:90,bestCount:8,target:36,cutPerPoint:.5,giveBackPerPoint:0,direction:'down',applyTo:'both',adjustFromNext:true};
+export const WL_DEFAULTS={mode:'team',allowance:90,bestCount:8,target:36,netParTarget:0,cutPerPoint:.5,giveBackPerPoint:0,direction:'down',teamAdjustment:'split',adjustFromNext:true};
 
 export function leagueHandicapSettings(league){
  const legacy=league?.wlSettings||{};
@@ -12,7 +12,7 @@ export function leagueHandicapSettings(league){
 function compCourse(c,state){const course=(state.courses||[]).find(x=>x.id===c.course);const tee=course?.tees?.find(t=>t.name===c.tee);const par=(tee?.holes||[]).reduce((a,h)=>a+(+h.par||0),0)||72;return{course,tee,par}}
 export function handicapAdjustment(score,settings=WL_DEFAULTS){
  if(!Number.isFinite(score)||settings.mode==='fixed'||settings.mode==='manual')return 0;
- const target=+(settings.target??36),above=score-target,cut=+(settings.cutPerPoint??0),back=+(settings.giveBackPerPoint??0);
+ const target=+(settings.target??36),buffer=+(settings.netParTarget??0),above=score-target-buffer,cut=+(settings.cutPerPoint??0),back=+(settings.giveBackPerPoint??0);
  if(above>0)return -(above*cut);
  if(above<0&&settings.direction==='both')return Math.abs(above)*back;
  return 0
@@ -29,7 +29,7 @@ export function winterLeagueTable(league,state){
  const teams=(league.teams||[]).map(t=>({...t,weeks:[],adjustments:Object.fromEntries((t.memberIds||[]).map(id=>[id,manualFor(league,id,comps[0]?.starts)]))}));
  const weekly=[];
  for(const c of comps){const rows=[];for(const t of teams){const before={...t.adjustments};const r=betterBall(t.memberIds||[],c,state,t.adjustments,settings);if(r){
-   const changes={};if(settings.mode==='team'){const d=handicapAdjustment(r.points,settings);for(const id of t.memberIds||[])changes[id]=d}
+   const changes={};if(settings.mode==='team'){const d=handicapAdjustment(r.points,settings),ids=t.memberIds||[],perPlayer=settings.teamAdjustment==='each'?d:(ids.length?d/ids.length:d);for(const id of ids)changes[id]=perPlayer}
    else if(settings.mode==='individual'){for(const pr of r.playerResults){const id=pr.playerId;changes[id]=handicapAdjustment(pr.points,settings)}}
    else for(const id of t.memberIds||[])changes[id]=0;
    for(const id of t.memberIds||[])t.adjustments[id]=(t.adjustments[id]||0)+(changes[id]||0);

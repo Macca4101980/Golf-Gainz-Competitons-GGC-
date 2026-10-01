@@ -133,8 +133,9 @@ function mergeLiveState(local,remote){
  const hiddenContacts=mergeIdMap(local.hiddenContacts,remote.hiddenContacts);
  const contacts={...remote.contacts};for(const [owner,ids] of Object.entries(local.contacts||{})){const hidden=new Set(hiddenContacts[owner]||[]);contacts[owner]=[...new Set([...(contacts[owner]||[]),...(ids||[])])].filter(id=>!hidden.has(id))}
  const comps=byId(local.comps,remote.comps,(a,b)=>{
-  const groups=byId(a.roundGroups||[],b.roundGroups||[],(x,y)=>y);
-  return {...b,entries:[...new Set([...(a.entries||[]),...(b.entries||[])])],roundGroups:groups};
+  const at=Date.parse(a?.updatedAt||a?.statusChangedAt||0)||0,bt=Date.parse(b?.updatedAt||b?.statusChangedAt||0)||0,base=at>=bt?a:b;
+  const groups=byId(a.roundGroups||[],b.roundGroups||[],(x,y)=>{const xt=Date.parse(x?.updatedAt||x?.startedAt||0)||0,yt=Date.parse(y?.updatedAt||y?.startedAt||0)||0;return xt>=yt?x:y});
+  return {...base,entries:[...new Set([...(a.entries||[]),...(b.entries||[])])],invites:[...new Set([...(a.invites||[]),...(b.invites||[])])],roundGroups:groups};
  }).filter(c=>!deletedSet.has(c.id));
  const leagues=byId(local.leagues,remote.leagues,newer).filter(g=>!deletedLeagueSet.has(g.id));
  return {...remote,players,societies,cards,audit,comps,leagues,deletedCompIds,deletedLeagueIds,contacts,hiddenContacts};

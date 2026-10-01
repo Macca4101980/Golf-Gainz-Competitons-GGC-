@@ -180,3 +180,15 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 
 /* Build 3.9.0 — Winter League handicap + OOM */
 .wlTableWrap{overflow-x:auto;margin-top:14px}.wlTable{width:100%;border-collapse:collapse;min-width:620px}.wlTable th,.wlTable td{padding:11px 9px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);vertical-align:middle}.wlTable th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;opacity:.72}.wlTeamCell{display:flex;align-items:center;gap:10px}.wlTeamCell>span{display:flex;flex-direction:column}.wlBadge{width:42px;height:42px;flex-basis:42px;border-radius:10px}.wlWeekResult{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)}.wlWeekResult:last-child{border-bottom:0}.wlHandicapCard .memberRow{padding-top:10px;padding-bottom:10px}
+
+
+/* Build 3.9.3 — League handicap mobile polish */
+.wlHandicapSettings>label,.wlHandicapSettings .wlHcapRuleGrid>label{color:#1d2a24;font-weight:800;opacity:1}
+.wlHandicapSettings>p.muted{color:#5f6d66;opacity:1}
+.wlHcapRuleGrid{align-items:stretch}
+.wlHcapRuleGrid>label{display:grid;grid-template-rows:minmax(3.1em,auto) auto;align-content:start}
+.wlHcapRuleGrid>label>input{width:100%;margin-top:8px}
+.wlInfoBtn{width:44px;min-width:44px;height:44px;border-radius:14px;padding:0;font-weight:900;font-size:1.05rem}
+.wlHcapInfo{margin-top:10px;padding:14px 16px;border-radius:14px;background:rgba(0,0,0,.05);color:#17211c}
+.wlHcapInfo p{margin:0 0 12px;line-height:1.45}.wlHcapInfo p:last-child{margin-bottom:0}
+@media(max-width:520px){.wlHcapRuleGrid{grid-template-columns:1fr 1fr;gap:18px}.wlHcapRuleGrid>label{font-size:.95rem;line-height:1.18}}

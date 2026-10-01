@@ -1,0 +1,628 @@
+{
+  "type": "ggc-winter-league-history",
+  "version": 1,
+  "season": "2025/26",
+  "source": "26.xlsx",
+  "notes": "Completed historical season from the workbook: 10 weeks, best 8. Weekly Better Ball team totals are source data. Older Rules text says 8/best 6 but the completed workbook ran 10/best 8. Detailed playoff cards were not present.",
+  "group": {
+    "id": "winter-league-2025-26-group",
+    "name": "Winter League 25/26"
+  },
+  "players": [
+    {
+      "id": "wl2526-macca",
+      "name": "Macca",
+      "hi": 8.2,
+      "unclaimed": true,
+      "teamName": "Very Little Helps"
+    },
+    {
+      "id": "wl2526-dan",
+      "name": "Dan",
+      "hi": 9.3,
+      "unclaimed": true,
+      "teamName": "Very Little Helps"
+    },
+    {
+      "id": "wl2526-summy",
+      "name": "Summy",
+      "hi": 10.2,
+      "unclaimed": true,
+      "teamName": "Flintstones"
+    },
+    {
+      "id": "wl2526-nighty",
+      "name": "Nighty",
+      "hi": 10.2,
+      "unclaimed": true,
+      "teamName": "Flintstones"
+    },
+    {
+      "id": "wl2526-sam",
+      "name": "Sam",
+      "hi": 3.5,
+      "unclaimed": true,
+      "teamName": "Dark Destroyers"
+    },
+    {
+      "id": "wl2526-butch",
+      "name": "Butch",
+      "hi": 14.3,
+      "unclaimed": true,
+      "teamName": "Dark Destroyers"
+    },
+    {
+      "id": "wl2526-fatty",
+      "name": "Fatty",
+      "hi": 12.6,
+      "unclaimed": true,
+      "teamName": "Sultans of swing"
+    },
+    {
+      "id": "wl2526-jonesy",
+      "name": "Jonesy",
+      "hi": 7.6,
+      "unclaimed": true,
+      "teamName": "Sultans of swing"
+    },
+    {
+      "id": "wl2526-johnny-heindel",
+      "name": "Johnny Heindel",
+      "hi": 22.5,
+      "unclaimed": true,
+      "teamName": "The Hosel Rockets"
+    },
+    {
+      "id": "wl2526-heir-shmidt",
+      "name": "Heir Shmidt",
+      "hi": 4.1,
+      "unclaimed": true,
+      "teamName": "The Hosel Rockets"
+    },
+    {
+      "id": "wl2526-belly",
+      "name": "Belly",
+      "hi": 13,
+      "unclaimed": true,
+      "teamName": "The Bogey men"
+    },
+    {
+      "id": "wl2526-batesy",
+      "name": "Batesy",
+      "hi": 13.6,
+      "unclaimed": true,
+      "teamName": "The Bogey men"
+    },
+    {
+      "id": "wl2526-hardwood",
+      "name": "Hardwood",
+      "hi": 16.5,
+      "unclaimed": true,
+      "teamName": "Balls Deep"
+    },
+    {
+      "id": "wl2526-alan-burnett",
+      "name": "Alan Burnett",
+      "hi": 17,
+      "unclaimed": true,
+      "teamName": "Balls Deep"
+    },
+    {
+      "id": "wl2526-tink",
+      "name": "Tink",
+      "hi": 21.3,
+      "unclaimed": true,
+      "teamName": "Weapons of Grass destruction"
+    },
+    {
+      "id": "wl2526-tinks-mate-matt",
+      "name": "Tinks Mate Matt",
+      "hi": 19.1,
+      "unclaimed": true,
+      "teamName": "Weapons of Grass destruction"
+    },
+    {
+      "id": "wl2526-rhys",
+      "name": "Rhys",
+      "hi": 11.2,
+      "unclaimed": true,
+      "teamName": "The Long Shots"
+    },
+    {
+      "id": "wl2526-aaron",
+      "name": "Aaron",
+      "hi": 15.5,
+      "unclaimed": true,
+      "teamName": "The Long Shots"
+    },
+    {
+      "id": "wl2526-dave-malings",
+      "name": "Dave Malings",
+      "hi": 15.2,
+      "unclaimed": true,
+      "teamName": "Guns and Bogeys"
+    },
+    {
+      "id": "wl2526-colin-boyles",
+      "name": "Colin Boyles",
+      "hi": 23.9,
+      "unclaimed": true,
+      "teamName": "Guns and Bogeys"
+    },
+    {
+      "id": "wl2526-james-woolgrove",
+      "name": "James Woolgrove",
+      "hi": 15.6,
+      "unclaimed": true,
+      "teamName": "Power Strangers"
+    },
+    {
+      "id": "wl2526-clarkson",
+      "name": "Clarkson",
+      "hi": 24.1,
+      "unclaimed": true,
+      "teamName": "Power Strangers"
+    },
+    {
+      "id": "wl2526-charlie-peacock",
+      "name": "Charlie Peacock",
+      "hi": 8.2,
+      "unclaimed": true,
+      "teamName": "Ace of Fades"
+    },
+    {
+      "id": "wl2526-jack-wilkinson",
+      "name": "Jack Wilkinson",
+      "hi": 7.7,
+      "unclaimed": true,
+      "teamName": "Ace of Fades"
+    },
+    {
+      "id": "wl2526-gavin-price",
+      "name": "Gavin Price",
+      "hi": 10.1,
+      "unclaimed": true,
+      "teamName": "Putter madness"
+    },
+    {
+      "id": "wl2526-neil-everson-watts",
+      "name": "Neil Everson-Watts",
+      "hi": 16.2,
+      "unclaimed": true,
+      "teamName": "Putter madness"
+    }
+  ],
+  "teams": [
+    {
+      "id": "wl2526-team-very-little-helps",
+      "name": "Very Little Helps",
+      "memberIds": [
+        "wl2526-macca",
+        "wl2526-dan"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-flintstones",
+      "name": "Flintstones",
+      "memberIds": [
+        "wl2526-summy",
+        "wl2526-nighty"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-dark-destroyers",
+      "name": "Dark Destroyers",
+      "memberIds": [
+        "wl2526-sam",
+        "wl2526-butch"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-sultans-of-swing",
+      "name": "Sultans of swing",
+      "memberIds": [
+        "wl2526-fatty",
+        "wl2526-jonesy"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-the-hosel-rockets",
+      "name": "The Hosel Rockets",
+      "memberIds": [
+        "wl2526-johnny-heindel",
+        "wl2526-heir-shmidt"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-the-bogey-men",
+      "name": "The Bogey men",
+      "memberIds": [
+        "wl2526-belly",
+        "wl2526-batesy"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-balls-deep",
+      "name": "Balls Deep",
+      "memberIds": [
+        "wl2526-hardwood",
+        "wl2526-alan-burnett"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-weapons-of-grass-destruction",
+      "name": "Weapons of Grass destruction",
+      "memberIds": [
+        "wl2526-tink",
+        "wl2526-tinks-mate-matt"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-the-long-shots",
+      "name": "The Long Shots",
+      "memberIds": [
+        "wl2526-rhys",
+        "wl2526-aaron"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-guns-and-bogeys",
+      "name": "Guns and Bogeys",
+      "memberIds": [
+        "wl2526-dave-malings",
+        "wl2526-colin-boyles"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-power-strangers",
+      "name": "Power Strangers",
+      "memberIds": [
+        "wl2526-james-woolgrove",
+        "wl2526-clarkson"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-ace-of-fades",
+      "name": "Ace of Fades",
+      "memberIds": [
+        "wl2526-charlie-peacock",
+        "wl2526-jack-wilkinson"
+      ],
+      "badgeImage": null
+    },
+    {
+      "id": "wl2526-team-putter-madness",
+      "name": "Putter madness",
+      "memberIds": [
+        "wl2526-gavin-price",
+        "wl2526-neil-everson-watts"
+      ],
+      "badgeImage": null
+    }
+  ],
+  "league": {
+    "id": "winter-league-2025-26",
+    "name": "Winter League 25/26",
+    "targetCompetitions": 10,
+    "bootstrapKey": "winter-league-2025-26",
+    "handicapSettings": {
+      "mode": "team",
+      "allowance": 90,
+      "bestCount": 8,
+      "target": 36,
+      "netParTarget": 0,
+      "cutPerPoint": 0.5,
+      "giveBackPerPoint": 0,
+      "direction": "down",
+      "teamAdjustment": "each",
+      "adjustFromNext": true
+    }
+  },
+  "competitions": [
+    {
+      "id": "wl2526-week-1",
+      "name": "Winter League 25/26 (Week 1)",
+      "starts": "2025-10-04T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 37,
+        "wl2526-team-flintstones": 36,
+        "wl2526-team-dark-destroyers": 35,
+        "wl2526-team-sultans-of-swing": 23,
+        "wl2526-team-the-hosel-rockets": 38,
+        "wl2526-team-the-bogey-men": 40,
+        "wl2526-team-balls-deep": 30,
+        "wl2526-team-weapons-of-grass-destruction": 35,
+        "wl2526-team-the-long-shots": 35,
+        "wl2526-team-guns-and-bogeys": 34,
+        "wl2526-team-power-strangers": 34,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 32
+      }
+    },
+    {
+      "id": "wl2526-week-2",
+      "name": "Winter League 25/26 (Week 2)",
+      "starts": "2025-11-01T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 38,
+        "wl2526-team-flintstones": 36,
+        "wl2526-team-dark-destroyers": 34,
+        "wl2526-team-sultans-of-swing": 31,
+        "wl2526-team-the-hosel-rockets": 35,
+        "wl2526-team-the-bogey-men": 43,
+        "wl2526-team-balls-deep": 41,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 33,
+        "wl2526-team-guns-and-bogeys": 20,
+        "wl2526-team-power-strangers": 42,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 38
+      }
+    },
+    {
+      "id": "wl2526-week-3",
+      "name": "Winter League 25/26 (Week 3)",
+      "starts": "2025-11-08T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 38,
+        "wl2526-team-flintstones": 36,
+        "wl2526-team-dark-destroyers": 35,
+        "wl2526-team-sultans-of-swing": 36,
+        "wl2526-team-the-hosel-rockets": 42,
+        "wl2526-team-the-bogey-men": 39,
+        "wl2526-team-balls-deep": 39,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 40,
+        "wl2526-team-guns-and-bogeys": 40,
+        "wl2526-team-power-strangers": 37,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 38
+      }
+    },
+    {
+      "id": "wl2526-week-4",
+      "name": "Winter League 25/26 (Week 4)",
+      "starts": "2025-11-22T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 41,
+        "wl2526-team-flintstones": 36,
+        "wl2526-team-dark-destroyers": 35,
+        "wl2526-team-sultans-of-swing": 44,
+        "wl2526-team-the-hosel-rockets": 32,
+        "wl2526-team-the-bogey-men": 35,
+        "wl2526-team-balls-deep": 32,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 32,
+        "wl2526-team-guns-and-bogeys": 39,
+        "wl2526-team-power-strangers": 37,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 36
+      }
+    },
+    {
+      "id": "wl2526-week-5",
+      "name": "Winter League 25/26 (Week 5)",
+      "starts": "2025-11-29T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 33,
+        "wl2526-team-flintstones": 41,
+        "wl2526-team-dark-destroyers": 39,
+        "wl2526-team-sultans-of-swing": 35,
+        "wl2526-team-the-hosel-rockets": 0,
+        "wl2526-team-the-bogey-men": 38,
+        "wl2526-team-balls-deep": 32,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 42,
+        "wl2526-team-guns-and-bogeys": 37,
+        "wl2526-team-power-strangers": 18,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 36
+      }
+    },
+    {
+      "id": "wl2526-week-6",
+      "name": "Winter League 25/26 (Week 6)",
+      "starts": "2025-12-06T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 29,
+        "wl2526-team-flintstones": 36,
+        "wl2526-team-dark-destroyers": 35,
+        "wl2526-team-sultans-of-swing": 39,
+        "wl2526-team-the-hosel-rockets": 34,
+        "wl2526-team-the-bogey-men": 34,
+        "wl2526-team-balls-deep": 24,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 36,
+        "wl2526-team-guns-and-bogeys": 30,
+        "wl2526-team-power-strangers": 21,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 38
+      }
+    },
+    {
+      "id": "wl2526-week-7",
+      "name": "Winter League 25/26 (Week 7)",
+      "starts": "2025-12-27T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 37,
+        "wl2526-team-flintstones": 41,
+        "wl2526-team-dark-destroyers": 39,
+        "wl2526-team-sultans-of-swing": 37,
+        "wl2526-team-the-hosel-rockets": 33,
+        "wl2526-team-the-bogey-men": 34,
+        "wl2526-team-balls-deep": 34,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 34,
+        "wl2526-team-guns-and-bogeys": 0,
+        "wl2526-team-power-strangers": 41,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 27
+      }
+    },
+    {
+      "id": "wl2526-week-8",
+      "name": "Winter League 25/26 (Week 8)",
+      "starts": "2026-01-03T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 31,
+        "wl2526-team-flintstones": 35,
+        "wl2526-team-dark-destroyers": 17,
+        "wl2526-team-sultans-of-swing": 45,
+        "wl2526-team-the-hosel-rockets": 33,
+        "wl2526-team-the-bogey-men": 31,
+        "wl2526-team-balls-deep": 40,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 33,
+        "wl2526-team-guns-and-bogeys": 29,
+        "wl2526-team-power-strangers": 40,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 40
+      }
+    },
+    {
+      "id": "wl2526-week-9",
+      "name": "Winter League 25/26 (Week 9)",
+      "starts": "2026-01-17T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 34,
+        "wl2526-team-flintstones": 38,
+        "wl2526-team-dark-destroyers": 40,
+        "wl2526-team-sultans-of-swing": 27,
+        "wl2526-team-the-hosel-rockets": 32,
+        "wl2526-team-the-bogey-men": 34,
+        "wl2526-team-balls-deep": 32,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 39,
+        "wl2526-team-guns-and-bogeys": 22,
+        "wl2526-team-power-strangers": 29,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 35
+      }
+    },
+    {
+      "id": "wl2526-week-10",
+      "name": "Winter League 25/26 (Week 10)",
+      "starts": "2026-01-31T08:00:00",
+      "status": "completed",
+      "format": "stableford",
+      "handicapAllowance": 90,
+      "historical": true,
+      "historicalTeamScores": {
+        "wl2526-team-very-little-helps": 32,
+        "wl2526-team-flintstones": 36,
+        "wl2526-team-dark-destroyers": 32,
+        "wl2526-team-sultans-of-swing": 35,
+        "wl2526-team-the-hosel-rockets": 41,
+        "wl2526-team-the-bogey-men": 37,
+        "wl2526-team-balls-deep": 35,
+        "wl2526-team-weapons-of-grass-destruction": 0,
+        "wl2526-team-the-long-shots": 38,
+        "wl2526-team-guns-and-bogeys": 0,
+        "wl2526-team-power-strangers": 35,
+        "wl2526-team-ace-of-fades": 0,
+        "wl2526-team-putter-madness": 37
+      }
+    }
+  ],
+  "playoffs": [
+    {
+      "id": "wl2526-sf1",
+      "name": "Winter League 25/26 Semi Final 1",
+      "teams": [
+        "Sultans of swing",
+        "Putter madness"
+      ],
+      "winner": "Putter madness"
+    },
+    {
+      "id": "wl2526-sf2",
+      "name": "Winter League 25/26 Semi Final 2",
+      "teams": [
+        "Flintstones",
+        "The Bogey men"
+      ],
+      "winner": null
+    },
+    {
+      "id": "wl2526-final",
+      "name": "Winter League 25/26 Final",
+      "teams": [
+        "Putter madness",
+        null
+      ],
+      "winner": "Putter madness"
+    }
+  ],
+  "expected": {
+    "finalTable": [
+      [
+        "Sultans of swing",
+        302
+      ],
+      [
+        "Flintstones",
+        300
+      ],
+      [
+        "The Bogey men",
+        300
+      ],
+      [
+        "Putter madness",
+        298
+      ],
+      [
+        "The Long Shots",
+        297
+      ]
+    ],
+    "champion": "Putter madness"
+  }
+}

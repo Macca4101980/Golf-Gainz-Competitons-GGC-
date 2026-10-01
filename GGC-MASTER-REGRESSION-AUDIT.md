@@ -243,3 +243,63 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 League screen shows position, team/badge, played, counting scores, total points and current Winter League team reduction.
 - 🔵 Weekly results panel shows top three and the handicap cut generated that week.
 - 🟠 Requires live regression with known Winter League cards before marking the full 10-week season verified.
+
+
+## Build 3.9.3 — Configurable League Handicap Management + badge storage
+- 🔵 LEAGUE-HCAP-001 — League handicap mode is configurable: fixed, individual performance, team performance, or manual only.
+- 🔵 LEAGUE-HCAP-002 — Starting allowance is League-owned and propagates to already-created linked competitions.
+- 🔵 LEAGUE-HCAP-003 — Stableford target, cut per point, down-only vs up/down, and shots-back rate are configurable.
+- 🔵 LEAGUE-HCAP-004 — Default/Winter League preset remains 90%, team score, target 36, 0.5 cut per point above target, reductions only.
+- 🔵 LEAGUE-HCAP-005 — Handicap progression is recomputed in chronological week order from stored cards, so historical score/rule edits cascade forward.
+- 🔵 LEAGUE-HCAP-006 — League adjustments are separate from normal GGC Handicap Index.
+- 🔵 LEAGUE-HCAP-007 — Fractional League adjustments are accumulated, then effective Playing Handicap is WHS-rounded before hole stroke allocation.
+- 🔵 LEAGUE-HCAP-008 — Automated rule tests cover 37/38/39 Winter League cuts, fixed/manual modes, down-only, up/down and legacy settings migration.
+- 🔵 BADGE-STORAGE-001 — New/replaced team badges upload as image files to Supabase Storage; GGC state stores the image URL rather than Base64 payload.
+- 🟠 BADGE-STORAGE-LIVE-001 — Supabase team-badges bucket/policies and authenticated upload/public read require staging verification before production.
+- 🟠 LEAGUE-HCAP-LIVE-001 — Existing 10-week Winter League requires staging verification that settings and historical changes cascade through all linked competitions.
+- 🟠 MOBILE-LIVE-393 — iPhone layout/touch regression required for Handicap Management controls.
+- ⚫ New regressions detected: none at static implementation stage.
+
+
+## Build 3.9.3 — Master Regression Rerun (2026-10-01)
+- 🟢 BUILD-393-001 — package identifies 3.9.3.
+- 🟢 BUILD-393-002 — GitHub production Vite build passed on commit e736472 after compile regressions were corrected.
+- 🟢 LEAGUE-HCAP-AUTO-001 — automated handicap suite covers default rules, fixed/manual, down-only, up/down, legacy migration, team split, Net Level Par buffer and fractional accumulation.
+- 🟢 SCORE-ENGINE-STATIC-001 — previously verified Individual scoring engine and Pairs scoring helpers remain present in src/scoring.js.
+- 🟢 PAIR-MATCH-STATIC-001 — Pairs Matchplay relative-handicap and match-result helpers remain present.
+- 🟢 WL-ENGINE-STATIC-001 — chronological League recomputation, Better Ball, one-partner valid scoring, countback and Best-X paths remain present.
+- 🔵 OOM-MODE-001 — OOM engine now has position, cumulative Stableford, cumulative nett +/- par and matchplay result modes.
+- 🔵 OOM-BESTX-001 — Best-X selection is high-to-low for points modes and low-to-high for nett +/- par.
+- 🔵 OOM-TEAM-001 — pair/team position awards support split equally or full award to each golfer.
+- 🔵 OOM-STATUS-001 — future competitions display UPCOMING; completed included competitions COUNTING; deliberately removed completed competitions EXCLUDED.
+- 🟠 OOM-LIVE-393 — all four OOM modes require deployed known-result verification; matchplay storage shape especially requires live verification.
+- 🟠 NAV-LIVE-393 — Home / Competitions / Groups / Results / Settings and top-right Me navigation require iPhone/PWA verification.
+- 🟠 SETTINGS-LIVE-393 — Settings Group selector and Competition / League / OOM / Group & Access panels require live persistence verification.
+- 🟠 CLOUD-LIVE-393 — cloud save/reload and realtime echo-loop regression require live verification.
+- 🟠 WL-LIVE-393 — existing 26/27 10-week League, teams, badges, allowance and handicap settings require live verification.
+- 🟠 BADGE-LIVE-393 — repeated replace/remove/re-upload and reload requires live verification; prior multi-upload iOS flow was user-confirmed functional.
+- 🟠 COMP-LIVE-393 — create/edit/delete competition, card edit/submit and completed leaderboard require live verification.
+- 🟠 GROUP-LIVE-393 — membership/invite/show-hide and persistence require live verification.
+- 🟠 MONEY-LIVE-393 — prize / 2s settlement display remains live verification.
+- 🟠 MOBILE-LIVE-393 — four-player scorecard fit, pair headers, matchplay strip and touch targets remain device verification.
+- 🟠 AUTH-LIVE-393 — passkey/login/profile claim flows require authenticated multi-account live verification.
+- 🔴 MONEY-SETTLEMENT — full settlement/owed/paid engine remains outside current build.
+- 🔴 SIMULTANEOUS-SCORING — whole-state cloud blob concurrency remains a known architectural limitation; normalized-data build still required.
+- ⚫ New static/automated regressions detected in this rerun: none after compile fixes.
+
+
+## Build 3.9.4 — live regression repair batch
+- 🔵 STATE-394-001 — authenticated app remains mounted during profile/token refresh so nested Settings/League UI is not discarded.
+- 🔵 STATE-394-002 — Settings section and League editor context persist across remount/reload boundaries.
+- 🔵 GROUP-394-001 — Start-group golfer draft persists in session storage until the group round is started/submitted.
+- 🔵 CLOUD-394-001 — competition realtime merge now selects the newer competition base and unions entries/invites/round groups.
+- 🔵 LEAGUE-394-001 — adding/removing a golfer to/from a League also adds/removes linked competition invites.
+- 🔵 SCORECARD-394-001 — four-player card restores gross, nett in brackets, Stableford points and controls below the score.
+- 🔵 SCORECARD-394-002 — player headers are sticky and entered scores have explicit high-contrast state.
+- 🔵 SCORECARD-394-003 — birdie/eagle/bogey/double-bogey gross-score notation added.
+- 🔵 NAV-394-001 — bottom navigation uses consistent Lucide icons and fixed icon dimensions.
+- 🔵 COPY-394-001 — competition name placeholder changed to “Enter your competition name”.
+- 🔵 BUILD-394-001 — scorecard and start-group build labels updated to 3.9.4.
+- 🟠 LIVE-394-001 — iPhone regression required for Settings/League stay-in-place behaviour, badge picker return, group golfer persistence, sticky scorecard header and four-column fit.
+- 🟠 INVITE-394-001 — second-account verification required that a newly added League golfer sees the linked competition invitation(s).
+- 🟠 CLOUD-394-002 — second-device concurrent cloud verification remains required before production.

@@ -1,0 +1,7 @@
+import test from'node:test';import assert from'node:assert/strict';import{handicapAdjustment,leagueHandicapSettings,wlCutForScore}from'../src/winterLeague.js';
+
+test('Winter League preset remains 90%, team based and 0.5 per point above 36',()=>{const s=leagueHandicapSettings({});assert.equal(s.allowance,90);assert.equal(s.mode,'team');assert.equal(s.target,36);assert.equal(wlCutForScore(36,s),0);assert.equal(wlCutForScore(37,s),.5);assert.equal(wlCutForScore(38,s),1);assert.equal(wlCutForScore(39,s),1.5)});
+test('fixed and manual modes do not auto adjust',()=>{assert.equal(handicapAdjustment(42,{mode:'fixed',target:36,cutPerPoint:1}),0);assert.equal(handicapAdjustment(42,{mode:'manual',target:36,cutPerPoint:1}),0)});
+test('down-only never gives shots back',()=>{assert.equal(handicapAdjustment(30,{mode:'team',target:36,cutPerPoint:.5,giveBackPerPoint:.5,direction:'down'}),0)});
+test('up and down can return shots',()=>{assert.equal(handicapAdjustment(34,{mode:'team',target:36,cutPerPoint:.5,giveBackPerPoint:.2,direction:'both'}),.4);assert.equal(handicapAdjustment(38,{mode:'team',target:36,cutPerPoint:.5,giveBackPerPoint:.2,direction:'both'}),-1)});
+test('legacy cutStart settings migrate to target',()=>{const s=leagueHandicapSettings({wlSettings:{cutStart:40,cutPerPoint:.25,allowance:85}});assert.equal(s.target,39);assert.equal(s.cutPerPoint,.25);assert.equal(s.allowance,85)});

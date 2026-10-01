@@ -79,7 +79,7 @@ function getOomEvent(state,c,mode='position',settings={}){
   }
   if(c.format==='blind-pairs'&&Array.isArray(c.blindDraw?.pairs)&&c.blindDraw.pairs.length){
    const byId=Object.fromEntries(rows.map(r=>[r.player.id,r])),pairs=c.blindDraw.pairs.map(pair=>{const ids=normaliseBlindPairIds(pair).filter(id=>byId[id]);return ids.length?{ids,score:ids.reduce((n,id)=>n+(Number(byId[id]?.points)||0),0)}:null}).filter(Boolean).sort((x,y)=>y.score-x.score),pts=oomPointsForField(rows.length),awards=[];
-   pairs.forEach((pair,i)=>{const teamPts=pts[i]||0;pair.ids.forEach(id=>awards.push(award(id,settings.teamAward==='each'?teamPts:teamPts/pair.ids.length,'Blind pair')))});return{comp:c,field:rows.length,awards,lowerWins:false};
+   pairs.forEach((pair,i)=>{const teamPts=pts[i]||0;pair.ids.forEach(id=>awards.push(award(id,settings.teamAward==='each'?teamPts:teamPts/pair.ids.length,'Blind pair')));});return{comp:c,field:rows.length,awards,lowerWins:false};
   }
   const pts=oomPointsForField(rows.length);return{comp:c,field:rows.length,awards:rows.map((r,i)=>award(r.player.id,pts[i]||0,r.player.name)),lowerWins:false};
  }catch(e){console.warn('Skipping malformed competition in OOM',c?.id,e);return{comp:c,field:0,awards:[],lowerWins:false}}

@@ -52,34 +52,45 @@ function migrate(x){
  for(const b of builtins){const i=existing.findIndex(c=>c.id===b.id||c.name===b.name);if(i<0)existing.push(b);else if(b.id==='harlestone'&&(!existing[i].tees||existing[i].tees.length===0))existing[i]=b;}
  return {...y,version:10,courses:existing,cards:y.cards||[],deletedCompIds:y.deletedCompIds||[],deletedLeagueIds:y.deletedLeagueIds||[],leagues:y.leagues||y.competitionGroups||[],audit:y.audit||[],contacts:y.contacts||{},hiddenContacts:y.hiddenContacts||{},societies:(y.societies||[]).map(q=>({...q,admins:q.admins||[],ownerId:q.ownerId||null,pinHash:null})),comps:(y.comps||[]).map(c=>({...c,createdBy:c.createdBy||null,status:c.status||'live',invites:c.invites||[]}))};
 }
-function getOomEvent(state,c){
- const cards=Array.isArray(state?.cards)?state.cards:[];
- const award=(id,points,label)=>({id,points:Number(points)||0,label});
+function oomCoursePar(state,c){
+ const course=(state.courses||[]).find(x=>x.id===c.course),tee=course?.tees?.find(t=>t.name===c.tee),holes=tee?.holes||[];
+ const selected=c.holesMode==='front9'?holes.slice(0,9):c.holesMode==='back9'?holes.slice(9,18):holes;
+ return selected.reduce((n,h)=>n+(+h.par||0),0)||(c.holesMode==='front9'||c.holesMode==='back9'?36:72);
+}
+function getOomEvent(state,c,mode='position',settings={}){
+ const cards=Array.isArray(state?.cards)?state.cards:[],award=(id,value,label,extra={})=>({id,value:Number(value)||0,label,...extra});
  try{
-  let rows=cards.filter(x=>x&&x.compId===c.id).map(x=>{try{return scoreCard(x,c,state)}catch{return null}}).filter(x=>x?.player&&!x.player.guest&&Number.isFinite(Number(x.rankValue)));
+  let rows=cards.filter(x=>x&&x.compId===c.id).map(x=>{try{return scoreCard(x,c,state)}catch{return null}}).filter(x=>x?.player&&!x.player.guest&&x.complete>0);
   const rule=FORMAT_RULES[c.format]||FORMAT_RULES.stableford;rows.sort(rule.lowerWins?(a,b)=>Number(a.rankValue)-Number(b.rankValue):(a,b)=>Number(b.rankValue)-Number(a.rankValue));
+  if(mode==='stableford-total')return{comp:c,field:rows.length,awards:rows.map(r=>award(r.player.id,r.points,r.player.name)),lowerWins:false};
+  if(mode==='nett-par'){const par=oomCoursePar(state,c);return{comp:c,field:rows.length,awards:rows.map(r=>award(r.player.id,r.net-par,r.player.name)),lowerWins:true};
+  if(mode==='matchplay'){
+   const outcome=c.matchResult||c.matchplayResult||null,awards=[];
+   if(outcome?.winnerId){const ids=[outcome.winnerId,outcome.loserId].filter(Boolean);ids.forEach(id=>awards.push(award(id,id===outcome.winnerId?settings.matchWin:settings.matchLoss,'Matchplay',{win:id===outcome.winnerId?1:0,half:0,loss:id===outcome.winnerId?0:1})))}
+   else if(outcome?.halved&&Array.isArray(outcome.playerIds)){outcome.playerIds.forEach(id=>awards.push(award(id,settings.matchHalf,'Matchplay',{win:0,half:1,loss:0})))}
+   return{comp:c,field:awards.length,awards,lowerWins:false};
+  }
   const isPair=formats.find(f=>f[0]===c.format)?.[4]==='Pairs';
   if(isPair&&c.format!=='blind-pairs'&&Array.isArray(c.pairs)&&c.pairs.length){
-   const pairRows=c.pairs.map(pair=>({...pairScore(pair,c,state),ids:pair.ids||[],name:pair.name||'Pair'}));const lower=!!FORMAT_RULES[c.format]?.lowerWins;pairRows.sort(lower?(a,b)=>a.rankValue-b.rankValue:(a,b)=>b.rankValue-a.rankValue);
+   const pairRows=c.pairs.map(pair=>({...pairScore(pair,c,state),ids:pair.ids||[],name:pair.name||'Pair'})),lower=!!FORMAT_RULES[c.format]?.lowerWins;pairRows.sort(lower?(x,y)=>x.rankValue-y.rankValue:(x,y)=>y.rankValue-x.rankValue);
    const field=[...new Set(c.pairs.flatMap(p=>p.ids||[]))].length,pts=oomPointsForField(field),awards=[];
-   pairRows.forEach((pair,i)=>{const teamPts=pts[i]||0;if(pair.ids.length)pair.ids.forEach(id=>awards.push(award(id,teamPts/pair.ids.length,pair.name)))});
-   return{comp:c,field,awards};
+   pairRows.forEach((pair,i)=>{const teamPts=pts[i]||0;if(pair.ids.length)pair.ids.forEach(id=>awards.push(award(id,settings.teamAward==='each'?teamPts:teamPts/pair.ids.length,pair.name)))});
+   return{comp:c,field,awards,lowerWins:false};
   }
   if(c.format==='blind-pairs'&&Array.isArray(c.blindDraw?.pairs)&&c.blindDraw.pairs.length){
-   const byId=Object.fromEntries(rows.map(r=>[r.player.id,r]));const pairs=c.blindDraw.pairs.map(pair=>{const ids=normaliseBlindPairIds(pair).filter(id=>byId[id]);return ids.length?{ids,score:ids.reduce((a,id)=>a+(Number(byId[id]?.points)||0),0)}:null}).filter(Boolean).sort((a,b)=>b.score-a.score),pts=oomPointsForField(rows.length),awards=[];
-   pairs.forEach((pair,i)=>{const teamPts=pts[i]||0;pair.ids.forEach(id=>awards.push(award(id,teamPts/pair.ids.length,'Blind pair')))});return{comp:c,field:rows.length,awards};
+   const byId=Object.fromEntries(rows.map(r=>[r.player.id,r])),pairs=c.blindDraw.pairs.map(pair=>{const ids=normaliseBlindPairIds(pair).filter(id=>byId[id]);return ids.length?{ids,score:ids.reduce((n,id)=>n+(Number(byId[id]?.points)||0),0)}:null}).filter(Boolean).sort((x,y)=>y.score-x.score),pts=oomPointsForField(rows.length),awards=[];
+   pairs.forEach((pair,i)=>{const teamPts=pts[i]||0;pair.ids.forEach(id=>awards.push(award(id,settings.teamAward==='each'?teamPts:teamPts/pair.ids.length,'Blind pair')))});return{comp:c,field:rows.length,awards,lowerWins:false};
   }
-  const pts=oomPointsForField(rows.length);return{comp:c,field:rows.length,awards:rows.map((r,i)=>award(r.player.id,pts[i]||0,r.player.name))};
- }catch(e){console.warn('Skipping malformed competition in OOM',c?.id,e);return{comp:c,field:0,awards:[]}}
+  const pts=oomPointsForField(rows.length);return{comp:c,field:rows.length,awards:rows.map((r,i)=>award(r.player.id,pts[i]||0,r.player.name)),lowerWins:false};
+ }catch(e){console.warn('Skipping malformed competition in OOM',c?.id,e);return{comp:c,field:0,awards:[],lowerWins:false}}
 }
 function getOomRows(state,societyId,settings={}){
- const players=Array.isArray(state?.players)?state.players:[],excluded=new Set(settings.excludedCompIds||[]);
- const comps=(state.comps||[]).filter(c=>c&&c.societyId===societyId&&effectiveCompStatus(c)==='completed'&&!excluded.has(c.id)).sort((a,b)=>new Date(a.starts||0)-new Date(b.starts||0));
- const events=comps.map(c=>getOomEvent(state,c));const byPlayer={};
- events.forEach(ev=>ev.awards.forEach(a=>{if(!a.id||a.points<=0)return;(byPlayer[a.id]??=[]).push({compId:ev.comp.id,name:ev.comp.name,date:ev.comp.starts,points:a.points})}));
- const bestCount=Math.max(0,Number(settings.bestCount)||0);
- const rows=Object.entries(byPlayer).map(([id,results])=>{const counting=[...results].sort((a,b)=>b.points-a.points).slice(0,bestCount||results.length),points=counting.reduce((n,r)=>n+r.points,0);return{player:players.find(p=>p?.id===id),points,played:results.length,counting:counting.length,results,countingIds:new Set(counting.map(r=>r.compId))}}).filter(x=>x.player&&!x.player.guest).sort((a,b)=>b.points-a.points||b.counting-a.counting||String(a.player.name||'').localeCompare(String(b.player.name||'')));
- return{rows,events,eligible:comps,bestCount};
+ const players=Array.isArray(state?.players)?state.players:[],excluded=new Set(settings.excludedCompIds||[]),all=(state.comps||[]).filter(c=>c&&c.societyId===societyId&&c.status!=='deleted'),mode=settings.mode==='automatic'||!settings.mode?oomDefaultMode(all):settings.mode;
+ const comps=all.filter(c=>effectiveCompStatus(c)==='completed'&&!excluded.has(c.id)).sort((x,y)=>new Date(x.starts||0)-new Date(y.starts||0)),events=comps.map(c=>getOomEvent(state,c,mode,settings)),byPlayer={};
+ events.forEach(ev=>ev.awards.forEach(a=>{if(!a.id||!Number.isFinite(a.value))return;(byPlayer[a.id]??=[]).push({compId:ev.comp.id,name:ev.comp.name,date:ev.comp.starts,value:a.value,win:a.win||0,half:a.half||0,loss:a.loss||0})}));
+ const bestCount=Math.max(0,Number(settings.bestCount)||0),lowerWins=mode==='nett-par';
+ const rows=Object.entries(byPlayer).map(([id,results])=>{const sorted=[...results].sort((x,y)=>lowerWins?x.value-y.value:y.value-x.value),counting=sorted.slice(0,bestCount||sorted.length),value=counting.reduce((n,r)=>n+r.value,0);return{player:players.find(p=>p?.id===id),value,points:value,played:results.length,counting:counting.length,results,countingIds:new Set(counting.map(r=>r.compId)),wins:counting.reduce((n,r)=>n+r.win,0),halves:counting.reduce((n,r)=>n+r.half,0),losses:counting.reduce((n,r)=>n+r.loss,0)}}).filter(x=>x.player&&!x.player.guest).sort((x,y)=>lowerWins?x.value-y.value||String(x.player.name||'').localeCompare(String(y.player.name||'')):y.value-x.value||y.wins-x.wins||String(x.player.name||'').localeCompare(String(y.player.name||'')));
+ return{rows,events,eligible:comps,bestCount,mode,lowerWins};
 }
 function oomDefaultMode(comps=[]){
  const formats=[...new Set(comps.map(c=>c.format).filter(Boolean))];
@@ -103,9 +114,9 @@ function OomScreen({state,setState,society,me,onPersist,management=false}){
    {resolvedMode==='nett-par'&&<div className="oomRuleNote"><b>Nett score vs par</b><span>Each round is converted to nett under/over par and accumulated like a multi-round tournament. Lowest total leads.</span></div>}
    {resolvedMode==='matchplay'&&<div className="oomMatchGrid"><label>Win<input type="number" step="0.5" value={settings.matchWin} disabled={!isAdmin} onChange={e=>save({matchWin:+e.target.value||0})}/></label><label>Half<input type="number" step="0.5" value={settings.matchHalf} disabled={!isAdmin} onChange={e=>save({matchHalf:+e.target.value||0})}/></label><label>Loss<input type="number" step="0.5" value={settings.matchLoss} disabled={!isAdmin} onChange={e=>save({matchLoss:+e.target.value||0})}/></label></div>}
    </>}</div>
-  {settings.enabled&&<div className="card oomSetup"><h3>ELIGIBLE COMPETITIONS</h3><p className="muted">Completed competitions count automatically. Use this list to exclude individual competitions from the OOM.</p>{allGroupComps.sort((a,b)=>new Date(a.starts||0)-new Date(b.starts||0)).map(c=>{const completed=effectiveCompStatus(c)==='completed',on=completed&&!(settings.excludedCompIds||[]).includes(c.id);return <div className="oomCompToggle" key={c.id}><span><b>{c.name}</b><small>{c.starts?new Date(c.starts).toLocaleDateString():'No date'} · {completed?'Completed':'Not completed'}</small></span><button className={on?'mini':'mini secondary'} disabled={!completed||!isAdmin} onClick={()=>{const ex=new Set(settings.excludedCompIds||[]);on?ex.add(c.id):ex.delete(c.id);save({excludedCompIds:[...ex]})}}>{on?'COUNTING':'EXCLUDED'}</button></div>})}</div>}</div>;
+  {settings.enabled&&<div className="card oomSetup"><h3>ELIGIBLE COMPETITIONS</h3><p className="muted">Completed competitions count automatically. Use this list to exclude individual competitions from the OOM.</p>{allGroupComps.sort((a,b)=>new Date(a.starts||0)-new Date(b.starts||0)).map(c=>{const completed=effectiveCompStatus(c)==='completed',on=completed&&!(settings.excludedCompIds||[]).includes(c.id);return <div className="oomCompToggle" key={c.id}><span><b>{c.name}</b><small>{c.starts?new Date(c.starts).toLocaleDateString():'No date'} · {completed?'Completed':'Not completed'}</small></span><button className={on?'mini':'mini secondary'} disabled={!completed||!isAdmin} onClick={()=>{const ex=new Set(settings.excludedCompIds||[]);on?ex.add(c.id):ex.delete(c.id);save({excludedCompIds:[...ex]})}}>{!completed?'UPCOMING':on?'COUNTING':'EXCLUDED'}</button></div>})}</div>}</div>;
  if(!settings.enabled)return <div className="card"><h3>ORDER OF MERIT</h3><p className="muted">OOM is switched off for this Group.</p></div>;
- return <div className="oomScreen"><div className="card oomHero"><div><small>ORDER OF MERIT</small><h2>{society?.name||'Golf Group'}</h2><p className="muted">{result.bestCount?'Best '+result.bestCount+' results count':'All eligible results count'}.</p></div></div>{!result.rows.length?<div className="card"><h3>STANDINGS</h3><p className="muted">No OOM results yet.</p></div>:<div className="card oomStandings"><div className="oomHead"><span>POS</span><span>GOLFER</span><span>PLAYED</span><span>COUNTING</span><span>PTS</span></div>{result.rows.map((r,i)=><React.Fragment key={r.player.id}><button type="button" className="oomRow" onClick={()=>setExpanded(expanded===r.player.id?null:r.player.id)}><strong>{i+1}</strong><span><b>{r.player.name||'Golfer'}</b><small>HI {formatHI(r.player.hi)}</small></span><em>{r.played}</em><em>{r.counting}</em><b>{fmtPts(r.points)}</b></button>{expanded===r.player.id&&<div className="oomBreakdown">{[...r.results].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)).map(x=><div key={x.compId}><span>{x.name}</span><b>{fmtPts(x.points)} pts {r.countingIds.has(x.compId)?'✓':'— dropped'}</b></div>)}</div>}</React.Fragment>)}</div>}</div>
+ return <div className="oomScreen"><div className="card oomHero"><div><small>ORDER OF MERIT</small><h2>{society?.name||'Golf Group'}</h2><p className="muted">{result.bestCount?'Best '+result.bestCount+' results count':'All eligible results count'}.</p></div></div>{!result.rows.length?<div className="card"><h3>STANDINGS</h3><p className="muted">No OOM results yet.</p></div>:<div className="card oomStandings"><div className="oomHead"><span>POS</span><span>GOLFER</span><span>PLAYED</span><span>COUNTING</span><span>{result.mode==='nett-par'?'+/-':result.mode==='matchplay'?'PTS':'PTS'}</span></div>{result.rows.map((r,i)=><React.Fragment key={r.player.id}><button type="button" className="oomRow" onClick={()=>setExpanded(expanded===r.player.id?null:r.player.id)}><strong>{i+1}</strong><span><b>{r.player.name||'Golfer'}</b><small>HI {formatHI(r.player.hi)}</small></span><em>{r.played}</em><em>{r.counting}</em><b>{result.mode==='nett-par'?(r.value>0?'+':'')+fmtPts(r.value):fmtPts(r.value)}</b></button>{expanded===r.player.id&&<div className="oomBreakdown">{[...r.results].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)).map(x=><div key={x.compId}><span>{x.name}</span><b>{result.mode==='nett-par'?(x.value>0?'+':'')+fmtPts(x.value):fmtPts(x.value)+(result.mode==='stableford-total'?' pts':'')} {r.countingIds.has(x.compId)?'✓':'— dropped'}</b></div>)}</div>}</React.Fragment>)}</div>}</div>
 }
 
 function mergeLiveState(local,remote){

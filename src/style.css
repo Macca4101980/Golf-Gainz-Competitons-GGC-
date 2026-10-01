@@ -201,3 +201,7 @@ main{padding-bottom:calc(var(--ggc-nav-h) + env(safe-area-inset-bottom) + 36px)}
 
 /* OOM management */
 .oomManage{display:grid;gap:12px;margin-top:12px}.oomManage label{display:grid;gap:7px;margin-top:14px;font-weight:800;color:#1b2721}.oomResolved,.oomRuleNote{margin-top:12px;padding:12px 14px;border-radius:13px;background:rgba(0,0,0,.055);color:#26332c}.oomRuleNote{display:grid;gap:6px}.oomRuleNote span{font-size:.84rem;line-height:1.35}.oomMatchGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.oomMatchGrid label{margin-top:12px}.oomMatchGrid input{text-align:center}.oomManage .oomSetup{margin-top:0}@media(max-width:520px){.oomManage .card{padding:18px 16px}.oomManage label{font-size:.92rem}.oomMatchGrid{gap:7px}}
+
+/* 3.9.4 navigation normalization */
+nav i{width:24px;height:24px;display:flex!important;align-items:center;justify-content:center;margin:0 auto 2px!important;font-size:22px!important;line-height:1!important}
+nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}

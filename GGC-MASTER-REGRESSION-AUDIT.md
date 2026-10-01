@@ -259,3 +259,30 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 LEAGUE-HCAP-LIVE-001 — Existing 10-week Winter League requires staging verification that settings and historical changes cascade through all linked competitions.
 - 🟠 MOBILE-LIVE-393 — iPhone layout/touch regression required for Handicap Management controls.
 - ⚫ New regressions detected: none at static implementation stage.
+
+
+## Build 3.9.3 — Master Regression Rerun (2026-10-01)
+- 🟢 BUILD-393-001 — package identifies 3.9.3.
+- 🟢 BUILD-393-002 — GitHub production Vite build passed on commit e736472 after compile regressions were corrected.
+- 🟢 LEAGUE-HCAP-AUTO-001 — automated handicap suite covers default rules, fixed/manual, down-only, up/down, legacy migration, team split, Net Level Par buffer and fractional accumulation.
+- 🟢 SCORE-ENGINE-STATIC-001 — previously verified Individual scoring engine and Pairs scoring helpers remain present in src/scoring.js.
+- 🟢 PAIR-MATCH-STATIC-001 — Pairs Matchplay relative-handicap and match-result helpers remain present.
+- 🟢 WL-ENGINE-STATIC-001 — chronological League recomputation, Better Ball, one-partner valid scoring, countback and Best-X paths remain present.
+- 🔵 OOM-MODE-001 — OOM engine now has position, cumulative Stableford, cumulative nett +/- par and matchplay result modes.
+- 🔵 OOM-BESTX-001 — Best-X selection is high-to-low for points modes and low-to-high for nett +/- par.
+- 🔵 OOM-TEAM-001 — pair/team position awards support split equally or full award to each golfer.
+- 🔵 OOM-STATUS-001 — future competitions display UPCOMING; completed included competitions COUNTING; deliberately removed completed competitions EXCLUDED.
+- 🟠 OOM-LIVE-393 — all four OOM modes require deployed known-result verification; matchplay storage shape especially requires live verification.
+- 🟠 NAV-LIVE-393 — Home / Competitions / Groups / Results / Settings and top-right Me navigation require iPhone/PWA verification.
+- 🟠 SETTINGS-LIVE-393 — Settings Group selector and Competition / League / OOM / Group & Access panels require live persistence verification.
+- 🟠 CLOUD-LIVE-393 — cloud save/reload and realtime echo-loop regression require live verification.
+- 🟠 WL-LIVE-393 — existing 26/27 10-week League, teams, badges, allowance and handicap settings require live verification.
+- 🟠 BADGE-LIVE-393 — repeated replace/remove/re-upload and reload requires live verification; prior multi-upload iOS flow was user-confirmed functional.
+- 🟠 COMP-LIVE-393 — create/edit/delete competition, card edit/submit and completed leaderboard require live verification.
+- 🟠 GROUP-LIVE-393 — membership/invite/show-hide and persistence require live verification.
+- 🟠 MONEY-LIVE-393 — prize / 2s settlement display remains live verification.
+- 🟠 MOBILE-LIVE-393 — four-player scorecard fit, pair headers, matchplay strip and touch targets remain device verification.
+- 🟠 AUTH-LIVE-393 — passkey/login/profile claim flows require authenticated multi-account live verification.
+- 🔴 MONEY-SETTLEMENT — full settlement/owed/paid engine remains outside current build.
+- 🔴 SIMULTANEOUS-SCORING — whole-state cloud blob concurrency remains a known architectural limitation; normalized-data build still required.
+- ⚫ New static/automated regressions detected in this rerun: none after compile fixes.

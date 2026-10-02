@@ -12,3 +12,28 @@ test('fractional cuts accumulate without mutating normal handicap index',()=>{co
 
 test('25/26 historical weekly team scores reproduce the completed workbook top five',()=>{const names=['Sultans of swing','Flintstones','The Bogey men','Putter madness','The Long Shots'],totals=[302,300,300,298,297],all={
 'Sultans of swing':[23,31,36,44,35,39,37,45,27,35],'Flintstones':[36,36,36,36,41,36,41,35,38,36],'The Bogey men':[40,43,39,35,38,34,34,31,34,37],'Putter madness':[32,38,38,36,36,38,27,40,35,37],'The Long Shots':[35,33,40,32,42,36,34,33,39,38]};const teams=names.map((name,i)=>({id:'t'+i,name,memberIds:['a'+i,'b'+i]})),league={id:'l',teams,handicapSettings:{mode:'team',allowance:90,bestCount:8,target:36,cutPerPoint:.5,direction:'down',teamAdjustment:'each'}},comps=Array.from({length:10},(_,w)=>({id:'w'+w,leagueId:'l',starts:`2025-10-${String(w+1).padStart(2,'0')}`,historicalTeamScores:Object.fromEntries(teams.map((t,i)=>[t.id,all[names[i]][w]]))})),state={players:teams.flatMap((t,i)=>t.memberIds.map(id=>({id,hi:10}))),courses:[],cards:[],comps};const table=winterLeagueTable(league,state).table;assert.deepEqual(table.slice(0,5).map(x=>[x.name,x.total]),names.map((n,i)=>[n,totals[i]]))});
+
+
+test('26/27 live League with no cards still produces table, handicap state and 10 weekly slots',()=>{
+ const teams=[{id:'t1',name:'Very Little Helps',memberIds:['p1','p2']},{id:'t2',name:'Flintstones',memberIds:['p3','p4']}];
+ const league={id:'winter-league-2026-27',teams,handicapSettings:{mode:'team',allowance:90,bestCount:8,target:36,cutPerPoint:.5,direction:'down',teamAdjustment:'each'}};
+ const comps=Array.from({length:10},(_,i)=>({id:'26w'+(i+1),leagueId:league.id,name:'Winter League 26/27 (Week '+(i+1)+')',starts:'2026-10-'+String(i+1).padStart(2,'0')+'T08:00:00',status:'draft'}));
+ const state={players:[{id:'p1',name:'Macca',hi:8.4},{id:'p2',name:'Dan',hi:6.9},{id:'p3',name:'Summy',hi:10.1},{id:'p4',name:'Nighty',hi:9.3}],courses:[],cards:[],comps};
+ const wl=winterLeagueTable(league,state);
+ assert.equal(wl.table.length,2);assert.equal(wl.weekly.length,10);assert.equal(wl.table[0].weeks.length,10);
+ const vlh=wl.table.find(x=>x.id==='t1');assert.ok(vlh);assert.equal(vlh.finalAdjustments.p1,0);assert.equal(vlh.finalAdjustments.p2,0);
+ assert.equal(vlh.weeks[0].beforeAdjustments.p1,0)
+});
+
+test('Results dependencies required by the League results view are exported',()=>{
+ assert.equal(typeof winterLeagueTable,'function');assert.equal(typeof leagueHandicapSettings,'function')
+});
+
+
+test('locked League starting handicap remains independent of later profile HI changes',()=>{
+ const league={id:'lock',memberIds:['p1','p2'],startingHandicaps:{p1:9.3,p2:10},teams:[{id:'t',name:'Team',memberIds:['p1','p2']}],handicapSettings:{mode:'team',allowance:90,bestCount:1,target:36,cutPerPoint:.5,direction:'down',teamAdjustment:'each',lockStartingHandicaps:true}};
+ const state={players:[{id:'p1',name:'Dan',hi:6.9},{id:'p2',name:'Mate',hi:7}],courses:[],cards:[],comps:[{id:'w',leagueId:'lock',name:'Week 1',starts:'2026-10-01T08:00:00',status:'draft'}]};
+ const wl=winterLeagueTable(league,state);assert.equal(wl.settings.lockStartingHandicaps,true);assert.equal(league.startingHandicaps.p1,9.3);assert.equal(state.players[0].hi,6.9)
+});
+
+test('League money arithmetic matches 30-player Winter League example',()=>{const players=30,leagueFee=12,twosFee=8,weeklyPrizePerPlayer=10,weeks=10;const expected=players*(leagueFee+twosFee),leaguePot=players*leagueFee,weekly=weeks*2*weeklyPrizePerPlayer,finalPot=leaguePot-weekly;assert.equal(expected,600);assert.equal(leaguePot,360);assert.equal(players*twosFee,240);assert.equal(weekly,200);assert.equal(finalPot,160);assert.equal(finalPot*.6,96);assert.equal(finalPot*.4,64)});

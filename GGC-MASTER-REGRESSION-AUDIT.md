@@ -303,3 +303,19 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 LIVE-394-001 — iPhone regression required for Settings/League stay-in-place behaviour, badge picker return, group golfer persistence, sticky scorecard header and four-column fit.
 - 🟠 INVITE-394-001 — second-account verification required that a newly added League golfer sees the linked competition invitation(s).
 - 🟠 CLOUD-394-002 — second-device concurrent cloud verification remains required before production.
+
+
+## Build 3.9.5 — historical League results repair
+- 🔵 HIST-395-001 — completed historical League competitions render full team leaderboards without fabricated individual scorecards.
+- 🔵 HIST-395-002 — Results recognises historical League Groups and renders League standings instead of an empty individual OOM.
+- 🔵 HIST-395-003 — Results shows all completed historical competitions rather than only the three most recent.
+- 🔵 WL-395-001 — weekly League results render every team rather than the top three only.
+- 🔵 MOBILE-395-001 — League table replaced with phone-first rows; counting scores expand on tap and no horizontal table is required.
+- 🔵 GROUPS-395-001 — duplicate League editor removed from the everyday Groups screen; administration remains in Settings → Leagues.
+- 🔵 BUILD-395-001 — scorecard labels/package identify build 3.9.5.
+- 🟠 LIVE-395-001 — production iPhone verification required for 25/26 Results, Week 1–10 leaderboards and mobile League rows.
+
+### 3.9.5 cloud state safety gate
+- 🔵 Automatic cloud writes are blocked until the authenticated client's first cloud hydration has completed.
+- 🔵 Empty/default client state is write-protected and cannot replace the shared cloud state.
+- 🟠 Live regression gate: fresh browser/session must load cloud before any save; auth refresh must preserve state; offline/empty startup must not overwrite cloud; second device must merge without data loss.

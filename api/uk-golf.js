@@ -1,4 +1,4 @@
-const API_BASE='https://uk-golf-api.vercel.app';
+const API_BASE='https://uk-golf-course-data-api.p.rapidapi.com';
 const API_HOST='uk-golf-course-data-api.p.rapidapi.com';
 async function call(path){
  const key=process.env.RAPIDAPI_KEY;if(!key){const e=new Error('UK Golf API is not configured');e.status=500;throw e}

@@ -246,3 +246,23 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 
 /* 3.9.5 season result twirly */
 .wlSeasonTwirl{margin:12px 0 20px}.wlSeasonTwirl>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-radius:16px;background:#172019;color:#fff;cursor:pointer;list-style:none;box-shadow:0 5px 16px rgba(0,0,0,.12)}.wlSeasonTwirl>summary::-webkit-details-marker{display:none}.wlSeasonTwirl>summary span{display:grid;gap:2px}.wlSeasonTwirl>summary b{font-size:1rem}.wlSeasonTwirl>summary small{font-size:.68rem;color:#aab5af}.wlSeasonTwirl>summary>strong{font-size:1.5rem;color:#68eb42;transition:transform .15s}.wlSeasonTwirl[open]>summary>strong{transform:rotate(90deg)}.wlSeasonTwirl>.historicalLeagueResults{margin-top:10px}
+
+
+/* Build 3.9.6 Beta — course library */
+.courseLibrary{display:grid;gap:12px;margin-bottom:12px}
+.courseSearch{padding:16px}
+.courseSearch h3,.courseLibrary>h3{margin:0 0 8px}
+.courseSearchRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.courseSearchRow input{min-width:0;margin:0}
+.courseSearchRow button{margin:0;white-space:nowrap}
+.courseResults,.courseImport{display:grid;gap:8px;margin-top:12px}
+.courseResult,.teeImportRow{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;border:1px solid var(--line,#d8d8d8);border-radius:12px;padding:12px;background:transparent;color:inherit}
+.courseResult span,.teeImportRow span,.courseManage span{display:grid;gap:3px;min-width:0}
+.courseResult small,.teeImportRow small,.courseManage small{opacity:.72}
+.courseImport>h3{margin:8px 0}
+.teeImportRow .mini{flex:0 0 auto}
+.courseCredit{display:block;margin-top:12px;opacity:.72}
+.courseCredit a{color:inherit;text-decoration:underline}
+.courseManage{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dangerIcon{flex:0 0 auto}
+@media(max-width:520px){.courseSearchRow{grid-template-columns:1fr}.courseSearchRow button{width:100%}.teeImportRow{align-items:flex-start}.teeImportRow small{line-height:1.35}}

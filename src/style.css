@@ -266,3 +266,15 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 .courseManage{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .dangerIcon{flex:0 0 auto}
 @media(max-width:520px){.courseSearchRow{grid-template-columns:1fr}.courseSearchRow button{width:100%}.teeImportRow{align-items:flex-start}.teeImportRow small{line-height:1.35}}
+
+
+/* Beta.13 — scheduled timing spacing + compact competition group headers */
+.goLiveAt{display:inline-block;margin-left:14px;vertical-align:middle}
+.groupCompTwirl>summary{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:14px 4px;cursor:pointer;list-style:none}
+.groupCompTwirl>summary::-webkit-details-marker{display:none}
+.groupCompTwirl>summary .groupCompName{min-width:0;text-align:left}
+.groupCompTwirl>summary .groupCompName b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.groupCompTwirl>summary .groupCompCount{font-weight:900;min-width:2ch;text-align:right}
+.groupCompTwirl>summary>strong{font-size:1.4rem;line-height:1;transition:transform .15s ease}
+.groupCompTwirl[open]>summary>strong{transform:rotate(90deg)}
+@media(max-width:520px){.goLiveAt{margin-left:12px}.groupCompTwirl>summary{gap:8px}.groupCompTwirl>summary .groupCompName b{font-size:.95rem}}

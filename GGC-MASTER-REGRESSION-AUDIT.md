@@ -319,3 +319,17 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 Automatic cloud writes are blocked until the authenticated client's first cloud hydration has completed.
 - 🔵 Empty/default client state is write-protected and cannot replace the shared cloud state.
 - 🟠 Live regression gate: fresh browser/session must load cloud before any save; auth refresh must preserve state; offline/empty startup must not overwrite cloud; second device must merge without data loss.
+
+
+## Build 3.9.6 Beta.9 — Checkpoint 1: League flexibility & persistence
+- 🔵 CP1-LEAGUE-TEAM-RENAME-001 — League team can be renamed without changing team ID, member IDs, badge, scores or history; linked competition pair display names update by the same team ID.
+- 🔵 CP1-LEAGUE-LINK-001 — New/edit Competition exposes League: None / [League] for the selected Group.
+- 🔵 CP1-LEAGUE-LINK-002 — Existing Competition can be linked to a League without recreating the Competition; linking inherits the League roster/team pair definitions and persistent League OOM settings.
+- 🔵 CP1-LEAGUE-UNLINK-001 — Existing Competition can be removed from a League by selecting None without deleting the Competition or its scorecards/history.
+- 🔵 CP1-LEAGUE-LENGTH-001 — League setup competition count is an initial creation quantity only; additional League competitions can always be added later.
+- 🔵 CP1-LEAGUE-OOM-001 — League stores persistent OOM method, Best-X/counting and team-award rules; changes propagate to linked Competition metadata and later-linked competitions inherit the current rules.
+- 🔵 CP1-WL-BESTX-001 — League Best-X drives the Winter League table when explicitly configured; Best-X 0 means all eligible rounds, while legacy Leagues with no League OOM setting retain their existing handicap-engine Best-X default.
+- 🟢 CP1-AUTO-REGRESSION-001 — GitHub Node test suite and production Vite build complete successfully on the CP1 branch.
+- 🟠 CP1-LIVE-001 — Live UI test still required: rename a real/test League team and confirm badge, members, historical cards and results remain attached.
+- 🟠 CP1-LIVE-002 — Live UI test still required: attach/detach an existing Competition and verify League Results/OOM, cloud reload and scorecard history.
+- 🟠 CP1-LIVE-003 — Live UI test still required: add an 11th competition to a 10-competition League and confirm persistent OOM/Best-X rules after cloud reload.

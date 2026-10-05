@@ -7,10 +7,10 @@ const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 const wl=fs.readFileSync(new URL('../src/winterLeague.js',import.meta.url),'utf8');
 const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 
-test('current build marker is Beta.13',()=>{
-  assert.equal(pkg.version,'3.9.6-beta.13');
-  assert.match(main,/Build 3\.9\.6 Beta\.13/);
-  assert.match(leagues,/GGC v3\.9\.6 Beta\.13/);
+test('current build marker is Beta.14',()=>{
+  assert.equal(pkg.version,'3.9.6-beta.14');
+  assert.match(main,/Build 3\.9\.6 Beta\.14/);
+  assert.match(leagues,/GGC v3\.9\.6 Beta\.14/);
 });
 
 test('CP1 team rename preserves team identity and updates linked pair display',()=>{
@@ -54,5 +54,5 @@ test('CP2 identity links placeholders by verified email and never by name',()=>{
   assert.match(main,/normEmail\(q\.email\)===verifiedEmail/);
   assert.doesNotMatch(main,/norm\(q\.name\)===norm\(claimed\.name\)/);
   assert.match(main,/membershipStatus:'member'/);
-  assert.match(main,/Build 3\.9\.6 Beta\.13/);
+  assert.match(main,/Build 3\.9\.6 Beta\.14/);
 });

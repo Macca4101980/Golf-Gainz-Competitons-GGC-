@@ -47,3 +47,12 @@ test('CP1 Results use the actual League name, not a hard-coded Winter League lab
   assert.doesNotMatch(main,/<h3>WINTER LEAGUE TABLE<\/h3>/);
   assert.doesNotMatch(main,/<h3>WINTER LEAGUE HANDICAPS<\/h3>/);
 });
+
+
+test('CP2 identity links placeholders by verified email and never by name',()=>{
+  assert.match(main,/const verifiedEmail=String\(auth\?\.user\?\.email/);
+  assert.match(main,/normEmail\(q\.email\)===verifiedEmail/);
+  assert.doesNotMatch(main,/norm\(q\.name\)===norm\(claimed\.name\)/);
+  assert.match(main,/membershipStatus:'member'/);
+  assert.match(main,/Build 3\.9\.6 Beta\.10/);
+});

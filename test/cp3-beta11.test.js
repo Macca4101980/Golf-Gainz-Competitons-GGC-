@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
 const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 test('CP3 group invitations persist and require recipient acceptance',()=>{assert.match(main,/societyInvites:y\.societyInvites\|\|\[\]/);assert.match(main,/const societyInvites=byId/);assert.match(main,/GROUP INVITATIONS/);assert.match(main,/ACCEPT/);assert.match(main,/DECLINE/)});
-test('CP3 unclaimed golfer invite is email-bound, replaceable and visible',()=>{assert.match(main,/EMAIL ADDED ✅/);assert.match(main,/SEND GGC INVITE/);assert.match(main,/SEND NEW GGC INVITE/);assert.match(main,/membershipStatus:'invite-sent'/);assert.match(main,/q\.claimToken===claimToken&&\(!q\.email/);assert.match(main,/check Junk\/Spam/)});
+test('CP3 unclaimed golfer invite is email-bound, replaceable and visible',()=>{assert.match(main,/EMAIL ADDED ✅/);assert.match(main,/EMAIL GGC INVITE/);assert.match(main,/SHARE INVITE LINK/);assert.match(main,/membershipStatus:'invite-sent'/);assert.match(main,/q\.claimToken===claimToken&&\(!q\.email/);assert.match(main,/check Junk\/Spam/)});
 test('CP3 live group locks after scoring and restart removes only group cards',()=>{assert.match(main,/playing group is locked because scoring has started/);assert.match(main,/RESTART ROUND/);assert.match(main,/Restart this round\? This will erase all scores entered for this playing group/);assert.match(main,/cards:state\.cards\.filter\(card=>!\(card\.compId===c\.id&&ids\.includes\(card\.playerId\)\)\)/)});
-test('CP3 build marker',()=>assert.match(main,/Build 3\.9\.6 Beta\.11/));
+test('CP3 build marker',()=>assert.match(main,/Build 3\.9\.6 Beta\.13/));

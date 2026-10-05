@@ -39,3 +39,11 @@ test('CP1 League OOM and Best-X persist on the League',()=>{
   assert.match(leagues,/leagueOomSettings:\{\.\.\.oomSettings\}/);
   assert.match(wl,/league\?\.oomSettings\?\.bestCount/);
 });
+
+
+test('CP1 Results use the actual League name, not a hard-coded Winter League label',()=>{
+  assert.match(main,/<h3>\{league\.name\} LEAGUE TABLE<\/h3>/);
+  assert.match(main,/<h3>\{league\.name\} HANDICAPS<\/h3>/);
+  assert.doesNotMatch(main,/<h3>WINTER LEAGUE TABLE<\/h3>/);
+  assert.doesNotMatch(main,/<h3>WINTER LEAGUE HANDICAPS<\/h3>/);
+});

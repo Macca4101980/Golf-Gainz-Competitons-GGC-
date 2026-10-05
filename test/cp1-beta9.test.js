@@ -7,10 +7,10 @@ const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 const wl=fs.readFileSync(new URL('../src/winterLeague.js',import.meta.url),'utf8');
 const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 
-test('CP1 build marker is Beta.9',()=>{
-  assert.equal(pkg.version,'3.9.6-beta.9');
-  assert.match(main,/Build 3\.9\.6 Beta\.9/);
-  assert.match(leagues,/GGC v3\.9\.6 Beta\.9/);
+test('current build marker is Beta.10',()=>{
+  assert.equal(pkg.version,'3.9.6-beta.10');
+  assert.match(main,/Build 3\.9\.6 Beta\.10/);
+  assert.match(leagues,/GGC v3\.9\.6 Beta\.10/);
 });
 
 test('CP1 team rename preserves team identity and updates linked pair display',()=>{
@@ -46,4 +46,13 @@ test('CP1 Results use the actual League name, not a hard-coded Winter League lab
   assert.match(main,/<h3>\{league\.name\} HANDICAPS<\/h3>/);
   assert.doesNotMatch(main,/<h3>WINTER LEAGUE TABLE<\/h3>/);
   assert.doesNotMatch(main,/<h3>WINTER LEAGUE HANDICAPS<\/h3>/);
+});
+
+
+test('CP2 identity links placeholders by verified email and never by name',()=>{
+  assert.match(main,/const verifiedEmail=String\(auth\?\.user\?\.email/);
+  assert.match(main,/normEmail\(q\.email\)===verifiedEmail/);
+  assert.doesNotMatch(main,/norm\(q\.name\)===norm\(claimed\.name\)/);
+  assert.match(main,/membershipStatus:'member'/);
+  assert.match(main,/Build 3\.9\.6 Beta\.10/);
 });

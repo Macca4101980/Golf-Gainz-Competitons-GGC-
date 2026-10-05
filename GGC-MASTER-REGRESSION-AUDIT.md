@@ -344,3 +344,12 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 CP2-LIVE-001 — Live test required: add an email to an existing placeholder and confirm its ID, teams, badges, cards and League history do not change.
 - 🟠 CP2-LIVE-002 — Live test required: same email on placeholders in multiple Groups, then authenticated claim, confirming one member identity and preserved memberships/history.
 - 🟠 CP2-LIVE-003 — Live test required: change a claimed display name and verify the new name throughout Groups, League teams, scorecards and historical Results.
+
+
+### Beta.10 CP2 Group golfer UX hardening
+- 🔵 CP2-GROUP-001 — Group admins create temporary/unclaimed golfers from Group Members with Name, HI and optional email.
+- 🔵 CP2-GROUP-002 — Admins can edit an unclaimed golfer's Name, HI and optional email on the same player ID; claimed GGC members are not editable by the Group admin.
+- 🔵 CP2-GROUP-003 — Member status displays NOT INVITED / INVITE SENT / GGC MEMBER rather than treating every Group record as a claimed member.
+- 🔵 CP2-GROUP-004 — Invite Existing Golfer is restricted to claimed GGC identities from another shared Group.
+- 🔵 CP2-LEAGUE-002 — League setup no longer creates golfers; it selects from the owning Group with ADD / IN LEAGUE.
+- 🟠 CP2-LIVE-004 — Live test required: create an unclaimed golfer in Group Members, edit name/HI/email, add to League, and verify the same golfer ID/history remains.

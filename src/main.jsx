@@ -63,6 +63,14 @@ function oomCoursePar(state,c){
 function getOomEvent(state,c,mode='position',settings={}){
  const cards=Array.isArray(state?.cards)?state.cards:[],award=(id,value,label,extra={})=>({id,value:Number(value)||0,label,...extra});
  try{
+  if(isGroupFormat(c?.format)){
+   const groups=groupLeaderboard(c,state).filter(r=>r.complete>0),memberIds=g=>((c.roundGroups||[]).find(x=>x.id===g.groupId)?.playerIds||[]).filter(id=>!state.players.find(p=>p.id===id)?.guest),awards=[];
+   if(mode==='stableford-total'){groups.forEach(g=>{const ids=memberIds(g),v=settings.teamAward==='each'?g.points:(g.points/(ids.length||1));ids.forEach(id=>awards.push(award(id,v,g.name)))});return{comp:c,field:[...new Set(groups.flatMap(memberIds))].length,awards,lowerWins:false}}
+   if(mode==='nett-par'){const par=oomCoursePar(state,c);groups.forEach(g=>{const ids=memberIds(g),v=(g.rankValue??0)-par;ids.forEach(id=>awards.push(award(id,v,g.name)))});return{comp:c,field:[...new Set(groups.flatMap(memberIds))].length,awards,lowerWins:true}}
+   const field=[...new Set(groups.flatMap(memberIds))].length,pts=oomPointsForField(field);
+   groups.forEach((g,i)=>{const ids=memberIds(g),teamPts=pts[i]||0,v=settings.teamAward==='each'?teamPts:(teamPts/(ids.length||1));ids.forEach(id=>awards.push(award(id,v,g.name)))});
+   return{comp:c,field,awards,lowerWins:false};
+  }
   let rows=cards.filter(x=>x&&x.compId===c.id).map(x=>{try{return scoreCard(x,c,state)}catch{return null}}).filter(x=>x?.player&&!x.player.guest&&x.complete>0);
   const rule=FORMAT_RULES[c.format]||FORMAT_RULES.stableford;rows.sort(rule.lowerWins?(a,b)=>Number(a.rankValue)-Number(b.rankValue):(a,b)=>Number(b.rankValue)-Number(a.rankValue));
   if(mode==='stableford-total')return{comp:c,field:rows.length,awards:rows.map(r=>award(r.player.id,r.points,r.player.name)),lowerWins:false};

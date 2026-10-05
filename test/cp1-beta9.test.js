@@ -7,8 +7,8 @@ const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 const wl=fs.readFileSync(new URL('../src/winterLeague.js',import.meta.url),'utf8');
 const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 
-test('current build marker is Beta.11',()=>{
-  assert.equal(pkg.version,'3.9.6-beta.11');
+test('current build marker is Beta.12',()=>{
+  assert.equal(pkg.version,'3.9.6-beta.12');
   assert.match(main,/Build 3\.9\.6 Beta\.11/);
   assert.match(leagues,/GGC v3\.9\.6 Beta\.11/);
 });

@@ -6,7 +6,7 @@ test('CP2 Group owns creation and editing of unclaimed golfers',()=>{
   assert.match(main,/function saveNewGolfer/);
   assert.match(main,/function editUnclaimedGolfer/);
   assert.match(main,/EDIT GOLFER/);
-  assert.match(main,/p\.authUserId\?'GGC MEMBER':p\.membershipStatus==='invite-sent'\?'INVITE SENT':'NOT INVITED'/);
+  assert.match(main,/p\.authUserId\?'GGC MEMBER ✅':p\.membershipStatus==='invite-sent'\?'INVITE SENT':p\.email\?'EMAIL ADDED ✅':'NOT INVITED'/);
 });
 
 test('CP2 Invite Existing Golfer only lists claimed GGC identities',()=>{

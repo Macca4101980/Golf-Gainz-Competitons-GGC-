@@ -353,3 +353,16 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 CP2-GROUP-004 — Invite Existing Golfer is restricted to claimed GGC identities from another shared Group.
 - 🔵 CP2-LEAGUE-002 — League setup no longer creates golfers; it selects from the owning Group with ADD / IN LEAGUE.
 - 🟠 CP2-LIVE-004 — Live test required: create an unclaimed golfer in Group Members, edit name/HI/email, add to League, and verify the same golfer ID/history remains.
+
+
+## 3.9.6 Beta.11 — CP3 invitations and live-round lifecycle
+- 🔵 CP3-INVITE-001 — Existing GGC member Group invitations persist in cloud state and remain pending until ACCEPT or DECLINE.
+- 🔵 CP3-INVITE-002 — Unclaimed golfer with an email shows EMAIL ADDED ✅ and can generate a new email-bound claim invite; issuing a new invite replaces the previous token.
+- 🔵 CP3-INVITE-003 — Claim token is accepted only when the authenticated email matches the stored golfer email (where an email is present); successful claim clears the token through identity consolidation.
+- 🔵 CP3-AUTH-001 — 6-digit verification screen tells the golfer to check Junk/Spam.
+- 🔵 CP3-ROUND-001 — Playing-group membership remains editable before scoring and locks after any score is entered.
+- 🔵 CP3-ROUND-002 — RESTART ROUND warns, deletes only cards belonging to that playing group, removes that round-group record and allows reselection.
+- 🟠 CP3-LIVE-005 — Two-device live test: existing-member Group invitation appears on recipient account and accepts correctly.
+- 🟠 CP3-LIVE-006 — New-account live test: invited temporary golfer signs in with matching email and inherits existing Group/League identity without duplication.
+- 🟠 CP3-LIVE-007 — Two-device round resume/restart lifecycle requires live verification.
+- 🟠 CP3-WL-LIVE-001 — League teammates playing different days/groups still require live Better Ball verification.

@@ -20,7 +20,7 @@ Status: 🔵 changed/tested this build · 🟢 retained and regression-tested ·
 - 🟠 PWA-UPDATE-LIVE — safe update banner code exists; old-PWA-to-new-build update journey requires device verification.
 - 🟠 MOBILE-LIVE — compact group card and League/settings layouts require iPhone verification.
 - 🔴 SIMULTANEOUS-SCORING — shared whole-state ggc_state blob remains an architectural concurrency risk; do not mark verified until normalized/conflict-safe persistence is implemented or proven safe.
-- 🟢 V4 automated regression gate — GitHub Actions run 134: npm test PASS and npm run build PASS; Vercel preview deployment PASS.
+- 🟢 V4 automated regression gate — GitHub Actions final branch run 137: npm test PASS and npm run build PASS; Vercel preview deployment PASS.
 - 🔵 HCAP-ZERO-001 — full regression exposed negative-zero on a plus-handicap hole with no give-back stroke; normalized to ordinary 0 and rerun successfully.
 - ⚫ V4 regressions detected after fixes: none in automated suite.
 

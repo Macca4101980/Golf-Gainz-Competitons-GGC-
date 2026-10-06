@@ -10,7 +10,7 @@ const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),
 test('current build marker is V4 Beta 1',()=>{
   assert.equal(pkg.version,'4.0.0-beta.1');
   assert.match(main,/V4 Beta 1/);
-  assert.match(leagues,/GGC v3\.9\.6 Beta\.14/);
+  assert.match(leagues,/GGC V4 Beta 1/);
 });
 
 test('CP1 team rename preserves team identity and updates linked pair display',()=>{

@@ -1,4 +1,4 @@
-# Golf Gainz Comps — Build 3.4 Individual Formats
+# Golf Gain Comps — Build 3.4 Individual Formats
 
 Build 3.4 adds the first competition-format category: Individual.
 

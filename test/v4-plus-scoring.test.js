@@ -1,5 +1,5 @@
-import test from'node:test';import assert from'node:assert/strict';import{courseHandicap,playingHandicap,strokesOnHole,stablefordPoints,scoreCard}from'../src/scoring.js';
+import test from'node:test';import assert from'node:assert/strict';import{courseHandicap,playingHandicap,strokesOnHole,scoreCard}from'../src/scoring.js';
 const holes=Array.from({length:18},(_,i)=>({n:i+1,par:4,si:i+1}));const course={id:'c',tees:[{name:'White',rating:72,slope:113,holes}]};
-test('plus HI remains negative through CH/PH maths and displays stroke give-back from SI18',()=>{assert.equal(courseHandicap(-5,113,72,72),-5);assert.equal(playingHandicap(-5,100),-5);assert.equal(strokesOnHole(-5,18),-1);assert.equal(strokesOnHole(-5,1),0);assert.equal(stablefordPoints(4,4,-1),1)});
+test('plus HI remains negative through CH/PH maths and gives back from SI18',()=>{assert.equal(courseHandicap(-5,113,72,72),-5);assert.equal(playingHandicap(-5,100),-5);assert.equal(strokesOnHole(-5,18),-1);assert.equal(strokesOnHole(-5,1),0)});
 test('ordinary positive handicap stroke allocation is unchanged',()=>{assert.equal(strokesOnHole(5,1),1);assert.equal(strokesOnHole(5,5),1);assert.equal(strokesOnHole(5,6),0)});
 test('plus handicap full Stableford card scores with give-back strokes',()=>{const state={courses:[course]},comp={course:'c',tee:'White',holesMode:'18',format:'stableford'},card={gross:Array(18).fill(4),courseHandicap:-5,playingHandicap:-5};const r=scoreCard(card,comp,state);assert.equal(r.points,31);assert.equal(r.gross,72);assert.equal(r.net,77)});

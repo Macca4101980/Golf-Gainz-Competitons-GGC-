@@ -1,3 +1,37 @@
+# V4 Beta 1 — Consolidation & Full Regression
+
+Status: 🔵 changed/tested this build · 🟢 retained and regression-tested · 🟠 requires live/device verification · 🔴 broken/missing · ⚫ regression.
+
+## V4 Beta 1 scope / current audit
+- 🔵 BUILD-V4B1 — visible/package build identity moved to V4 Beta 1 / 4.0.0-beta.1.
+- 🔵 GOLF-GAIN-001 — Golf Gain companion App Store card added using the supplied icon and App Store destination.
+- 🔵 HCAP-PLUS-ENTRY — signup, Group Add Golfer and Group Manage Golfer accept golf notation such as +5 and store it internally as -5; display remains +5.0.
+- 🟢 HCAP-PLUS-SCORE — scoring engine remains separate from the input fix; existing regression covers plus Playing Handicap giving strokes back from SI18.
+- 🟢 GROUP-DELETE — deleted Group tombstones are retained and filtered during live merge so stale state cannot re-add a deleted Group.
+- 🟢 MONEY-LEAGUE-STATIC — League Money manager exists: entry fee, 2s contribution, weekly prize, final split, paid-in, paid-out, owed, rollover and bank reconciliation.
+- 🟢 MONEY-COMP-STATIC — competition overall/side-pot/2s calculation lineage retained from 3.6.0.
+- 🟠 MONEY-LIVE — complete real League/competition settlement needs live verification against actual completed results and reload.
+- 🟠 JOIN-CODE-LIVE — separate-account Join With Code journey still requires live verification.
+- 🟠 INVITE-CLAIM-LIVE — email/share invite, claim, cross-Group identity linking and claimed-status journey requires live multi-account verification.
+- 🟠 WL-25/26-LIVE — historical season/results/playoff presentation requires final deployed comparison.
+- 🟠 WL-26/27-LIVE — current 10-week League, team cuts, Best-X and week-by-week handicap display require deployed comparison.
+- 🟠 RESULTS-OOM-LIVE — Results/OOM presentation and Group isolation require deployed completion checks.
+- 🟠 BADGE-LIVE — repeated upload/replace/remove/reload requires authenticated iPhone/Supabase verification.
+- 🟠 PWA-UPDATE-LIVE — safe update banner code exists; old-PWA-to-new-build update journey requires device verification.
+- 🟠 MOBILE-LIVE — compact group card and League/settings layouts require iPhone verification.
+- 🔴 SIMULTANEOUS-SCORING — shared whole-state ggc_state blob remains an architectural concurrency risk; do not mark verified until normalized/conflict-safe persistence is implemented or proven safe.
+- 🟢 V4 automated regression gate — GitHub Actions final branch run 137: npm test PASS and npm run build PASS; Vercel preview deployment PASS.
+- 🔵 HCAP-ZERO-001 — full regression exposed negative-zero on a plus-handicap hole with no give-back stroke; normalized to ordinary 0 and rerun successfully.
+- ⚫ V4 regressions detected after fixes: none in automated suite.
+
+## Required V4 Beta 1 regression gate
+1. Run every repository node:test regression, including Individual, Pairs, Group Formats, Winter League, identity, invites, deletion and + handicap tests.
+2. Vercel preview must compile/deploy successfully.
+3. Any changed behaviour must have a dedicated regression assertion.
+4. No production promotion while a newly introduced automated regression is failing.
+5. Live-only items remain 🟠 rather than being incorrectly marked green.
+
+
 # GGC Master Regression Audit — Build 3.4 Individual Formats
 
 Status: 🔵 current-build change tested · 🟢 prior behaviour regression-tested · 🟠 requires deployed/live test · 🔴 current failure · ⚫ regression.

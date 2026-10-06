@@ -16,7 +16,7 @@ export function whsRound(n){return n<0?-Math.round(Math.abs(n)):Math.round(n)}
 export function playingHandicapFromRaw(raw,allowance=100){return whsRound(raw*(Math.max(0,Math.min(100,+allowance||0))/100))}
 export function courseHandicap(hi,tee,par){return whsRound(rawCourseHandicap(hi,tee,par))}
 export function playingHandicap(hi,tee,par,allowance=100){return playingHandicapFromRaw(rawCourseHandicap(hi,tee,par),allowance)}
-export function holeStrokes(ch,si){const base=Math.trunc(ch/18),rem=Math.abs(ch%18);return ch>=0?base+(si<=rem?1:0):base-(rem>0&&si>18-rem?1:0)}
+export function holeStrokes(ch,si){const base=Math.trunc(ch/18),rem=Math.abs(ch%18);return ch>=0?base+(si<=rem?1:0):(base-(rem>0&&si>18-rem?1:0)||0)}
 function selectedIndexes(c,hs){return c.holesMode==='front9'?[0,1,2,3,4,5,6,7,8]:c.holesMode==='back9'?[9,10,11,12,13,14,15,16,17]:hs.map((_,i)=>i)}
 function modifiedPoints(net,par,table={}){const d=net-par;if(d<=-3)return +(table.albatross??8);if(d===-2)return +(table.eagle??5);if(d===-1)return +(table.birdie??2);if(d===0)return +(table.par??0);if(d===1)return +(table.bogey??-1);return +(table.double??-3)}
 function effectiveGross(card,c,hs){if(c.format!=='eclectic')return card.gross||[];const rounds=Array.isArray(card.eclecticRounds)?card.eclecticRounds:[];return hs.map((_,i)=>{const vals=rounds.map(r=>+(r?.gross?.[i]||0)).filter(v=>v>0);return vals.length?Math.min(...vals):0})}

@@ -52,3 +52,30 @@ test('overlapping saves on one device cannot race each other',async()=>{
  await assert.rejects(session.save({...opened.card,gross:[2,5]}),/already in progress/);
  release();await first;assert.equal(writes,1);assert.deepEqual(remote.gross,[3,5]);
 });
+
+test('open cannot replace baseline while save is pending, and close is blocked',async()=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve});
+ let remote=structuredClone(original),revision=2;
+ const fetcher=async(url,opts)=>{
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  await gate;remote=JSON.parse(opts.body).p_card;revision++;
+  return {ok:true,json:async()=>revision};
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ const saving=session.save(opened.card);
+ await assert.rejects(session.open('c1'),/already in progress/);
+ assert.throws(()=>session.close('c1'),/during an operation/);
+ release();await saving;
+ const next=await session.open('c1');assert.equal(next.revision,3);
+});
+test('overlapping opens cannot overwrite a baseline with out-of-order responses',async()=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve});
+ const fetcher=async()=>{await gate;return {ok:true,json:async()=>[{card:structuredClone(original),revision:2}]}};
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opening=session.open('c1');
+ await assert.rejects(session.open('c1'),/already in progress/);
+ release();await opening;
+});

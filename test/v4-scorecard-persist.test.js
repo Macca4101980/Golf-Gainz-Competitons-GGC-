@@ -33,3 +33,9 @@ test('missing baseline for existing card fails closed',async()=>{
  await assert.rejects(persistV4Scorecard({...base,card:{...card,gross:[4,4]},fetcher:api.fetcher}),ScorecardConflictError);
  assert.equal(api.calls.length,1);
 });
+
+test('deleted remote card is not silently recreated over a stale baseline',async()=>{
+ const api=fake(null);
+ await assert.rejects(persistV4Scorecard({...base,baselineCard:card,baselineRevision:3,fetcher:api.fetcher}),ScorecardConflictError);
+ assert.equal(api.calls.length,1);
+});

@@ -31,7 +31,13 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
   if(JSON.stringify(card)===JSON.stringify(baseline.card))return {revision:baseline.revision,unchanged:true};
   const mode=card.playerId===actorGolferId?'own':'group';
   const revision=await saveV4Scorecard({...connection,card,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:card.playerId}:{})});
-  baselines.set(card.id,{card:copy(card),revision});
+  // Confirm the server actually retained this exact card before reporting success.
+  const confirmed=await readV4Scorecard({...connection,cardId:card.id});
+  if(!confirmed||confirmed.revision!==revision||JSON.stringify(confirmed.card)!==JSON.stringify(card)){
+   baselines.delete(card.id);
+   throw new ScorecardConflictError();
+  }
+  baselines.set(card.id,{card:copy(confirmed.card),revision});
   return {revision,unchanged:false};
   }finally{inFlight.delete(card.id)}
  }

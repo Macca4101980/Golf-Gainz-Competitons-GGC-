@@ -434,5 +434,22 @@ async function loadProfile(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/pr
 async function saveProfile(token,p){const r=await fetch(`${SUPA_URL}/rest/v1/profiles`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(p)});if(!r.ok)throw Error(await r.text())}
 async function markPasskey(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({passkey_enabled:true,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text())}
 function readAuth(){try{return JSON.parse(localStorage.getItem('ggc-auth'))}catch{return null}}function writeAuth(a){localStorage.setItem('ggc-auth',JSON.stringify(a))}function clearAuth(){localStorage.removeItem('ggc-auth')}async function restoreAuth(){const a=readAuth();if(!a)return null;if(a.expires_at&&Date.now()/1000<a.expires_at-60)return a;if(!a.refresh_token){clearAuth();return null}try{const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:a.refresh_token})});const n=await r.json();if(!r.ok||!n.access_token)throw Error();writeAuth(n);return n}catch{clearAuth();return null}}
-async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();return a[0]?.payload}async function saveCloud(s,set,token){set('Saving…');try{const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify({id:'main',payload:s,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text());set('Cloud saved')}catch{set('Cloud save failed')}}
+// Legacy cloud write guard: opt-in only. Compare-and-swap prevents stale tabs/devices overwriting newer state.
+let cloudRevision=null;
+async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload,updated_at`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();if(a[0])cloudRevision=a[0].updated_at;return a[0]?.payload}
+async function saveCloud(s,set,token){
+ set('Saving…');
+ try{
+  if(import.meta.env.VITE_GGC_CAS_WRITES==='true'){
+   if(!cloudRevision){set('Cloud save blocked — reload cloud first');return}
+   const previous=cloudRevision;
+   const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&updated_at=eq.${encodeURIComponent(previous)}&select=updated_at`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({payload:s,updated_at:new Date().toISOString()})});
+   if(!r.ok)throw Error(await r.text());
+   const rows=await r.json();
+   if(rows.length!==1){set('Cloud conflict — newer data exists. Reload before saving.');return}
+   cloudRevision=rows[0].updated_at;set('Cloud saved');return;
+  }
+  const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify({id:'main',payload:s,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text());set('Cloud saved');
+ }catch{set('Cloud save failed')}
+}
 createRoot(document.getElementById('root')).render(<App/>);

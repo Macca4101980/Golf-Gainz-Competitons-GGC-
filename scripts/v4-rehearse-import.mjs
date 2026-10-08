@@ -18,7 +18,15 @@ if(!['localhost','127.0.0.1','::1'].includes(url.hostname)){
  console.error('Refusing non-local database host');process.exit(2);
 }
 const raw=JSON.parse(fs.readFileSync(file,'utf8'));
-const state=raw.payload??raw;
+// A production backup export may be a single row or an array containing one row.
+const snapshot=Array.isArray(raw)?(raw.length===1?raw[0]:null):raw;
+if(!snapshot||typeof snapshot!=='object'){
+ console.error('Refusing rehearsal: expected one backup snapshot object');process.exit(2);
+}
+const state=snapshot.payload??snapshot;
+if(!state||typeof state!=='object'||Array.isArray(state)||!Array.isArray(state.players)||!Array.isArray(state.societies)||!Array.isArray(state.comps)||!Array.isArray(state.cards)){
+ console.error('Refusing rehearsal: snapshot missing required players, societies, comps or cards arrays');process.exit(2);
+}
 const excludedGroupIds=(process.env.GGC_V4_EXCLUDED_GROUP_IDS??'').split(',').map(x=>x.trim()).filter(Boolean);
 const requestedExclusions=new Set(excludedGroupIds);
 const matchedExclusions=new Set((state.societies??[]).filter(g=>requestedExclusions.has(String(g.id))).map(g=>String(g.id)));

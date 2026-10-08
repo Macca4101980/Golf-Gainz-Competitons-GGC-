@@ -5,6 +5,7 @@ export async function persistV4Scorecard({baseUrl,apiKey,accessToken,card,actorG
  if(!actorGolferId||!card?.id)throw Error('Claimed golfer and scorecard required');
  const connection={baseUrl,apiKey,accessToken,fetcher};
  const existing=await readV4Scorecard({...connection,cardId:card.id});
+ if(!existing&&baselineCard)throw new ScorecardConflictError();
  if(existing){
   if(existing.card?.id!==card.id||existing.card?.compId!==card.compId||existing.card?.societyId!==card.societyId||existing.card?.playerId!==card.playerId)throw Error('Existing scorecard identity mismatch');
   // Never silently overwrite a scorecard whose contents changed on another device.

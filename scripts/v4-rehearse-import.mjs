@@ -88,5 +88,7 @@ try{
  }
  // A rehearsal is always rolled back. No live state is changed or stored.
  await client.query('rollback');
- console.log(JSON.stringify({...report,transaction:'ROLLED_BACK',verifiedScorecardContents:storedCards.rows.length,databaseCounts:counts.rows[0]},null,2));
+ const afterRollback=await client.query("select (select count(*)::int from public.ggc_golfers) golfers,(select count(*)::int from public.ggc_groups) groups,(select count(*)::int from public.ggc_memberships) memberships,(select count(*)::int from public.ggc_competition_scope_v4) competition_scopes,(select count(*)::int from public.ggc_scorecards_v4) scorecards");
+ if(Object.values(afterRollback.rows[0]).some(n=>n!==0))throw Error('Rollback verification failed: V4 tables are not empty');
+ console.log(JSON.stringify({...report,transaction:'ROLLED_BACK',rollbackVerified:true,verifiedScorecardContents:storedCards.rows.length,databaseCounts:counts.rows[0]},null,2));
 }catch(e){await client.query('rollback');throw e;}finally{await client.end();}

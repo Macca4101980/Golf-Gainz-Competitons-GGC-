@@ -50,3 +50,35 @@ test('weekly countback prefers better back nine when totals tie',()=>{
  assert.equal(rows[0].teamId,'back');
  assert.equal(rows[0].points,36);
 });
+
+test('46-point team round cuts five shots total, split equally, beginning the following week',()=>{
+ // 10 holes with birdies (3 pts) and 8 holes with pars (2 pts) = 46.
+ const strong=[...Array(10).fill(3),...Array(8).fill(4)];
+ const state={...base,comps:[week(1),week(2)],cards:[
+  {...card('a',1,4),gross:strong},
+  card('a',2,4),card('b',2,4)
+ ]};
+ const result=winterLeagueTable(league,state).table[0];
+ assert.equal(result.weeks[0].points,46);
+ assert.equal(result.weeks[0].beforeAdjustments.a,0);
+ assert.equal(result.weeks[0].beforeAdjustments.b,0);
+ assert.equal(result.weeks[0].afterAdjustments.a,-2.5);
+ assert.equal(result.weeks[0].afterAdjustments.b,-2.5);
+ assert.equal(result.weeks[1].beforeAdjustments.a,-2.5);
+ assert.equal(result.weeks[1].beforeAdjustments.b,-2.5);
+ assert.equal(result.finalAdjustments.a,-2.5);
+ assert.equal(result.finalAdjustments.b,-2.5);
+});
+test('best eight of ten discards two lowest weekly results without cancelling weeks',()=>{
+ const comps=Array.from({length:10},(_,i)=>({...week(i+1),starts:'2026-11-'+String(i+1).padStart(2,'0')}));
+ const scores=[36,36,36,36,36,36,36,36,18,0];
+ const cards=comps.map((c,i)=>({...card('a',i+1,4),gross:i===9?Array(18).fill(7):Array(18).fill(i===8?5:4)}));
+ const noCuts={...league,handicapSettings:{...league.handicapSettings,mode:'fixed'}};
+ const result=winterLeagueTable(noCuts,{...base,comps,cards});
+ assert.equal(result.bestCount,8);
+ assert.equal(result.table[0].played,10);
+ assert.equal(result.table[0].counting.length,8);
+ assert.equal(result.table[0].total,288);
+ assert.equal(result.table[0].countingIds.has('week9'),false);
+ assert.equal(result.table[0].countingIds.has('week10'),false);
+});

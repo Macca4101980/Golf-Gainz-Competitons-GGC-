@@ -35,3 +35,10 @@ test('scoped read handles missing and denied cards without exposing data',async(
  assert.equal(await readV4Scorecard({...base,cardId:'missing',fetcher:async()=>({ok:true,json:async()=>[]})}),null);
  await assert.rejects(readV4Scorecard({...base,cardId:'secret',fetcher:async()=>({ok:false,status:403})}),/read rejected/);
 });
+
+test('scoped read refuses wrong card identity and nonpositive revisions',async()=>{
+ const fetcher=async(_url,opts)=>({ok:true,json:async()=>[{card:{...card,id:'another-card'},revision:4}]});
+ await assert.rejects(readV4Scorecard({...base,cardId:'card-1',fetcher}),/identity returned/);
+ await assert.rejects(readV4Scorecard({...base,cardId:'card-1',fetcher:async()=>({ok:true,json:async()=>[{card,revision:0}]})}),/Invalid scorecard revision/);
+ await assert.rejects(readV4Scorecard({...base,cardId:'card-1',fetcher:async()=>({ok:true,json:async()=>[{card:null,revision:3}]})}),/identity returned/);
+});

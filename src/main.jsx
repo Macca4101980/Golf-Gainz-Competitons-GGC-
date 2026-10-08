@@ -437,11 +437,21 @@ function readAuth(){try{return JSON.parse(localStorage.getItem('ggc-auth'))}catc
 // V4 cloud writes use the server-side compare-and-swap RPC only. Never fall back to an unrestricted upsert.
 // Retain the attempted payload on conflict so it can be recovered rather than silently lost.
 let cloudRevision=null;
-let pendingCloudSave=null;
+// Keep the latest failed attempt in session storage so a page refresh does not erase it.
+// Do not automatically replay a stale whole-state snapshot: it could overwrite newer scores.
+const PENDING_CLOUD_KEY='ggc-v4-pending-cloud-save';
+function persistPendingCloudSave(payload){
+ try{sessionStorage.setItem(PENDING_CLOUD_KEY,JSON.stringify({payload,savedAt:new Date().toISOString()}));return true}catch{return false}
+}
+function readPendingCloudSave(){try{return JSON.parse(sessionStorage.getItem(PENDING_CLOUD_KEY)||'null')}catch{return null}}
+function clearPendingCloudSave(){try{sessionStorage.removeItem(PENDING_CLOUD_KEY)}catch{}}
+let pendingCloudSave=readPendingCloudSave()?.payload||null;
 async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload,updated_at`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();if(a[0])cloudRevision=a[0].updated_at;return a[0]?.payload}
 async function saveCloud(s,set,token){
  set('Saving…');
  pendingCloudSave=s;
+ const persisted=persistPendingCloudSave(s);
+ if(!persisted){set('Cloud save blocked — could not protect unsaved changes on this device');return false}
  try{
   if(!cloudRevision){set('Cloud save blocked — load cloud first; local changes retained');return false}
   const expected=cloudRevision;
@@ -449,7 +459,7 @@ async function saveCloud(s,set,token){
   if(!r.ok){if(r.status===409||r.status===400){set('Cloud conflict — your changes are retained on this device; reload cloud before retrying');return false}throw Error(await r.text())}
   const revision=await r.json();if(typeof revision!=='string'||!revision)throw Error('Missing server revision');
   cloudRevision=revision;
-  if(pendingCloudSave===s)pendingCloudSave=null;
+  if(pendingCloudSave===s){pendingCloudSave=null;clearPendingCloudSave()}
   set('Cloud saved');return true;
  }catch{set('Cloud save failed — local changes retained');return false}
 }

@@ -127,3 +127,17 @@ test('draft edited while save is in flight does not invalidate confirmed submitt
  assert.equal(remote.gross[0],3);
  assert.equal(opened.card.gross[0],2);
 });
+
+test('failed save invalidates baseline because remote commit may have succeeded',async()=>{
+ let revision=2,remote=structuredClone(original),writes=0;
+ const fetcher=async(url)=>{
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  writes++;throw Error('Connection lost after request');
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ await assert.rejects(session.save(opened.card),/Connection lost/);
+ await assert.rejects(session.save(opened.card),/Open the server scorecard/);
+ assert.equal(writes,1);
+ const reopened=await session.open('c1');assert.equal(reopened.revision,2);
+});

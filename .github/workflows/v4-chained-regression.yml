@@ -1,0 +1,52 @@
+name: V4 Chained Regression
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'scripts/**'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - '.github/workflows/v4-chained-regression.yml'
+  workflow_dispatch:
+jobs:
+  unit-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-package-lock --ignore-scripts
+      - name: Stage 1 - scoring, Winter League, group formats and security unit regression
+        run: npm test
+      - name: Stage 2 - production bundle build
+        run: npm run build
+  isolated-postgres:
+    needs: unit-and-build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ggc_v4_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ggc_v4_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock --ignore-scripts pg
+      - name: Stage 3 - isolated PostgreSQL migration, scoped RPC and rollback regression
+        run: node test/v4-postgres-integration.mjs
+  gate:
+    needs: [unit-and-build, isolated-postgres]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Automated stages passed. Real protected-backup rehearsal, multi-device live checks and production approval remain separate manual gates."

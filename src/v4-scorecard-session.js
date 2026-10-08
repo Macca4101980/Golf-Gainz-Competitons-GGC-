@@ -34,7 +34,14 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
   if(!current||current.revision!==baseline.revision||!same(current.card,baseline.card))throw new ScorecardConflictError();
   if(same(submitted,baseline.card))return {revision:baseline.revision,unchanged:true};
   const mode=submitted.playerId===actorGolferId?'own':'group';
-  const revision=await saveV4Scorecard({...connection,card:submitted,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:submitted.playerId}:{})});
+  let revision;
+  try{
+   revision=await saveV4Scorecard({...connection,card:submitted,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:submitted.playerId}:{})});
+  }catch(error){
+   // A network failure may happen after the server commits. Require a fresh open.
+   baselines.delete(card.id);
+   throw error;
+  }
   // Confirm the server actually retained this exact card before reporting success.
   const confirmed=await readV4Scorecard({...connection,cardId:card.id});
   if(!confirmed||confirmed.revision!==revision||!same(confirmed.card,submitted)){

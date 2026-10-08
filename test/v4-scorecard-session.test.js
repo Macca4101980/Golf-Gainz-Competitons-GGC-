@@ -36,3 +36,19 @@ test('changing card identity is forbidden',async()=>{
  const f=fixture();await f.session.open('c1');
  await assert.rejects(f.session.save({...original,playerId:'other'}),/identity changed/);assert.equal(f.get().writes,0);
 });
+
+test('overlapping saves on one device cannot race each other',async()=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve});
+ let revision=1,writes=0,remote=structuredClone(original);
+ const fetcher=async(url,opts)=>{
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  writes++;await gate;remote=JSON.parse(opts.body).p_card;revision++;
+  return {ok:true,json:async()=>revision};
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ const first=session.save(opened.card);
+ await assert.rejects(session.save({...opened.card,gross:[2,5]}),/already in progress/);
+ release();await first;assert.equal(writes,1);assert.deepEqual(remote.gross,[3,5]);
+});

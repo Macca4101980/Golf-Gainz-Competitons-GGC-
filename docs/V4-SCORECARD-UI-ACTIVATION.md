@@ -1,6 +1,6 @@
 # V4 scorecard UI activation gates
 
-The `VITE_GGC_V4_SCOPED_SCORECARD_UI` flag enables a **read-only** comparison control on the group scoring screen. It does not sync or submit scores.
+The `VITE_GGC_V4_SCOPED_SCORECARD_UI` flag enables development-only secure scorecard checks and an opt-in **SUBMIT ROUND** path that writes individual scorecards through the scoped RPCs after server baselines have been opened. It must remain OFF in production. Other scoring/editing paths are still legacy and unsafe for a V4 cutover.
 
 ## Before enabling writes
 1. Rehearse the protected real production backup in an isolated database. Reconcile golfer IDs, group IDs, competition scope and card IDs; do not publish the backup to CI.
@@ -12,4 +12,4 @@ The `VITE_GGC_V4_SCOPED_SCORECARD_UI` flag enables a **read-only** comparison co
 7. Replace all score submission and editing paths, including group submit, restart, individual cards and league scoring. Block or safely replace the legacy whole-state save path.
 8. Run live-browser two-device tests, full format regression, WL 25/26 and 26/27 scoring/handicap regression, and rollback rehearsal before production cutover.
 
-The staged scorecard adapter (`src/v4-scorecard-persist.js`) is intentionally **not called** from the scoring screen yet. The read-only UI check can identify mismatches but cannot resolve them automatically.
+The opt-in group submit path uses `createV4ScorecardSession` directly. It verifies each card separately, stops on the first failure, does not report success for unconfirmed cards, and does not automatically retry partially completed submissions. It does not yet reconcile successful server submissions back into the local UI. The standalone `src/v4-scorecard-persist.js` adapter is not called by this path. **This is a development-only integration milestone, not a production-ready scoring implementation.**

@@ -13,3 +13,7 @@ The `VITE_GGC_V4_SCOPED_SCORECARD_UI` flag enables development-only secure score
 8. Run live-browser two-device tests, full format regression, WL 25/26 and 26/27 scoring/handicap regression, and rollback rehearsal before production cutover.
 
 The opt-in group submit path uses `createV4ScorecardSession` directly. It verifies each card separately, stops on the first failure, does not report success for unconfirmed cards, and does not automatically retry partially completed submissions. It does not yet reconcile successful server submissions back into the local UI. The standalone `src/v4-scorecard-persist.js` adapter is not called by this path. **This is a development-only integration milestone, not a production-ready scoring implementation.**
+
+## Legacy-write isolation in test mode
+
+With `VITE_GGC_V4_SCOPED_SCORECARD_UI=true`, the React state autosave effect does not call `saveCloud`, and direct `saveCloud` invocations return without writing whole-state data. Local browser state still updates for display and pending edits. **Other competition-management changes made in this mode are not cloud-saved.** Do not enable this flag in production; complete scoped persistence for every mutation path before cutover.

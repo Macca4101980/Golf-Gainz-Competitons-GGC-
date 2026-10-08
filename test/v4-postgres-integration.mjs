@@ -58,7 +58,17 @@ try {
   const bad=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
   assert.equal(bad.status,1,bad.stderr+' '+bad.stdout);
   assert.match(bad.stdout,/unresolved_reference/);
-  console.log('PASS: local-only snapshot rehearsal, count verification, rollback, unresolved-reference refusal');
+  const excluded={...env,GGC_V4_EXCLUDED_GROUP_IDS:'teat'};
+  fixture.societies.push({id:'teat',name:'Teat',members:['missing-owner'],admins:['missing-owner'],ownerId:'missing-owner'});
+  fixture.societies[0].members=['p1'];
+  fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
+  const without=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
+  assert.equal(without.status,1,without.stderr+' '+without.stdout);
+  const withExclusion=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:excluded,encoding:'utf8'});
+  assert.equal(withExclusion.status,0,withExclusion.stderr+' '+withExclusion.stdout);
+  assert.match(withExclusion.stdout,/"name": "Teat"/);
+  assert.match(withExclusion.stdout,/ROLLED_BACK/);
+  console.log('PASS: local-only snapshot rehearsal, count verification, rollback, unresolved-reference refusal, explicit Teat exclusion');
  } finally {fs.unlinkSync(file);}
 
 } finally {await client.end()}

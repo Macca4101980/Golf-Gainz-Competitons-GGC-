@@ -4,6 +4,7 @@
 create or replace function public.ggc_save_state_cas(p_expected_revision timestamptz,p_payload jsonb)
 returns timestamptz language plpgsql security definer set search_path=public,pg_temp as $$
 declare v_revision timestamptz;
+declare v_current jsonb;
 begin
  if auth.uid() is null then raise exception 'Authentication required' using errcode='28000'; end if;
  if p_expected_revision is null or p_payload is null or jsonb_typeof(p_payload)<>'object'
@@ -14,6 +15,14 @@ begin
  or jsonb_typeof(p_payload->'comps')<>'array'
  or jsonb_typeof(p_payload->'cards')<>'array'
  then raise exception 'Incomplete application state' using errcode='22023'; end if;
+ -- Fail closed on accidental whole-collection wipes caused by partial/stale client state.
+ select payload into v_current from public.ggc_state where id='main' and updated_at=p_expected_revision for update;
+ if v_current is null then raise exception 'State conflict: reload required' using errcode='40001'; end if;
+ if (jsonb_array_length(v_current->'players')>0 and jsonb_array_length(p_payload->'players')=0)
+ or (jsonb_array_length(v_current->'societies')>0 and jsonb_array_length(p_payload->'societies')=0)
+ or (jsonb_array_length(v_current->'comps')>0 and jsonb_array_length(p_payload->'comps')=0)
+ or (jsonb_array_length(v_current->'cards')>0 and jsonb_array_length(p_payload->'cards')=0)
+ then raise exception 'Whole-collection deletion blocked' using errcode='22023'; end if;
  update public.ggc_state
  set payload=p_payload,updated_at=clock_timestamp()
  where id='main' and updated_at=p_expected_revision

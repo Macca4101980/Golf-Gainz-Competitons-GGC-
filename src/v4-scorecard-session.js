@@ -7,6 +7,8 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
  const inFlight=new Set();
  const opening=new Set();
  const copy=value=>JSON.parse(JSON.stringify(value));
+ const sortJson=value=>Array.isArray(value)?value.map(sortJson):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,sortJson(value[key])])):value;
+ const same=(a,b)=>JSON.stringify(sortJson(a))===JSON.stringify(sortJson(b));
  async function open(cardId){
   if(!cardId)throw Error('Card ID required');
   if(inFlight.has(cardId)||opening.has(cardId))throw Error('Scorecard operation already in progress');
@@ -27,13 +29,13 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
   if(!baseline)throw Error('Open the server scorecard before saving');
   if(card.id!==baseline.card.id||card.compId!==baseline.card.compId||card.societyId!==baseline.card.societyId||card.playerId!==baseline.card.playerId)throw Error('Scorecard identity changed');
   const current=await readV4Scorecard({...connection,cardId:card.id});
-  if(!current||current.revision!==baseline.revision||JSON.stringify(current.card)!==JSON.stringify(baseline.card))throw new ScorecardConflictError();
-  if(JSON.stringify(card)===JSON.stringify(baseline.card))return {revision:baseline.revision,unchanged:true};
+  if(!current||current.revision!==baseline.revision||!same(current.card,baseline.card))throw new ScorecardConflictError();
+  if(same(card,baseline.card))return {revision:baseline.revision,unchanged:true};
   const mode=card.playerId===actorGolferId?'own':'group';
   const revision=await saveV4Scorecard({...connection,card,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:card.playerId}:{})});
   // Confirm the server actually retained this exact card before reporting success.
   const confirmed=await readV4Scorecard({...connection,cardId:card.id});
-  if(!confirmed||confirmed.revision!==revision||JSON.stringify(confirmed.card)!==JSON.stringify(card)){
+  if(!confirmed||confirmed.revision!==revision||!same(confirmed.card,card)){
    baselines.delete(card.id);
    throw new ScorecardConflictError();
   }

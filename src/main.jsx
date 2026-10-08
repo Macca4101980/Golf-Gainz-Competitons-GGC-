@@ -454,6 +454,11 @@ async function saveCloud(s,set,token){
  if(!persisted){set('Cloud save blocked — could not protect unsaved changes on this device');return false}
  try{
   if(!cloudRevision){set('Cloud save blocked — load cloud first; local changes retained');return false}
+  // Fail closed: this whole-state RPC is server-only after V4 cutover.
+  // Browser writes require scoped, authenticated scorecard APIs instead.
+  if(import.meta.env.VITE_GGC_ENABLE_BROWSER_WHOLE_STATE_CAS!=='true'){
+   set('Cloud save held — secure scorecard sync is not yet activated; local changes retained');return false;
+  }
   const expected=cloudRevision;
   const r=await fetch(`${SUPA_URL}/rest/v1/rpc/ggc_save_state_cas`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({p_expected_revision:expected,p_payload:s})});
   if(!r.ok){if(r.status===409||r.status===400){set('Cloud conflict — your changes are retained on this device; reload cloud before retrying');return false}throw Error(await r.text())}

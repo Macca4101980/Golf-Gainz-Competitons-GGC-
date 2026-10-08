@@ -1,12 +1,13 @@
 -- STAGED ONLY: apply at controlled cutover, never during shadow-mode rollout.
--- Blocks old client POST/PATCH to ggc_state; only authenticated CAS RPC may update.
+-- Blocks old client POST/PATCH to ggc_state. SECURITY HOLD: whole-state RPC is restricted to service_role only.
+-- Ordinary authenticated users must use scoped, server-authorised operations; do NOT grant them whole-state replacement.
 -- Ensure public.ggc_state(id text primary key, payload jsonb, updated_at timestamptz) exists.
 create or replace function public.ggc_save_state_cas(p_expected_revision timestamptz,p_payload jsonb)
 returns timestamptz language plpgsql security definer set search_path=public,pg_temp as $$
 declare v_revision timestamptz;
 declare v_current jsonb;
 begin
- if auth.uid() is null then raise exception 'Authentication required' using errcode='28000'; end if;
+ if coalesce(auth.role(),'') <> 'service_role' then raise exception 'Service role required for whole-state replacement' using errcode='42501'; end if;
  if p_expected_revision is null or p_payload is null or jsonb_typeof(p_payload)<>'object'
  then raise exception 'Invalid state or revision' using errcode='22023'; end if;
  -- Reject missing/empty structural arrays before any write.
@@ -30,7 +31,8 @@ begin
  if v_revision is null then raise exception 'State conflict: reload required' using errcode='40001'; end if;
  return v_revision;
 end $$;
-revoke all on function public.ggc_save_state_cas(timestamptz,jsonb) from public,anon;
-grant execute on function public.ggc_save_state_cas(timestamptz,jsonb) to authenticated;
+revoke all on function public.ggc_save_state_cas(timestamptz,jsonb) from public,anon,authenticated;
+grant execute on function public.ggc_save_state_cas(timestamptz,jsonb) to service_role;
 -- CUTOVER ENFORCEMENT: old app builds can no longer overwrite newer data.
+-- IMPORTANT: This SQL is NOT a deployable client cutover until scoped write RPCs replace browser whole-state writes.
 revoke insert,update,delete on public.ggc_state from anon,authenticated;

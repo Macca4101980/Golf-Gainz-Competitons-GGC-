@@ -383,14 +383,15 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
    const localCards=state.cards.filter(x=>x.compId===c.id&&ids.includes(x.playerId));
    if(localCards.length!==ids.length||localCards.some(x=>!v4Drafts[x.id])){setV4Sync('Submission blocked: server card baseline missing');return}
    const now=new Date().toISOString();
-   const submittedCards=localCards.map(local=>{
-    const baseline=v4Drafts[local.id];
-    if(local.compId!==baseline.compId||local.societyId!==baseline.societyId||local.playerId!==baseline.playerId)throw Error('Card identity mismatch');
-    return {...baseline,gross:[...local.gross],submitted:true,submittedAt:local.submittedAt||now,updatedAt:now,lastEditedBy:me.id};
-   });
-   setV4Sync('Submitting secure cards individually…');
    const saved=[];
+   let submittedCards=[];
    try{
+    submittedCards=localCards.map(local=>{
+     const baseline=v4Drafts[local.id];
+     if(local.compId!==baseline.compId||local.societyId!==baseline.societyId||local.playerId!==baseline.playerId)throw Error('Card identity mismatch');
+     return {...baseline,gross:[...local.gross],submitted:true,submittedAt:local.submittedAt||now,updatedAt:now,lastEditedBy:me.id};
+    });
+    setV4Sync('Submitting secure cards individually…');
     for(const card of submittedCards){
      await v4Session.save(card);
      saved.push(card);

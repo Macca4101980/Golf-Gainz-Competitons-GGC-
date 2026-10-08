@@ -4,6 +4,11 @@ import fs from 'node:fs';
 import pg from 'pg';
 import {planV4Migration} from './v4-migration-plan.mjs';
 import {planV4ScorecardMigration} from './v4-scorecard-migration-plan.mjs';
+function sortJson(value){
+ if(Array.isArray(value))return value.map(sortJson);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,sortJson(value[key])]));
+ return value;
+}
 const file=process.argv[2];
 if(!file||process.env.GGC_V4_TEST_DATABASE!=='1'||!process.env.DATABASE_URL){
  console.error('Requires snapshot file, DATABASE_URL and GGC_V4_TEST_DATABASE=1');process.exit(2);
@@ -42,7 +47,19 @@ try{
  for(const k of ['golfers','groups','memberships','competitionScopes','scorecards']){
   if(counts.rows[0][k==='competitionScopes'?'competition_scopes':k]!==report.counts[k])throw Error('Count mismatch: '+k);
  }
+ // Verify each stored card's identity and complete JSON content, not just row totals.
+ // This catches a successful-looking migration that silently changed a golfer's scores.
+ const storedCards=await client.query('select id,comp_id,group_id,golfer_id,revision,card from public.ggc_scorecards_v4 order by id');
+ const expectedCards=new Map(scorePlan.cards.map(card=>[card.id,card]));
+ if(storedCards.rows.length!==expectedCards.size)throw Error('Scorecard row mismatch');
+ for(const row of storedCards.rows){
+  const expected=expectedCards.get(row.id);
+  if(!expected||row.comp_id!==expected.comp_id||row.group_id!==expected.group_id
+   ||row.golfer_id!==expected.golfer_id||Number(row.revision)!==expected.revision
+   ||JSON.stringify(sortJson(row.card))!==JSON.stringify(sortJson(expected.card)))
+   throw Error('Scorecard content mismatch: '+row.id);
+ }
  // A rehearsal is always rolled back. No live state is changed or stored.
  await client.query('rollback');
- console.log(JSON.stringify({...report,transaction:'ROLLED_BACK',databaseCounts:counts.rows[0]},null,2));
+ console.log(JSON.stringify({...report,transaction:'ROLLED_BACK',verifiedScorecardContents:storedCards.rows.length,databaseCounts:counts.rows[0]},null,2));
 }catch(e){await client.query('rollback');throw e;}finally{await client.end();}

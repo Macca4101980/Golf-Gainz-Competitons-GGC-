@@ -79,3 +79,16 @@ test('overlapping opens cannot overwrite a baseline with out-of-order responses'
  await assert.rejects(session.open('c1'),/already in progress/);
  release();await opening;
 });
+
+test('save refuses success when server readback does not match submitted card',async()=>{
+ let remote=structuredClone(original),revision=2,writes=0;
+ const fetcher=async(url)=>{
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  writes++;revision++;return {ok:true,json:async()=>revision};
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ await assert.rejects(session.save(opened.card),ScorecardConflictError);
+ assert.equal(writes,1);
+ await assert.rejects(session.save(opened.card),/Open the server scorecard/);
+});

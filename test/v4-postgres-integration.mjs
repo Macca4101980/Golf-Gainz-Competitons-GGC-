@@ -174,6 +174,7 @@ try {
   assert.equal(matching.status,0,matching.stderr+' '+matching.stdout);
   assert.match(matching.stdout,/"verifiedScorecardContents": 1/);
   assert.match(matching.stdout,/"rollbackVerified": true/);
+  assert.match(matching.stdout,/"verifiedNormalizedContents": true/);
   const good=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
   assert.equal(good.status,0,good.stderr+' '+good.stdout);
   assert.match(good.stdout,/ROLLED_BACK/);

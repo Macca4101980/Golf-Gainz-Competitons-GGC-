@@ -92,3 +92,18 @@ test('save refuses success when server readback does not match submitted card',a
  assert.equal(writes,1);
  await assert.rejects(session.save(opened.card),/Open the server scorecard/);
 });
+
+test('scorecard save tolerates reordered JSON object keys returned by PostgreSQL',async()=>{
+ let revision=2,remote=structuredClone(original);
+ const reverseKeys=obj=>Object.fromEntries(Object.entries(obj).reverse());
+ const fetcher=async(url,opts)=>{
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:reverseKeys(structuredClone(remote)),revision}]};
+  remote=JSON.parse(opts.body).p_card;revision++;
+  return {ok:true,json:async()=>revision};
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ const saved=await session.save(opened.card);
+ assert.equal(saved.revision,3);
+ assert.equal(saved.unchanged,false);
+});

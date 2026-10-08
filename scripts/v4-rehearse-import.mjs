@@ -70,6 +70,19 @@ try{
  for(const card of scorePlan.cards){
   await client.query('insert into public.ggc_scorecards_v4(id,comp_id,group_id,golfer_id,card,revision) values($1,$2,$3,$4,$5::jsonb,$6)',[card.id,card.comp_id,card.group_id,card.golfer_id,JSON.stringify(card.card),card.revision]);
  }
+ // Verify the normalized records themselves, not only aggregate counts.
+ const storedGolfers=await client.query('select id,display_name,placeholder from public.ggc_golfers order by id');
+ const storedGroups=await client.query('select id,name from public.ggc_groups order by id');
+ const storedMemberships=await client.query('select group_id,golfer_id,role,status from public.ggc_memberships order by group_id,golfer_id');
+ const storedScopes=await client.query('select comp_id,group_id from public.ggc_competition_scope_v4 order by comp_id');
+ const verifyRows=(actual,expected,label)=>{
+  const stable=rows=>JSON.stringify(rows.map(sortJson).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));
+  if(stable(actual)!==stable(expected))throw Error('Migrated '+label+' content mismatch');
+ };
+ verifyRows(storedGolfers.rows,plan.golfers.map(g=>({id:g.id,display_name:g.display_name,placeholder:g.placeholder})),'golfers');
+ verifyRows(storedGroups.rows,plan.groups,'groups');
+ verifyRows(storedMemberships.rows,plan.memberships,'memberships');
+ verifyRows(storedScopes.rows,scorePlan.scope,'competition scopes');
  const counts=await client.query("select (select count(*)::int from public.ggc_golfers) golfers,(select count(*)::int from public.ggc_groups) groups,(select count(*)::int from public.ggc_memberships) memberships,(select count(*)::int from public.ggc_competition_scope_v4) competition_scopes,(select count(*)::int from public.ggc_scorecards_v4) scorecards");
  for(const k of ['golfers','groups','memberships','competitionScopes','scorecards']){
   if(counts.rows[0][k==='competitionScopes'?'competition_scopes':k]!==report.counts[k])throw Error('Count mismatch: '+k);
@@ -90,5 +103,5 @@ try{
  await client.query('rollback');
  const afterRollback=await client.query("select (select count(*)::int from public.ggc_golfers) golfers,(select count(*)::int from public.ggc_groups) groups,(select count(*)::int from public.ggc_memberships) memberships,(select count(*)::int from public.ggc_competition_scope_v4) competition_scopes,(select count(*)::int from public.ggc_scorecards_v4) scorecards");
  if(Object.values(afterRollback.rows[0]).some(n=>n!==0))throw Error('Rollback verification failed: V4 tables are not empty');
- console.log(JSON.stringify({...report,transaction:'ROLLED_BACK',rollbackVerified:true,verifiedScorecardContents:storedCards.rows.length,databaseCounts:counts.rows[0]},null,2));
+ console.log(JSON.stringify({...report,transaction:'ROLLED_BACK',rollbackVerified:true,verifiedNormalizedContents:true,verifiedScorecardContents:storedCards.rows.length,databaseCounts:counts.rows[0]},null,2));
 }catch(e){await client.query('rollback');throw e;}finally{await client.end();}

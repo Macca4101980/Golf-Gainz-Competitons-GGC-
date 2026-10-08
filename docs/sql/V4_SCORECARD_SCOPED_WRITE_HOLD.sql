@@ -47,7 +47,7 @@ begin
  return v_revision;
 end $$;
 revoke all on function public.ggc_save_my_scorecard_v4(text,text,text,bigint,jsonb) from public,anon;
-grant execute on function public.ggc_save_my_scorecard_v4(text,text,bigint,jsonb) to authenticated;
+grant execute on function public.ggc_save_my_scorecard_v4(text,text,text,bigint,jsonb) to authenticated;
 
 -- Scoped delegated entry: only an active admin/owner of the scorecard's group.
 -- The target golfer must be an active member of that same group.

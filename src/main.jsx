@@ -440,6 +440,13 @@ async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_sta
 async function saveCloud(s,set,token){
  set('Saving…');
  try{
+  if(import.meta.env.VITE_GGC_SERVER_CAS==='true'){
+   if(!cloudRevision){set('Cloud save blocked — reload cloud first');return}
+   const r=await fetch(`${SUPA_URL}/rest/v1/rpc/ggc_save_state_cas`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({p_expected_revision:cloudRevision,p_payload:s})});
+   if(!r.ok){if(r.status===409||r.status===400){set('Cloud conflict — reload before saving');return}throw Error(await r.text())}
+   const revision=await r.json();if(!revision)throw Error('Missing server revision');
+   cloudRevision=revision;set('Cloud saved');return;
+  }
   if(import.meta.env.VITE_GGC_CAS_WRITES==='true'){
    if(!cloudRevision){set('Cloud save blocked — reload cloud first');return}
    const previous=cloudRevision;

@@ -51,6 +51,9 @@ if(!report.ready){console.log(JSON.stringify(report,null,2));process.exit(1);}
 const client=new pg.Client({connectionString:process.env.DATABASE_URL});
 await client.connect();
 try{
+ // Fail closed on a reused or populated local database. Never mix a rehearsal with existing records.
+ const preflight=await client.query("select (select count(*)::int from public.ggc_golfers) golfers,(select count(*)::int from public.ggc_groups) groups,(select count(*)::int from public.ggc_memberships) memberships,(select count(*)::int from public.ggc_competition_scope_v4) competition_scopes,(select count(*)::int from public.ggc_scorecards_v4) scorecards");
+ if(Object.values(preflight.rows[0]).some(n=>n!==0))throw Error('Refusing rehearsal: local V4 target tables are not empty');
  await client.query('begin');
  for(const g of plan.golfers){
   await client.query('insert into public.ggc_golfers(id,display_name,placeholder) values($1,$2,$3)',[g.id,g.display_name,g.placeholder]);

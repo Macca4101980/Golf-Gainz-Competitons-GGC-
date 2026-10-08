@@ -23,3 +23,26 @@ test('rejects competitions referring to absent groups',()=>{
  const bad=structuredClone(state);bad.comps.push({id:'orphan',societyId:'none'});
  assert.ok(planV4ScorecardMigration(bad).issues.some(x=>x.type==='competition_missing_group'));
 });
+
+test('exclusion cannot hide a card assigned to a different competition',()=>{
+ const bad=structuredClone(state);
+ bad.cards.push({id:'hidden',compId:'c1',societyId:'teat',playerId:'p1'});
+ const plan=planV4ScorecardMigration(bad,{excludedGroupIds:['teat']});
+ assert.equal(plan.ready,false);
+ assert.ok(plan.issues.some(x=>x.type==='excluded_card_scope_mismatch'));
+ assert.ok(!plan.excludedCards.includes('hidden'));
+});
+test('duplicate competition IDs are rejected even across excluded groups',()=>{
+ const bad=structuredClone(state);
+ bad.comps.push({id:'c1',societyId:'teat'});
+ const plan=planV4ScorecardMigration(bad,{excludedGroupIds:['teat']});
+ assert.equal(plan.ready,false);
+ assert.ok(plan.issues.some(x=>x.type==='missing_or_duplicate_competition_id'));
+});
+test('duplicate card IDs cannot be hidden by excluded group',()=>{
+ const bad=structuredClone(state);
+ bad.cards.push({id:'a',compId:'ct',societyId:'teat',playerId:'p2'});
+ const plan=planV4ScorecardMigration(bad,{excludedGroupIds:['teat']});
+ assert.equal(plan.ready,false);
+ assert.ok(plan.issues.some(x=>x.type==='missing_or_duplicate_card_id'));
+});

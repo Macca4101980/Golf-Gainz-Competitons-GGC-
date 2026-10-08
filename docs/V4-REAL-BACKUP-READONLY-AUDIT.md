@@ -10,7 +10,9 @@ No backup payload, golfer names, emails, tokens or scorecard contents are stored
 - No duplicate golfer, group, competition or scorecard IDs.
 - One test group named **Teat**, with one competition and one scorecard.
 - **Teat actual group ID:** `75eea654-ebc2-4e8a-8479-0acaa8a91c2d`. The literal `teat` is **not** its ID.
-- Expected after explicitly excluding that ID: 11 groups, 35 competitions, 47 scorecards; golfer and membership counts require independent validation.
+- Expected after explicitly excluding that ID: **123 golfers, 11 groups, 80 distinct memberships, 35 competitions, 47 scorecards**.
+- Three unresolved membership references exist in the excluded test group; **zero unresolved membership references remain in retained groups**.
+- Zero retained groups or golfers have missing IDs or display names.
 
 ## Isolated rehearsal (not yet completed with protected backup)
 

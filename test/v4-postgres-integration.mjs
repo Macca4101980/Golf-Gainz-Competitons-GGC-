@@ -139,6 +139,26 @@ try {
  const stored=await client.query("select revision,card->'holes' holes from public.ggc_scorecards_v4 where id='sc1'");
  assert.equal(Number(stored.rows[0].revision),2);
  assert.deepEqual(stored.rows[0].holes,[3,5]);
+ // Read visibility: golfer and group admin may read; unrelated golfer cannot.
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[other]);
+ const ownerRead=await client.query("select card,revision from public.ggc_read_scorecard_v4('sc1')");
+ assert.equal(ownerRead.rows.length,1);
+ assert.equal(Number(ownerRead.rows[0].revision),2);
+ await client.query('rollback');
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[uid]);
+ const adminRead=await client.query("select card,revision from public.ggc_read_scorecard_v4('sc1')");
+ assert.equal(adminRead.rows.length,1);
+ await client.query('rollback');
+ await client.query("insert into auth.users values('33333333-3333-4333-8333-333333333333','outsider@example.com',now())");
+ await client.query("insert into public.ggc_golfers(id,display_name,auth_user_id,placeholder) values('outsider','Outsider','33333333-3333-4333-8333-333333333333',false)");
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',true)");
+ const deniedRead=await client.query("select * from public.ggc_read_scorecard_v4('sc1')");
+ assert.equal(deniedRead.rows.length,0);
+ await client.query('rollback');
+ console.log('PASS: scorecard read visible to owner and group admin; hidden from outsider');
  console.log('PASS: scorecard owner save, admin delegated save, member denied, stale revision rejected');
  await client.query('truncate public.ggc_identity_links,public.ggc_claim_invites,public.ggc_memberships,public.ggc_groups,public.ggc_golfers cascade');
  const fixture={players:[{id:'p1',name:'James',placeholder:true},{id:'p2',name:'James',authUserId:uid,placeholder:false}],societies:[{id:'g1',name:'WL',members:['p1'],admins:['p1']}],comps:[{id:'c1'}],cards:[{id:'card1'}],leagues:[{id:'l1'}]};

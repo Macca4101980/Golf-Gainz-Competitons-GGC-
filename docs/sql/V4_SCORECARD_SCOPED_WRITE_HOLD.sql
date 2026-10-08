@@ -9,6 +9,13 @@ create table if not exists public.ggc_scorecards_v4 (
  revision bigint not null default 1,
  updated_at timestamptz not null default now()
 );
+-- Competition-to-group mapping must be verified independently of caller-supplied card JSON.
+create table if not exists public.ggc_competition_scope_v4 (
+ comp_id text primary key,
+ group_id text not null references public.ggc_groups(id)
+);
+alter table public.ggc_competition_scope_v4 enable row level security;
+revoke all on public.ggc_competition_scope_v4 from anon,authenticated;
 create index if not exists ggc_scorecards_v4_golfer_idx on public.ggc_scorecards_v4(golfer_id);
 alter table public.ggc_scorecards_v4 enable row level security;
 revoke all on public.ggc_scorecards_v4 from anon,authenticated;
@@ -33,6 +40,7 @@ begin
  or p_card->>'playerId' is distinct from v_golfer_id
  then raise exception 'Scorecard identity mismatch' using errcode='42501'; end if;
  if not exists(select 1 from public.ggc_memberships m where m.group_id=p_group_id and m.golfer_id=v_golfer_id and m.status='member') then raise exception 'Group membership required' using errcode='42501'; end if;
+ if not exists(select 1 from public.ggc_competition_scope_v4 cs where cs.comp_id=p_comp_id and cs.group_id=p_group_id) then raise exception 'Competition group mismatch' using errcode='42501'; end if;
  if p_expected_revision=0 then
   insert into public.ggc_scorecards_v4(id,comp_id,group_id,golfer_id,card)
   values(p_card_id,p_comp_id,p_group_id,v_golfer_id,p_card)

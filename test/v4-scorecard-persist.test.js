@@ -39,3 +39,23 @@ test('deleted remote card is not silently recreated over a stale baseline',async
  await assert.rejects(persistV4Scorecard({...base,baselineCard:card,baselineRevision:3,fetcher:api.fetcher}),ScorecardConflictError);
  assert.equal(api.calls.length,1);
 });
+
+test('two-device race: first write succeeds, second stale revision is rejected',async()=>{
+ let remote={...card},revision=2;
+ const fetcher=async(url,opts)=>{
+  const p=JSON.parse(opts.body);
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  if(p.p_expected_revision!==revision)return {ok:false,status:409,text:async()=> '40001 conflict'};
+  remote=structuredClone(p.p_card);revision++;
+  return {ok:true,json:async()=>revision};
+ };
+ const first={...card,gross:[3,5]},second={...card,gross:[4,4]};
+ const a=await persistV4Scorecard({...base,card:first,baselineCard:card,baselineRevision:2,fetcher});
+ assert.equal(a.revision,3);
+ await assert.rejects(persistV4Scorecard({...base,card:second,baselineCard:card,baselineRevision:2,fetcher}),ScorecardConflictError);
+ assert.deepEqual(remote.gross,[3,5]);
+});
+test('permission rejection propagates and never reports success',async()=>{
+ const fetcher=async(url)=>url.includes('read_scorecard')?{ok:true,json:async()=>[]}:{ok:false,status:403,text:async()=> 'forbidden'};
+ await assert.rejects(persistV4Scorecard({...base,fetcher}),/rejected \(403\)/);
+});

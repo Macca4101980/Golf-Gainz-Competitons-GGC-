@@ -71,7 +71,8 @@ test('back-nine selection excludes front nine',()=>{
 });
 test('scramble handicap allowance follows 25/20/15/10 weighting of sorted course handicaps',()=>{
  const p=players.map((x,i)=>({...x,hi:[4,8,12,16][i]}));
- const result=groupScore(group,{id:'comp',format:'scramble',course:'course',tee:'white'}, {...state,players:p});
+ const {teamPlayingHandicap,...withoutManualOverride}=group;
+ const result=groupScore(withoutManualOverride,{id:'comp',format:'scramble',course:'course',tee:'white'}, {...state,players:p});
  // 4*.25 + 8*.20 + 12*.15 + 16*.10 = 6
  assert.equal(result.teamHandicap,6);
  assert.equal(result.gross,72);

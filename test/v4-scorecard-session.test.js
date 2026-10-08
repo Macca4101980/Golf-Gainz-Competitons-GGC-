@@ -141,3 +141,24 @@ test('failed save invalidates baseline because remote commit may have succeeded'
  assert.equal(writes,1);
  const reopened=await session.open('c1');assert.equal(reopened.revision,2);
 });
+
+test('post-save read failure invalidates baseline even if write was accepted',async()=>{
+ let revision=2,remote=structuredClone(original),writes=0,failRead=false;
+ const fetcher=async(url,opts)=>{
+  if(url.includes('read_scorecard')){
+   if(failRead)throw Error('Verification connection lost');
+   return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  }
+  writes++;remote=JSON.parse(opts.body).p_card;revision++;failRead=true;
+  return {ok:true,json:async()=>revision};
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ await assert.rejects(session.save(opened.card),/Verification connection lost/);
+ assert.equal(writes,1);
+ await assert.rejects(session.save(opened.card),/Open the server scorecard/);
+ failRead=false;
+ const reopened=await session.open('c1');
+ assert.equal(reopened.revision,3);
+ assert.equal(reopened.card.gross[0],3);
+});

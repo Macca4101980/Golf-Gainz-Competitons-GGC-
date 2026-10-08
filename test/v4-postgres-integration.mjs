@@ -82,6 +82,15 @@ try {
  await client.query("select set_config('request.jwt.claim.sub','',true)");
  await assert.rejects(client.query('select public.ggc_save_state_cas($1,$2::jsonb)',[newRevision,JSON.stringify(base)]),/Authentication required/);
  await client.query('rollback');
+ // Prevent an incomplete client from wiping a previously populated collection.
+ await client.query("update public.ggc_state set payload=$1::jsonb,updated_at='2026-10-08T11:00:00Z' where id='main'",[JSON.stringify({players:[{id:'keep'}],societies:[],comps:[],cards:[]})]);
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[uid]);
+ await assert.rejects(client.query('select public.ggc_save_state_cas($1,$2::jsonb)',['2026-10-08T11:00:00Z',JSON.stringify(base)]),/Whole-collection deletion blocked/);
+ await client.query('rollback');
+ const kept=await client.query("select jsonb_array_length(payload->'players')::int n from public.ggc_state where id='main'");
+ assert.equal(kept.rows[0].n,1);
+ console.log('PASS: accidental populated-collection wipe rejected and existing golfers preserved');
  console.log('PASS: two-device stale revision rejected, original preserved, refreshed save accepted, anonymous CAS rejected');
  console.log('PASS: PostgreSQL schema, token rejection, two-group claim, role preservation, historical identity, idempotent retry, competing account');
  await client.query('truncate public.ggc_identity_links,public.ggc_claim_invites,public.ggc_memberships,public.ggc_groups,public.ggc_golfers cascade');

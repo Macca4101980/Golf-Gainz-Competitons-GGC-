@@ -20,6 +20,13 @@ if(!['localhost','127.0.0.1','::1'].includes(url.hostname)){
 const raw=JSON.parse(fs.readFileSync(file,'utf8'));
 const state=raw.payload??raw;
 const excludedGroupIds=(process.env.GGC_V4_EXCLUDED_GROUP_IDS??'').split(',').map(x=>x.trim()).filter(Boolean);
+const requestedExclusions=new Set(excludedGroupIds);
+const matchedExclusions=new Set((state.societies??[]).filter(g=>requestedExclusions.has(String(g.id))).map(g=>String(g.id)));
+const missingExclusions=excludedGroupIds.filter(id=>!matchedExclusions.has(id));
+if(missingExclusions.length){
+ console.error('Refusing rehearsal: excluded group IDs not found in snapshot: '+missingExclusions.join(','));
+ process.exit(2);
+}
 const plan=planV4Migration(state,{excludedGroupIds});
 const scorePlan=planV4ScorecardMigration(state,{excludedGroupIds});
 const report={ready:plan.ready&&scorePlan.ready,excludedGroups:plan.excludedGroups,excludedScorecards:scorePlan.excludedCards,issues:[...plan.issues,...scorePlan.issues],counts:{golfers:plan.golfers.length,groups:plan.groups.length,memberships:plan.memberships.length,competitionScopes:scorePlan.scope.length,scorecards:scorePlan.cards.length,...plan.preserved}};

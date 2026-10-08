@@ -103,6 +103,11 @@ try {
  // Staged scorecard permission regression: owner, delegate, outsider and stale revision.
  await client.query(fs.readFileSync('docs/sql/V4_SCORECARD_SCOPED_WRITE_HOLD.sql','utf8'));
  await client.query("insert into public.ggc_memberships(group_id,golfer_id,role,status) values('wl26','other','member','member')");
+ await client.query("insert into public.ggc_competition_scope_v4(comp_id,group_id) values('comp1','wl26')");
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[other]);
+ await assert.rejects(client.query('select public.ggc_save_my_scorecard_v4($1,$2,$3,$4,$5::jsonb)',['wrong-comp','comp-other','wl26',0,JSON.stringify({id:'wrong-comp',compId:'comp-other',societyId:'wl26',playerId:'other'})]),/Competition group mismatch/);
+ await client.query('rollback');
  const card={id:'sc1',compId:'comp1',societyId:'wl26',playerId:'other',holes:[4,5]};
  await client.query('begin');
  await client.query("select set_config('request.jwt.claim.sub',$1,true)",[other]);

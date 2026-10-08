@@ -32,6 +32,7 @@ begin
  or p_card->>'societyId' is distinct from p_group_id
  or p_card->>'playerId' is distinct from v_golfer_id
  then raise exception 'Scorecard identity mismatch' using errcode='42501'; end if;
+ if not exists(select 1 from public.ggc_memberships m where m.group_id=p_group_id and m.golfer_id=v_golfer_id and m.status='member') then raise exception 'Group membership required' using errcode='42501'; end if;
  if p_expected_revision=0 then
   insert into public.ggc_scorecards_v4(id,comp_id,group_id,golfer_id,card)
   values(p_card_id,p_comp_id,p_group_id,v_golfer_id,p_card)

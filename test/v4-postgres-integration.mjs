@@ -109,6 +109,11 @@ try {
  const own=await client.query('select public.ggc_save_my_scorecard_v4($1,$2,$3,$4,$5::jsonb) revision',['sc1','comp1','wl26',0,JSON.stringify(card)]);
  assert.equal(Number(own.rows[0].revision),1);
  await client.query('commit');
+ // Own-card writes require active membership, not merely a claimed login.
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[other]);
+ await assert.rejects(client.query('select public.ggc_save_my_scorecard_v4($1,$2,$3,$4,$5::jsonb)',['sc-denied','comp1','wl25',0,JSON.stringify({...card,id:'sc-denied',societyId:'wl25'})]),/Group membership required/);
+ await client.query('rollback');
  await client.query('begin');
  await client.query("select set_config('request.jwt.claim.sub',$1,true)",[uid]);
  await assert.rejects(client.query('select public.ggc_save_my_scorecard_v4($1,$2,$3,$4,$5::jsonb)',['sc1','comp1','wl26',1,JSON.stringify(card)]),/Scorecard identity mismatch/);

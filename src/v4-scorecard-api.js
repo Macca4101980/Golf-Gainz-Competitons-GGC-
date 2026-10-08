@@ -18,3 +18,14 @@ export async function saveV4Scorecard({baseUrl,apiKey,accessToken,card,expectedR
  if(!Number.isSafeInteger(Number(revision))||Number(revision)<=expectedRevision)throw Error('Invalid scorecard revision returned');
  return Number(revision);
 }
+
+export async function readV4Scorecard({baseUrl,apiKey,accessToken,cardId,fetcher=fetch}){
+ if(!baseUrl||!apiKey||!accessToken||!cardId)throw Error('Authenticated scorecard read required');
+ const res=await fetcher(baseUrl.replace(/\/$/,'')+'/rest/v1/rpc/ggc_read_scorecard_v4',{method:'POST',headers:{apikey:apiKey,Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({p_card_id:cardId})});
+ if(!res.ok)throw Error('Scorecard read rejected ('+res.status+')');
+ const rows=await res.json();
+ if(!Array.isArray(rows))throw Error('Invalid scorecard read');
+ if(rows.length===0)return null;
+ if(rows.length!==1||!Number.isSafeInteger(Number(rows[0].revision)))throw Error('Invalid scorecard revision');
+ return {card:rows[0].card,revision:Number(rows[0].revision)};
+}

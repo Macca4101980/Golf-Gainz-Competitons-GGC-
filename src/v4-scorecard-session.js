@@ -5,17 +5,22 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
  const connection={baseUrl,apiKey,accessToken,fetcher};
  const baselines=new Map();
  const inFlight=new Set();
+ const opening=new Set();
  const copy=value=>JSON.parse(JSON.stringify(value));
  async function open(cardId){
   if(!cardId)throw Error('Card ID required');
-  const result=await readV4Scorecard({...connection,cardId});
-  if(!result){baselines.delete(cardId);return null}
-  baselines.set(cardId,{card:copy(result.card),revision:result.revision});
-  return {card:copy(result.card),revision:result.revision};
+  if(inFlight.has(cardId)||opening.has(cardId))throw Error('Scorecard operation already in progress');
+  opening.add(cardId);
+  try{
+   const result=await readV4Scorecard({...connection,cardId});
+   if(!result){baselines.delete(cardId);return null}
+   baselines.set(cardId,{card:copy(result.card),revision:result.revision});
+   return {card:copy(result.card),revision:result.revision};
+  }finally{opening.delete(cardId)}
  }
  async function save(card){
   if(!card?.id||!actorGolferId)throw Error('Claimed golfer and card required');
-  if(inFlight.has(card.id))throw Error('Scorecard save already in progress');
+  if(inFlight.has(card.id)||opening.has(card.id))throw Error('Scorecard operation already in progress');
   inFlight.add(card.id);
   try{
   const baseline=baselines.get(card.id);
@@ -30,6 +35,9 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
   return {revision,unchanged:false};
   }finally{inFlight.delete(card.id)}
  }
- function close(cardId){baselines.delete(cardId)}
+ function close(cardId){
+  if(inFlight.has(cardId)||opening.has(cardId))throw Error('Cannot close scorecard during an operation');
+  baselines.delete(cardId);
+ }
  return {open,save,close};
 }

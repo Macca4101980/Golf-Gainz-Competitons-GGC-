@@ -39,3 +39,41 @@ test('front-nine selection excludes all back-nine contributions',()=>{
  assert.equal(result.complete,9);
  assert.equal(result.holes.slice(9).every(x=>x===null),true);
 });
+
+test('Irish Fourball switches from one to two to three to four scores at exact hole boundaries',()=>{
+ const result=groupScore(group,{id:'comp',format:'irish-fourball',course:'course',tee:'white'},state);
+ for(const [hole,count,points] of [[6,1,3],[7,2,5],[12,2,5],[13,3,6],[17,3,6],[18,4,6]]){
+  assert.equal(result.holes[hole-1].counted.length,count,'hole '+hole+' count');
+  assert.equal(result.holes[hole-1].points,points,'hole '+hole+' points');
+ }
+});
+test('yellow ball rotates by hole, always includes designated player, and adds one best other',()=>{
+ const result=groupScore(group,{id:'comp',format:'yellow-ball',course:'course',tee:'white'},state);
+ for(let i=0;i<18;i++){
+  assert.equal(result.holes[i].yellowBallId,ids[i%4],'yellow golfer hole '+(i+1));
+  assert.equal(result.holes[i].counted.length,2);
+  assert.equal(result.holes[i].points,5);
+ }
+});
+test('partial cards only count submitted holes and never invent scores for unplayed holes',()=>{
+ const partial={...state,cards:cards.map(c=>({...c,gross:c.gross.map((g,i)=>i<9?g:0)}))};
+ const result=groupScore(group,{id:'comp',format:'best2',course:'course',tee:'white'},partial);
+ assert.equal(result.complete,9);
+ assert.equal(result.points,45);
+ assert.equal(result.holes[9].points,0);
+ assert.equal(result.holes[9].counted.length,0);
+});
+test('back-nine selection excludes front nine',()=>{
+ const result=groupScore(group,{id:'comp',format:'best1',course:'course',tee:'white',holesMode:'back9'},state);
+ assert.equal(result.complete,9);
+ assert.equal(result.points,27);
+ assert.equal(result.holes.slice(0,9).every(x=>x===null),true);
+});
+test('scramble handicap allowance follows 25/20/15/10 weighting of sorted course handicaps',()=>{
+ const p=players.map((x,i)=>({...x,hi:[4,8,12,16][i]}));
+ const result=groupScore(group,{id:'comp',format:'scramble',course:'course',tee:'white'}, {...state,players:p});
+ // 4*.25 + 8*.20 + 12*.15 + 16*.10 = 6
+ assert.equal(result.teamHandicap,6);
+ assert.equal(result.gross,72);
+ assert.equal(result.net,66);
+});

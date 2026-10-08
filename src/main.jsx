@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState,useRef}from'react';
 import{createRoot}from'react-dom/client';
 import{createClient}from'@supabase/supabase-js';
 import{Plus,Users,Flag,Wallet,Settings,Home,ChevronRight,UserRound,Save,X,Share2,Copy,LogIn,Building2,Trophy,ArrowLeft,CheckCircle2,Trash2,Mail,LogOut,UserPlus}from'lucide-react';
+import {persistV4Scorecard} from './v4-scorecard-persist.js';
 import'./style.css';
 import Leagues from './CompetitionGroups.jsx';
 import{loadV4Memberships}from './lib/v4MembershipShadow.js';
@@ -299,6 +300,30 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
  const savedGroup=(c.roundGroups||[]).find(g=>(g.playerIds||[]).includes(me.id));
  const defaultIds=savedGroup?.playerIds?.length?savedGroup.playerIds:[me.id];
  const groupDraftKey=`ggc-score-group-${c.id}-${me.id}`;const savedDraft=(()=>{try{return JSON.parse(sessionStorage.getItem(groupDraftKey)||'null')}catch{return null}})();
+ const[v4Sync,setV4Sync]=useState('');
+ const v4ScopedEnabled=import.meta.env.VITE_GGC_V4_SCOPED_SCORECARD_UI==='true';
+ async function syncV4Cards(){
+  if(!v4ScopedEnabled)return;
+  if(!CLOUD||!auth?.access_token||!me?.id){setV4Sync('Sign in with a claimed golfer before syncing');return}
+  const ids=groupIds.filter(Boolean);
+  if(!ids.length){setV4Sync('Choose golfers first');return}
+  setV4Sync('Checking server revisions…');
+  try{
+   // Existing cards require a server baseline; never assume localStorage is current.
+   const {readV4Scorecard}=await import('./v4-scorecard-api.js');
+   const connection={baseUrl:SUPA_URL,apiKey:SUPA_KEY,accessToken:auth.access_token};
+   const cards=state.cards.filter(x=>x.compId===c.id&&ids.includes(x.playerId));
+   if(cards.length!==ids.length)throw Error('Start the group round before syncing');
+   const results=[];
+   for(const card of cards){
+    const baseline=await readV4Scorecard({...connection,cardId:card.id});
+    if(baseline&&JSON.stringify(baseline.card)!==JSON.stringify(card))throw Error('Server scorecard differs. Sync stopped; reload/reconcile before editing.');
+    const result=await persistV4Scorecard({...connection,card,actorGolferId:me.id,baselineCard:baseline?.card,baselineRevision:baseline?.revision});
+    results.push(result);
+   }
+   setV4Sync('Verified '+results.length+' card(s) against secure server');
+  }catch(e){setV4Sync('Secure sync blocked: '+(e?.message||'unknown error'))}
+ }
  const[groupIds,setGroupIds]=useState(savedGroup?.playerIds?.length?savedGroup.playerIds:(savedDraft?.length?savedDraft:defaultIds));const[setup,setSetup]=useState(!savedGroup);const[showBoard,setShowBoard]=useState(false);const[matchDecision,setMatchDecision]=useState(null);
  useEffect(()=>{if(setup)sessionStorage.setItem(groupDraftKey,JSON.stringify(groupIds))},[groupDraftKey,setup,groupIds]);
  const candidateIds=[...new Set([me.id,...(society?.members||[]),...(society?.admins||[]),society?.ownerId,...(c.entries||[])].filter(Boolean))];const candidates=state.players.filter(p=>candidateIds.includes(p.id));
@@ -322,6 +347,7 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
  return <div className="app score groupScore"><header><button className="icon" onClick={back}><ArrowLeft/></button><div><b>{c.name}</b><small>{course?.name} · {c.tee} · V4 Beta 1</small></div></header><main>
  <button className="secondary" onClick={()=>setShowBoard(v=>!v)}><Trophy/> {showBoard?'HIDE':'VIEW'} LIVE LEADERBOARD</button>{showBoard&&<Leaderboard c={currentComp} state={state} setState={setState} auth={auth} setCloud={setCloud}/>} {liveMatch&&<div className="liveMatchStrip"><b>{liveMatchText}</b><span>{liveMatch.played?`THRU ${liveMatch.played}`:'MATCH READY'}</span></div>}<div className="groupCardWrap"><div className={`groupGrid ${pairFormat?'pairedGrid':''}`} style={{'--players':cols}}>{pairFormat&&<><div className="teamBandCorner"></div><div className="teamBand teamA" style={{gridColumn:'2 / span 2'}}>TEAM A · {players.slice(0,2).map(p=>p.name.split(' ')[0]).join(' & ')}</div><div className="teamBand teamB" style={{gridColumn:'4 / span 2'}}>TEAM B · {players.slice(2,4).map(p=>p.name.split(' ')[0]).join(' & ')}</div></>}<div className="gHead holeHead">HOLE</div>{players.map((p,idx)=><div key={p.id} className={`gHead playerHead ${pairFormat?(idx<2?'teamA':'teamB'):''}`}><b>{p.name.split(' ')[0]}</b><small>HI {formatHI(hcap(p.id).hi)}{c.format==='4bbb-match'?` · M${matchRel[p.id]??0}`:` · PH ${hcap(p.id).ph}`}</small></div>)}
  {holeIdx.flatMap(i=>{const h=hs[i];if(!h)return[];return [<div className="holeMeta" key={`h-${i}`}><b>{h.n}</b><small>P{h.par}<br/>SI {h.si}</small></div>,...players.map((p,pi)=>{const card=cardFor(p.id),v=card?.gross?.[i]??'',sh=shots(p.id,h.si),entered=v!==''&&v!==null&&v!==undefined,g=entered?(+v||0):0,net=entered?g-sh:null,pts=entered?Math.max(0,2+(h.par+sh-g)):null,rel=entered?g-h.par:null,shape=!entered?'':rel<=-2?'eagle':rel===-1?'birdie':rel===1?'bogey':rel>=2?'doubleBogey':'';return <div className={`groupCell ${entered?'scoreEntered ':'scoreEmpty '}${pairFormat?(pi<2?'teamA':'teamB'):''}`} key={`${p.id}-${i}`}><span className="shotDots" title={`${sh} handicap shot${sh===1?'':'s'}`}>{dots(sh)}</span><div className={`grossMark ${shape}`}><input inputMode="numeric" aria-label={`${p.name} hole ${h.n} gross score`} value={v} placeholder={h.par} onChange={e=>changeScore(p.id,i,()=>e.target.value)}/></div><div className="holeCalc">{entered&&<><span>({net})</span>{(c.format==='stableford'||c.format==='4bbb-stableford'||c.format==='aggregate-stableford')&&<b>{pts} pts</b>}</>}</div><div className="scoreButtons"><button onClick={()=>changeScore(p.id,i,x=>Math.max(1,x===''?h.par-1:(+x||h.par)-1))}>−</button><button onClick={()=>changeScore(p.id,i,x=>x===''?h.par:(+x||h.par)+1)}>+</button></div></div>})]})}</div></div>
+ {v4ScopedEnabled&&<div className="card"><b>V4 SECURE SCORECARD CHECK (TEST MODE)</b><p className="muted">Only verifies matching existing cards or creates missing cards. Changed server cards require reconciliation; this does not replace normal saving.</p><button className="secondary" onClick={syncV4Cards}>CHECK / SYNC SECURE CARDS</button>{v4Sync&&<p role="status">{v4Sync}</p>}</div>}
  <div className="card groupStatus"><b>LIVE GROUP ROUND</b><span>{players.map(p=>p.name).join(' · ')}</span><small>Scores save to each golfer's own card. Any golfer in this group can continue the same round.</small></div><div className="scoreactions"><button className="secondary" onClick={()=>{const scored=(state.cards||[]).some(card=>card.compId===c.id&&groupIds.includes(card.playerId)&&(card.gross||[]).some(v=>v!==''&&v!==null&&v!==undefined));if(scored)return alert('This playing group is locked because scoring has started. Use RESTART ROUND to change the golfers.');setSetup(true)}}>CHANGE GROUP</button><button className="secondary danger" onClick={async()=>{if(!confirm('Restart this round? This will erase all scores entered for this playing group and allow the golfers to be selected again. This cannot be undone.'))return;const ids=[...groupIds];const gid=savedGroup?.id;const now=new Date().toISOString();const next={...state,cards:state.cards.filter(card=>!(card.compId===c.id&&ids.includes(card.playerId))),comps:state.comps.map(q=>q.id===c.id?{...q,roundGroups:(q.roundGroups||[]).filter(g=>g.id!==gid)}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'RESTART GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,before:{playerIds:ids},after:{cleared:true}}]};setState(next);setGroupIds([me.id]);setSetup(true);sessionStorage.removeItem(groupDraftKey);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}>RESTART ROUND</button><button className="primary" onClick={submitGroup}><CheckCircle2/> SUBMIT ROUND</button></div>
  {matchDecision&&<div className="shade matchShade"><div className="modal matchWon"><h2>MATCH WON</h2><div className="big">{matchDecision.text}</div><p>The match is mathematically decided. You can finish now or keep entering scores.</p><button className="primary" onClick={submitGroup}>SAVE ROUND & EXIT</button><button className="secondary" onClick={()=>setMatchDecision(null)}>CONTINUE PLAYING</button></div></div>}
  </main></div>}

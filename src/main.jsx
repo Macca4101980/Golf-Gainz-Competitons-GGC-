@@ -317,6 +317,15 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
     if(!opened)throw Error('Card '+card.id+' not yet migrated to secure storage');
     drafts[card.id]=opened.card;
    }
+   // Never establish a trusted baseline while the local scoring view disagrees
+   // with the migrated server card. Reconcile explicitly instead of overwriting.
+   const stable=value=>JSON.stringify(value);
+   const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+   for(const card of cards){
+    const remote=drafts[card.id];
+    if(remote.id!==card.id||remote.compId!==card.compId||remote.societyId!==card.societyId||remote.playerId!==card.playerId)throw Error('Server identity differs for card '+card.id);
+    if(stable(canonical(remote.gross||[]))!==stable(canonical(card.gross||[])))throw Error('Local and server scores differ for card '+card.id+'; reconcile before submitting');
+   }
    setV4Drafts(drafts);setV4Session(session);
    setV4Sync('Opened '+cards.length+' server card(s). Secure drafts are separate from local scoring.');
   }catch(e){setV4Session(null);setV4Drafts({});setV4Sync('Secure open blocked: '+(e?.message||'unknown error'))}

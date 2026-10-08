@@ -10,7 +10,7 @@ const uid='11111111-1111-4111-8111-111111111111';
 const other='22222222-2222-4222-8222-222222222222';
 const token='a'.repeat(48);
 try {
- await client.query(`create role anon nologin; create role authenticated nologin; create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz); create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
+ await client.query(`create role anon nologin; create role authenticated nologin; create role service_role nologin; create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz); create function auth.uid() returns uuid language sql stable as $select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$; create function auth.role() returns text language sql stable as $select nullif(current_setting('request.jwt.claim.role',true),'')$;`);
  for(const file of ['20261008_v4_membership_foundation.sql','20261008_v4_claim_guard.sql','20261008_v4_verified_claim.sql','20261008_v4_membership_read_rpc.sql','20261008_v4_authoritative_write_guard.sql']) {
   await client.query(fs.readFileSync('supabase/migrations/'+file,'utf8'));
  }
@@ -58,6 +58,12 @@ try {
  await client.query("create table public.ggc_state(id text primary key,payload jsonb not null,updated_at timestamptz not null)");
  await client.query("insert into public.ggc_state values('main',$1::jsonb,'2026-10-08T10:00:00Z')",[JSON.stringify({players:[],societies:[],comps:[],cards:[],marker:'initial'})]);
  await client.query(fs.readFileSync('docs/sql/V4_STATE_CAS_CUTOVER_HOLD.sql','utf8'));
+ // Only privileged server-side callers may replace the shared JSON state.
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.role','authenticated',true)");
+ await assert.rejects(client.query('select public.ggc_save_state_cas($1,$2::jsonb)',['2026-10-08T10:00:00Z',JSON.stringify({players:[],societies:[],comps:[],cards:[]})]),/Service role required/);
+ await client.query('rollback');
+ await client.query("select set_config('request.jwt.claim.role','service_role',false)");
  const before=(await client.query("select updated_at from public.ggc_state where id='main'")).rows[0].updated_at;
  const base={players:[],societies:[],comps:[],cards:[]};
  await client.query('begin');
@@ -80,7 +86,8 @@ try {
  assert.equal(refreshed.rows[0].marker,'device-B-refreshed');
  await client.query('begin');
  await client.query("select set_config('request.jwt.claim.sub','',true)");
- await assert.rejects(client.query('select public.ggc_save_state_cas($1,$2::jsonb)',[newRevision,JSON.stringify(base)]),/Authentication required/);
+ await client.query("select set_config('request.jwt.claim.role','anon',true)");
+ await assert.rejects(client.query('select public.ggc_save_state_cas($1,$2::jsonb)',[newRevision,JSON.stringify(base)]),/Service role required/);
  await client.query('rollback');
  // Prevent an incomplete client from wiping a previously populated collection.
  await client.query("update public.ggc_state set payload=$1::jsonb,updated_at='2026-10-08T11:00:00Z' where id='main'",[JSON.stringify({players:[{id:'keep'}],societies:[],comps:[],cards:[]})]);
@@ -91,7 +98,7 @@ try {
  const kept=await client.query("select jsonb_array_length(payload->'players')::int n from public.ggc_state where id='main'");
  assert.equal(kept.rows[0].n,1);
  console.log('PASS: accidental populated-collection wipe rejected and existing golfers preserved');
- console.log('PASS: two-device stale revision rejected, original preserved, refreshed save accepted, anonymous CAS rejected');
+ console.log('PASS: two-device stale revision rejected, original preserved, refreshed save accepted, unauthorised browser CAS rejected');
  console.log('PASS: PostgreSQL schema, token rejection, two-group claim, role preservation, historical identity, idempotent retry, competing account');
  await client.query('truncate public.ggc_identity_links,public.ggc_claim_invites,public.ggc_memberships,public.ggc_groups,public.ggc_golfers cascade');
  const fixture={players:[{id:'p1',name:'James',placeholder:true},{id:'p2',name:'James',authUserId:uid,placeholder:false}],societies:[{id:'g1',name:'WL',members:['p1'],admins:['p1']}],comps:[{id:'c1'}],cards:[{id:'card1'}],leagues:[{id:'l1'}]};

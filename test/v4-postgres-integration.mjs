@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import pg from 'pg';
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 const client=new pg.Client({connectionString:process.env.DATABASE_URL});
 await client.connect();
 const uid='11111111-1111-4111-8111-111111111111';
@@ -39,4 +42,23 @@ try {
  await assert.rejects(client.query('select public.ggc_claim_golfer($1,$2)',['old',token]),/Claim already used/);
  await client.query('rollback');
  console.log('PASS: PostgreSQL schema, token rejection, two-group claim, role preservation, historical identity, idempotent retry, competing account');
+ await client.query('truncate public.ggc_identity_links,public.ggc_claim_invites,public.ggc_memberships,public.ggc_groups,public.ggc_golfers cascade');
+ const fixture={players:[{id:'p1',name:'James',placeholder:true},{id:'p2',name:'James',authUserId:uid,placeholder:false}],societies:[{id:'g1',name:'WL',members:['p1'],admins:['p1']}],comps:[{id:'c1'}],cards:[{id:'card1'}],leagues:[{id:'l1'}]};
+ const file=path.join(os.tmpdir(),'ggc-v4-rehearsal-'+process.pid+'.json');
+ try {
+  fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
+  const env={...process.env,GGC_V4_TEST_DATABASE:'1'};
+  const good=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
+  assert.equal(good.status,0,good.stderr+' '+good.stdout);
+  assert.match(good.stdout,/ROLLED_BACK/);
+  const empty=await client.query('select count(*)::int n from public.ggc_golfers');
+  assert.equal(empty.rows[0].n,0);
+  fixture.societies[0].members.push('missing-player');
+  fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
+  const bad=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
+  assert.equal(bad.status,1,bad.stderr+' '+bad.stdout);
+  assert.match(bad.stdout,/unresolved_reference/);
+  console.log('PASS: local-only snapshot rehearsal, count verification, rollback, unresolved-reference refusal');
+ } finally {fs.unlinkSync(file);}
+
 } finally {await client.end()}

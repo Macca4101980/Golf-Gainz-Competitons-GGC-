@@ -1,14 +1,15 @@
 // Pure migration planner: no database writes, no automatic identity merges.
 export function planV4Migration(state, options={}) {
- const excludedGroupIds=new Set(options.excludedGroupIds??[]);
+ const excludedGroupIds=new Set((options.excludedGroupIds??[]).map(String));
  const players=state.players??[],allGroups=state.societies??[];
  const groups=allGroups.filter(g=>!excludedGroupIds.has(String(g.id)));
  const ids=new Set(players.map(p=>String(p.id)));
  const groupIds=new Set(groups.map(g=>String(g.id)));
+ const allGroupIds=new Set(allGroups.map(g=>String(g.id)));
  const issues=[],memberships=[],golfers=[];
  const excludedGroups=allGroups.filter(g=>excludedGroupIds.has(String(g.id))).map(g=>({id:String(g.id),name:g.name}));
  if(ids.size!==players.length)issues.push({type:'duplicate_golfer_ids'});
- if(groupIds.size!==groups.length)issues.push({type:'duplicate_group_ids'});
+ if(allGroupIds.size!==allGroups.length)issues.push({type:'duplicate_group_ids'});
  for(const p of players){
   if(!p.id||!String(p.name??p.displayName??'').trim()){issues.push({type:'invalid_golfer',id:p.id??null});continue;}
   golfers.push({id:String(p.id),display_name:String(p.name??p.displayName),placeholder:Boolean(p.placeholder??p.unclaimed??!p.authUserId),auth_user_id:p.authUserId||null});

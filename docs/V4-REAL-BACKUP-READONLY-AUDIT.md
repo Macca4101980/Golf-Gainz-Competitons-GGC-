@@ -24,6 +24,6 @@ GGC_V4_EXCLUDED_GROUP_IDS=75eea654-ebc2-4e8a-8479-0acaa8a91c2d \
 DATABASE_URL=postgres://...@localhost:5432/... \
 node scripts/v4-rehearse-import.mjs /secure/local/snapshot.json
 ```
-Rehearsal refuses non-local database URLs, unmatched exclusion IDs and unresolved references; verifies imported counts and complete scorecard JSON; rolls back. Never point at production or run against a database with valuable data.
+Rehearsal refuses non-local database URLs, populated V4 target tables, unmatched exclusion IDs and unresolved references; verifies imported counts and complete scorecard JSON; rolls back. Never point at production or run against a database with valuable data.
 
 **Status:** Backup referential audit passed. Real-backup import-and-rollback **not yet run**. Production migration and feature flags remain on hold.

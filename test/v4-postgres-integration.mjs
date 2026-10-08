@@ -160,8 +160,8 @@ try {
  await client.query('rollback');
  console.log('PASS: scorecard read visible to owner and group admin; hidden from outsider');
  console.log('PASS: scorecard owner save, admin delegated save, member denied, stale revision rejected');
- await client.query('truncate public.ggc_identity_links,public.ggc_claim_invites,public.ggc_memberships,public.ggc_groups,public.ggc_golfers cascade');
- const fixture={players:[{id:'p1',name:'James',placeholder:true},{id:'p2',name:'James',authUserId:uid,placeholder:false}],societies:[{id:'g1',name:'WL',members:['p1'],admins:['p1']}],comps:[{id:'c1'}],cards:[{id:'card1'}],leagues:[{id:'l1'}]};
+ await client.query('truncate public.ggc_scorecards_v4,public.ggc_competition_scope_v4,public.ggc_identity_links,public.ggc_claim_invites,public.ggc_memberships,public.ggc_groups,public.ggc_golfers cascade');
+ const fixture={players:[{id:'p1',name:'James',placeholder:true},{id:'p2',name:'James',authUserId:uid,placeholder:false}],societies:[{id:'g1',name:'WL',members:['p1'],admins:['p1']}],comps:[{id:'c1',societyId:'g1'}],cards:[{id:'card1',compId:'c1',societyId:'g1',playerId:'p1',gross:[4,5]}],leagues:[{id:'l1'}]};
  const file=path.join(os.tmpdir(),'ggc-v4-rehearsal-'+process.pid+'.json');
  try {
   fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
@@ -169,8 +169,12 @@ try {
   const good=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
   assert.equal(good.status,0,good.stderr+' '+good.stdout);
   assert.match(good.stdout,/ROLLED_BACK/);
+  assert.match(good.stdout,/"scorecards": 1/);
+  assert.match(good.stdout,/"competition_scopes": 1/);
   const empty=await client.query('select count(*)::int n from public.ggc_golfers');
   assert.equal(empty.rows[0].n,0);
+  const emptyCards=await client.query('select count(*)::int n from public.ggc_scorecards_v4');
+  assert.equal(emptyCards.rows[0].n,0);
   fixture.societies[0].members.push('missing-player');
   fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
   const bad=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});

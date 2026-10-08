@@ -173,9 +173,11 @@ try {
   const matching=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:expected,encoding:'utf8'});
   assert.equal(matching.status,0,matching.stderr+' '+matching.stdout);
   assert.match(matching.stdout,/"verifiedScorecardContents": 1/);
+  assert.match(matching.stdout,/"rollbackVerified": true/);
   const good=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
   assert.equal(good.status,0,good.stderr+' '+good.stdout);
   assert.match(good.stdout,/ROLLED_BACK/);
+  assert.match(good.stdout,/"rollbackVerified": true/);
   assert.match(good.stdout,/"scorecards": 1/);
   assert.match(good.stdout,/"verifiedScorecardContents": 1/);
   assert.match(good.stdout,/"competition_scopes": 1/);

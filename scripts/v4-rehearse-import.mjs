@@ -30,6 +30,23 @@ if(missingExclusions.length){
 const plan=planV4Migration(state,{excludedGroupIds});
 const scorePlan=planV4ScorecardMigration(state,{excludedGroupIds});
 const report={ready:plan.ready&&scorePlan.ready,excludedGroups:plan.excludedGroups,excludedScorecards:scorePlan.excludedCards,issues:[...plan.issues,...scorePlan.issues],counts:{golfers:plan.golfers.length,groups:plan.groups.length,memberships:plan.memberships.length,competitionScopes:scorePlan.scope.length,scorecards:scorePlan.cards.length,...plan.preserved}};
+// Optional explicit count gate for a known protected backup. Never infer expected totals.
+const expectedCountsRaw=process.env.GGC_V4_EXPECTED_COUNTS;
+if(expectedCountsRaw){
+ let expectedCounts;
+ try{expectedCounts=JSON.parse(expectedCountsRaw);}catch{console.error('Invalid GGC_V4_EXPECTED_COUNTS JSON');process.exit(2);}
+ const keys=['golfers','groups','memberships','competitionScopes','scorecards'];
+ if(!expectedCounts||Array.isArray(expectedCounts)||typeof expectedCounts!=='object'
+  ||keys.some(k=>!Number.isSafeInteger(expectedCounts[k])||expectedCounts[k]<0)){
+  console.error('GGC_V4_EXPECTED_COUNTS requires nonnegative integer golfers, groups, memberships, competitionScopes and scorecards');
+  process.exit(2);
+ }
+ const mismatches=keys.filter(k=>report.counts[k]!==expectedCounts[k]);
+ if(mismatches.length){
+  console.error('Refusing rehearsal: snapshot count mismatch for '+mismatches.join(', '));
+  process.exit(1);
+ }
+}
 if(!report.ready){console.log(JSON.stringify(report,null,2));process.exit(1);}
 const client=new pg.Client({connectionString:process.env.DATABASE_URL});
 await client.connect();

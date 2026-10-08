@@ -187,6 +187,9 @@ try {
   fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
   const without=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
   assert.equal(without.status,1,without.stderr+' '+without.stdout);
+  const wrongExclusion=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:{...env,GGC_V4_EXCLUDED_GROUP_IDS:'not-a-real-group-id'},encoding:'utf8'});
+  assert.equal(wrongExclusion.status,2,wrongExclusion.stderr+' '+wrongExclusion.stdout);
+  assert.match(wrongExclusion.stderr,/excluded group IDs not found/);
   const withExclusion=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:excluded,encoding:'utf8'});
   assert.equal(withExclusion.status,0,withExclusion.stderr+' '+withExclusion.stdout);
   assert.match(withExclusion.stdout,/"name": "Teat"/);

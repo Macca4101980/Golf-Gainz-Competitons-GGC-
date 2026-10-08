@@ -71,7 +71,7 @@ try {
  await client.query('rollback');
  const persisted=await client.query("select payload->>'marker' marker from public.ggc_state where id='main'");
  assert.equal(persisted.rows[0].marker,'device-A');
- const newRevision=(await client.query("select updated_at from public.ggc_state where id='main'")).rows[0].updated_at;
+ const newRevision=(await client.query(`select to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as revision from public.ggc_state where id='main'`)).rows[0].revision;
  await client.query('begin');
  await client.query("select set_config('request.jwt.claim.sub',$1,true)",[other]);
  await client.query('select public.ggc_save_state_cas($1,$2::jsonb)',[newRevision,JSON.stringify({...base,marker:'device-B-refreshed'})]);

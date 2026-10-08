@@ -25,14 +25,14 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
   if(inFlight.has(card.id)||opening.has(card.id))throw Error('Scorecard operation already in progress');
   inFlight.add(card.id);
   try{
+  // Capture the user's submitted values before the first asynchronous server read.
+  const submitted=copy(card);
   const baseline=baselines.get(card.id);
   if(!baseline)throw Error('Open the server scorecard before saving');
   if(card.id!==baseline.card.id||card.compId!==baseline.card.compId||card.societyId!==baseline.card.societyId||card.playerId!==baseline.card.playerId)throw Error('Scorecard identity changed');
   const current=await readV4Scorecard({...connection,cardId:card.id});
   if(!current||current.revision!==baseline.revision||!same(current.card,baseline.card))throw new ScorecardConflictError();
-  if(same(card,baseline.card))return {revision:baseline.revision,unchanged:true};
-  // Snapshot the exact draft submitted; callers may continue editing their UI object.
-  const submitted=copy(card);
+  if(same(submitted,baseline.card))return {revision:baseline.revision,unchanged:true};
   const mode=submitted.playerId===actorGolferId?'own':'group';
   const revision=await saveV4Scorecard({...connection,card:submitted,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:submitted.playerId}:{})});
   // Confirm the server actually retained this exact card before reporting success.

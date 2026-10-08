@@ -170,6 +170,7 @@ try {
   assert.equal(good.status,0,good.stderr+' '+good.stdout);
   assert.match(good.stdout,/ROLLED_BACK/);
   assert.match(good.stdout,/"scorecards": 1/);
+  assert.match(good.stdout,/"verifiedScorecardContents": 1/);
   assert.match(good.stdout,/"competition_scopes": 1/);
   const empty=await client.query('select count(*)::int n from public.ggc_golfers');
   assert.equal(empty.rows[0].n,0);

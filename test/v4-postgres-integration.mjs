@@ -166,6 +166,13 @@ try {
  try {
   fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
   const env={...process.env,GGC_V4_TEST_DATABASE:'1'};
+  const expected={...env,GGC_V4_EXPECTED_COUNTS:JSON.stringify({golfers:2,groups:1,memberships:1,competitionScopes:1,scorecards:1})};
+  const mismatched=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:{...expected,GGC_V4_EXPECTED_COUNTS:JSON.stringify({golfers:2,groups:1,memberships:1,competitionScopes:1,scorecards:2})},encoding:'utf8'});
+  assert.equal(mismatched.status,1,mismatched.stderr+' '+mismatched.stdout);
+  assert.match(mismatched.stderr,/snapshot count mismatch for scorecards/);
+  const matching=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:expected,encoding:'utf8'});
+  assert.equal(matching.status,0,matching.stderr+' '+matching.stdout);
+  assert.match(matching.stdout,/"verifiedScorecardContents": 1/);
   const good=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
   assert.equal(good.status,0,good.stderr+' '+good.stdout);
   assert.match(good.stdout,/ROLLED_BACK/);

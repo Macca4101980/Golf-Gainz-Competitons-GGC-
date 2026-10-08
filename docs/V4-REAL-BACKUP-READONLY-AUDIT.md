@@ -18,6 +18,7 @@ No backup payload, golfer names, emails, tokens or scorecard contents are stored
 
 Obtain snapshot securely without committing it or exposing personal data in logs. Use a **local disposable PostgreSQL database only**, with staged V4 schema loaded. Set:
 ```sh
+GGC_V4_EXPECTED_COUNTS='{"golfers":123,"groups":11,"memberships":80,"competitionScopes":35,"scorecards":47}' \
 GGC_V4_TEST_DATABASE=1 \
 GGC_V4_EXCLUDED_GROUP_IDS=75eea654-ebc2-4e8a-8479-0acaa8a91c2d \
 DATABASE_URL=postgres://...@localhost:5432/... \

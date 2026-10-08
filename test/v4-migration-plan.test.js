@@ -19,3 +19,17 @@ test('does not mutate input or historical data',()=>{
  const s={players:[{id:'a',name:'Alice'}],societies:[],cards:[{id:'c',points:40}]};
  const before=JSON.stringify(s);planV4Migration(s);assert.equal(JSON.stringify(s),before);
 });
+
+test('refuses duplicate group IDs even if duplicate is in excluded test group',()=>{
+ const state={players:[{id:'a',name:'Alice'}],societies:[{id:'g',name:'Active',members:['a']},{id:'g',name:'Teat'}]};
+ const plan=planV4Migration(state,{excludedGroupIds:['g']});
+ assert.equal(plan.ready,false);
+ assert.ok(plan.issues.some(issue=>issue.type==='duplicate_group_ids'));
+});
+test('normalizes numeric excluded group IDs to strings',()=>{
+ const state={players:[],societies:[{id:42,name:'Teat'}]};
+ const plan=planV4Migration(state,{excludedGroupIds:[42]});
+ assert.equal(plan.ready,true);
+ assert.equal(plan.groups.length,0);
+ assert.equal(plan.excludedGroups.length,1);
+});

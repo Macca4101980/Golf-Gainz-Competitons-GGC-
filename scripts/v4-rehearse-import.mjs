@@ -13,8 +13,9 @@ if(!['localhost','127.0.0.1','::1'].includes(url.hostname)){
 }
 const raw=JSON.parse(fs.readFileSync(file,'utf8'));
 const state=raw.payload??raw;
-const plan=planV4Migration(state);
-const report={ready:plan.ready,issues:plan.issues,counts:{golfers:plan.golfers.length,groups:plan.groups.length,memberships:plan.memberships.length,...plan.preserved}};
+const excludedGroupIds=(process.env.GGC_V4_EXCLUDED_GROUP_IDS??'').split(',').map(x=>x.trim()).filter(Boolean);
+const plan=planV4Migration(state,{excludedGroupIds});
+const report={ready:plan.ready,excludedGroups:plan.excludedGroups,issues:plan.issues,counts:{golfers:plan.golfers.length,groups:plan.groups.length,memberships:plan.memberships.length,...plan.preserved}};
 if(!plan.ready){console.log(JSON.stringify(report,null,2));process.exit(1);}
 const client=new pg.Client({connectionString:process.env.DATABASE_URL});
 await client.connect();

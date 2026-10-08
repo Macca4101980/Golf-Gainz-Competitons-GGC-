@@ -11,9 +11,11 @@ const other='22222222-2222-4222-8222-222222222222';
 const token='a'.repeat(48);
 try {
  await client.query(`create role anon nologin; create role authenticated nologin; create schema auth; create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz); create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
- for(const file of ['20261008_v4_membership_foundation.sql','20261008_v4_claim_guard.sql','20261008_v4_verified_claim.sql']) {
+ for(const file of ['20261008_v4_membership_foundation.sql','20261008_v4_claim_guard.sql','20261008_v4_verified_claim.sql','20261008_v4_membership_read_rpc.sql','20261008_v4_authoritative_write_guard.sql']) {
   await client.query(fs.readFileSync('supabase/migrations/'+file,'utf8'));
  }
+ const guard=await client.query("select has_table_privilege('authenticated','public.ggc_memberships','INSERT') as insert_ok,has_table_privilege('authenticated','public.ggc_memberships','UPDATE') as update_ok,has_table_privilege('anon','public.ggc_memberships','DELETE') as delete_ok");
+ assert.deepEqual(guard.rows[0],{insert_ok:false,update_ok:false,delete_ok:false});
  await client.query('insert into auth.users values($1,$2,now()),($3,$4,now())',[uid,'james@example.com',other,'other@example.com']);
  await client.query(`insert into public.ggc_golfers(id,display_name,auth_user_id,placeholder) values('old','James',null,true),('real','James',$1,false),('other','Other',$2,false)`,[uid,other]);
  await client.query(`insert into public.ggc_groups(id,name) values('wl25','Winter League 25/26'),('wl26','Winter League 26/27')`);
@@ -28,6 +30,17 @@ try {
  const result=await client.query('select public.ggc_claim_golfer($1,$2) as id',['old',token]);
  assert.equal(result.rows[0].id,'real');
  await client.query('commit');
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[uid]);
+ const myMemberships=await client.query('select * from public.ggc_my_memberships_v4() order by group_id');
+ assert.equal(myMemberships.rows.length,2);
+ assert.equal(myMemberships.rows[1].role,'admin');
+ await client.query('rollback');
+ await client.query('begin');
+ await client.query("select set_config('request.jwt.claim.sub',$1,true)",[other]);
+ const otherMemberships=await client.query('select * from public.ggc_my_memberships_v4()');
+ assert.equal(otherMemberships.rows.length,0);
+ await client.query('rollback');
  const members=await client.query(`select group_id,role from public.ggc_memberships where golfer_id='real' order by group_id`);
  assert.deepEqual(members.rows,[{group_id:'wl25',role:'member'},{group_id:'wl26',role:'admin'}]);
  const old=await client.query(`select count(*)::int n from public.ggc_memberships where golfer_id='old'`);

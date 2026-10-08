@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {saveV4Scorecard,ScorecardConflictError} from '../src/v4-scorecard-api.js';
+import {saveV4Scorecard,readV4Scorecard,ScorecardConflictError} from '../src/v4-scorecard-api.js';
 const card={id:'card-1',compId:'comp-1',societyId:'group-1',playerId:'golfer-1',gross:[4,5]};
 const base={baseUrl:'https://example.supabase.co/',apiKey:'public-key',accessToken:'user-token',card,expectedRevision:0};
 test('own-card request is scoped and authenticated',async()=>{
@@ -25,4 +25,13 @@ test('never sends invalid identity, delegated target or revision',async()=>{
 });
 test('server permission denial never reports a successful save',async()=>{
  await assert.rejects(saveV4Scorecard({...base,fetcher:async()=>({ok:false,status:403,text:async()=> 'permission denied'})}),/rejected \(403\)/);
+});
+
+test('scoped read returns current revision and card',async()=>{
+ let url,payload;const result=await readV4Scorecard({...base,cardId:'card-1',fetcher:async(u,o)=>{url=u;payload=JSON.parse(o.body);return {ok:true,json:async()=>[{card,revision:3}]}}});
+ assert.match(url,/\/rpc\/ggc_read_scorecard_v4$/);assert.deepEqual(payload,{p_card_id:'card-1'});assert.deepEqual(result,{card,revision:3});
+});
+test('scoped read handles missing and denied cards without exposing data',async()=>{
+ assert.equal(await readV4Scorecard({...base,cardId:'missing',fetcher:async()=>({ok:true,json:async()=>[]})}),null);
+ await assert.rejects(readV4Scorecard({...base,cardId:'secret',fetcher:async()=>({ok:false,status:403})}),/read rejected/);
 });

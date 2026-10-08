@@ -107,3 +107,23 @@ test('scorecard save tolerates reordered JSON object keys returned by PostgreSQL
  assert.equal(saved.revision,3);
  assert.equal(saved.unchanged,false);
 });
+
+test('draft edited while save is in flight does not invalidate confirmed submitted snapshot',async()=>{
+ let release;
+ const gate=new Promise(resolve=>{release=resolve});
+ let revision=2,remote=structuredClone(original);
+ const fetcher=async(url,opts)=>{
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  await gate;remote=JSON.parse(opts.body).p_card;revision++;
+  return {ok:true,json:async()=>revision};
+ };
+ const session=createV4ScorecardSession({baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher});
+ const opened=await session.open('c1');opened.card.gross[0]=3;
+ const saving=session.save(opened.card);
+ opened.card.gross[0]=2;
+ release();
+ const result=await saving;
+ assert.equal(result.revision,3);
+ assert.equal(remote.gross[0],3);
+ assert.equal(opened.card.gross[0],2);
+});

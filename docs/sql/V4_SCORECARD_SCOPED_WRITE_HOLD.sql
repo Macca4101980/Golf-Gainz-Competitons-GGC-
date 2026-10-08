@@ -104,3 +104,22 @@ begin
 end $$;
 revoke all on function public.ggc_save_group_scorecard_v4(text,text,text,text,bigint,jsonb) from public,anon;
 grant execute on function public.ggc_save_group_scorecard_v4(text,text,text,text,bigint,jsonb) to authenticated;
+
+-- Scoped read for revision-aware editing; cards are visible only to their golfer
+-- or an active admin/owner of the same group.
+create or replace function public.ggc_read_scorecard_v4(p_card_id text)
+returns table(card jsonb,revision bigint) language plpgsql security definer
+set search_path=public,pg_temp as $$
+declare v_actor text;
+begin
+ if auth.uid() is null then raise exception 'Authentication required' using errcode='28000'; end if;
+ select g.id into v_actor from public.ggc_golfers g where g.auth_user_id=auth.uid() and g.placeholder=false;
+ if v_actor is null then raise exception 'No claimed golfer account' using errcode='42501'; end if;
+ return query select s.card,s.revision from public.ggc_scorecards_v4 s
+ where s.id=p_card_id and (
+  (s.golfer_id=v_actor and exists(select 1 from public.ggc_memberships m where m.group_id=s.group_id and m.golfer_id=v_actor and m.status='member'))
+  or exists(select 1 from public.ggc_memberships m where m.group_id=s.group_id and m.golfer_id=v_actor and m.status='member' and m.role in ('admin','owner'))
+ );
+end $$;
+revoke all on function public.ggc_read_scorecard_v4(text) from public,anon;
+grant execute on function public.ggc_read_scorecard_v4(text) to authenticated;

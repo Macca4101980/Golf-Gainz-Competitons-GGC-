@@ -43,7 +43,14 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
    throw error;
   }
   // Confirm the server actually retained this exact card before reporting success.
-  const confirmed=await readV4Scorecard({...connection,cardId:card.id});
+  let confirmed;
+  try{
+   confirmed=await readV4Scorecard({...connection,cardId:card.id});
+  }catch(error){
+   // Save may have committed, but its verification failed: discard stale trust.
+   baselines.delete(card.id);
+   throw error;
+  }
   if(!confirmed||confirmed.revision!==revision||!same(confirmed.card,submitted)){
    baselines.delete(card.id);
    throw new ScorecardConflictError();

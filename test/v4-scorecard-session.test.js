@@ -162,3 +162,49 @@ test('post-save read failure invalidates baseline even if write was accepted',as
  assert.equal(reopened.revision,3);
  assert.equal(reopened.card.gross[0],3);
 });
+
+test('two golfers scoring different cards preserve both scores without replacing either card',async()=>{
+ const cards=new Map([
+  ['c1',{...structuredClone(original),id:'c1',playerId:'golfer-a'}],
+  ['c2',{...structuredClone(original),id:'c2',playerId:'golfer-b'}]
+ ]);
+ const revisions=new Map([['c1',1],['c2',1]]);
+ const fetcher=async(url,opts)=>{
+  const p=JSON.parse(opts.body);
+  if(url.includes('read_scorecard')){
+   const id=p.p_card_id,card=cards.get(id);
+   return {ok:true,json:async()=>card?[{card:structuredClone(card),revision:revisions.get(id)}]:[]};
+  }
+  const id=p.p_card_id;
+  if(revisions.get(id)!==p.p_expected_revision)return {ok:false,status:409,text:async()=> 'stale revision'};
+  cards.set(id,structuredClone(p.p_card));revisions.set(id,revisions.get(id)+1);
+  return {ok:true,json:async()=>revisions.get(id)};
+ };
+ const opts={baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',fetcher};
+ const a=createV4ScorecardSession({...opts,actorGolferId:'golfer-a'});
+ const b=createV4ScorecardSession({...opts,actorGolferId:'golfer-b'});
+ const aCard=(await a.open('c1')).card,bCard=(await b.open('c2')).card;
+ aCard.gross[0]=3;bCard.gross[1]=4;
+ await Promise.all([a.save(aCard),b.save(bCard)]);
+ assert.deepEqual(cards.get('c1').gross,[3,5]);
+ assert.deepEqual(cards.get('c2').gross,[4,4]);
+ assert.equal(revisions.get('c1'),2);assert.equal(revisions.get('c2'),2);
+});
+
+test('two devices editing the same golfer card reject stale second submission',async()=>{
+ let remote=structuredClone(original),revision=1,writes=0;
+ const fetcher=async(url,opts)=>{
+  const p=JSON.parse(opts.body);
+  if(url.includes('read_scorecard'))return {ok:true,json:async()=>[{card:structuredClone(remote),revision}]};
+  if(p.p_expected_revision!==revision)return {ok:false,status:409,text:async()=> 'stale revision'};
+  remote=structuredClone(p.p_card);revision++;writes++;
+  return {ok:true,json:async()=>revision};
+ };
+ const opts={baseUrl:'https://example.supabase.co',apiKey:'key',accessToken:'token',actorGolferId:'golfer',fetcher};
+ const phone=createV4ScorecardSession(opts),laptop=createV4ScorecardSession(opts);
+ const first=(await phone.open('c1')).card,second=(await laptop.open('c1')).card;
+ first.gross[0]=3;second.gross[0]=6;
+ await phone.save(first);
+ await assert.rejects(laptop.save(second),ScorecardConflictError);
+ assert.deepEqual(remote.gross,[3,5]);assert.equal(writes,1);
+});

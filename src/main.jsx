@@ -383,16 +383,32 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
    const localCards=state.cards.filter(x=>x.compId===c.id&&ids.includes(x.playerId));
    if(localCards.length!==ids.length||localCards.some(x=>!v4Drafts[x.id])){setV4Sync('Submission blocked: server card baseline missing');return}
    const now=new Date().toISOString();
+   const submittedCards=localCards.map(local=>{
+    const baseline=v4Drafts[local.id];
+    if(local.compId!==baseline.compId||local.societyId!==baseline.societyId||local.playerId!==baseline.playerId)throw Error('Card identity mismatch');
+    return {...baseline,gross:[...local.gross],submitted:true,submittedAt:local.submittedAt||now,updatedAt:now,lastEditedBy:me.id};
+   });
    setV4Sync('Submitting secure cards individually…');
+   const saved=[];
    try{
-    for(const local of localCards){
-     const baseline=v4Drafts[local.id];
-     if(local.compId!==baseline.compId||local.societyId!==baseline.societyId||local.playerId!==baseline.playerId)throw Error('Card identity mismatch');
-     const submitted={...baseline,gross:[...local.gross],submitted:true,submittedAt:local.submittedAt||now,updatedAt:now,lastEditedBy:me.id};
-     await v4Session.save(submitted);
+    for(const card of submittedCards){
+     await v4Session.save(card);
+     saved.push(card);
     }
-    setV4Sync('All '+localCards.length+' cards saved and verified in secure storage. Refresh to reconcile local view.');
-   }catch(e){setV4Sync('Secure submission stopped. Cards already saved remain saved; reconcile before retry: '+(e?.message||'unknown error'))}
+    // Update only cards whose scoped writes were confirmed. Never trigger legacy cloud saving.
+    const savedById=new Map(saved.map(card=>[card.id,card]));
+    setState(prev=>({...prev,cards:prev.cards.map(card=>savedById.has(card.id)?{...card,...savedById.get(card.id)}:card)}));
+    setV4Drafts(prev=>({...prev,...Object.fromEntries(saved.map(card=>[card.id,card]))}));
+    setV4Sync('All '+saved.length+' cards saved and verified securely. Local cards updated; no legacy cloud write.');
+   }catch(e){
+    // Keep successfully saved cards visible even when another golfer's card conflicts.
+    if(saved.length){
+     const savedById=new Map(saved.map(card=>[card.id,card]));
+     setState(prev=>({...prev,cards:prev.cards.map(card=>savedById.has(card.id)?{...card,...savedById.get(card.id)}:card)}));
+     setV4Drafts(prev=>({...prev,...Object.fromEntries(saved.map(card=>[card.id,card]))}));
+    }
+    setV4Sync('Secure submission stopped after '+saved.length+' of '+submittedCards.length+' cards. Reopen server cards to reconcile: '+(e?.message||'unknown error'));
+   }
    return;
   }
   const now=new Date().toISOString();const ids=groupIds.filter(Boolean);const next={...state,cards:state.cards.map(x=>x.compId===c.id&&ids.includes(x.playerId)?{...x,submitted:true,submittedAt:x.submittedAt||now,updatedAt:now,lastEditedBy:me.id}:x),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'SUBMIT GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,after:{playerIds:ids}}]};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);localStorage.removeItem('ggc-active-comp');sessionStorage.removeItem(groupDraftKey);alert('Round submitted. It has been removed from the dashboard and remains available in Competitions.');back()}

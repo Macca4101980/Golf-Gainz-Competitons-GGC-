@@ -17,3 +17,7 @@ The opt-in group submit path uses `createV4ScorecardSession` directly. It verifi
 ## Legacy-write isolation in test mode
 
 With `VITE_GGC_V4_SCOPED_SCORECARD_UI=true`, the React state autosave effect does not call `saveCloud`, and direct `saveCloud` invocations return without writing whole-state data. Local browser state still updates for display and pending edits. **Other competition-management changes made in this mode are not cloud-saved.** Do not enable this flag in production; complete scoped persistence for every mutation path before cutover.
+
+## Server baseline opening order
+
+In the development test screen, select the group and **OPEN SERVER SCORECARDS before editing any scores**. Opening compares local and server gross arrays and card identities. If they differ, it blocks submission; do not overwrite the server with a stale local card. A future reconciliation interface must present both versions and let the authorized golfer resolve differences. This deliberately blocks opening after offline/local edits until those edits have been reconciled.

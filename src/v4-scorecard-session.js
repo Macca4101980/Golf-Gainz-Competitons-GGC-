@@ -31,11 +31,13 @@ export function createV4ScorecardSession({baseUrl,apiKey,accessToken,actorGolfer
   const current=await readV4Scorecard({...connection,cardId:card.id});
   if(!current||current.revision!==baseline.revision||!same(current.card,baseline.card))throw new ScorecardConflictError();
   if(same(card,baseline.card))return {revision:baseline.revision,unchanged:true};
-  const mode=card.playerId===actorGolferId?'own':'group';
-  const revision=await saveV4Scorecard({...connection,card,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:card.playerId}:{})});
+  // Snapshot the exact draft submitted; callers may continue editing their UI object.
+  const submitted=copy(card);
+  const mode=submitted.playerId===actorGolferId?'own':'group';
+  const revision=await saveV4Scorecard({...connection,card:submitted,expectedRevision:baseline.revision,mode,...(mode==='group'?{targetGolferId:submitted.playerId}:{})});
   // Confirm the server actually retained this exact card before reporting success.
   const confirmed=await readV4Scorecard({...connection,cardId:card.id});
-  if(!confirmed||confirmed.revision!==revision||!same(confirmed.card,card)){
+  if(!confirmed||confirmed.revision!==revision||!same(confirmed.card,submitted)){
    baselines.delete(card.id);
    throw new ScorecardConflictError();
   }

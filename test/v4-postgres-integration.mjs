@@ -179,6 +179,11 @@ try {
   assert.match(good.stdout,/"scorecards": 1/);
   assert.match(good.stdout,/"verifiedScorecardContents": 1/);
   assert.match(good.stdout,/"competition_scopes": 1/);
+  await client.query("insert into public.ggc_competition_scope_v4(comp_id,group_id) values('existing-comp','existing-group')");
+  const populated=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env,encoding:'utf8'});
+  assert.notEqual(populated.status,0,populated.stderr+' '+populated.stdout);
+  assert.match(populated.stderr,/local V4 target tables are not empty/);
+  await client.query("delete from public.ggc_competition_scope_v4 where comp_id='existing-comp'");
   const empty=await client.query('select count(*)::int n from public.ggc_golfers');
   assert.equal(empty.rows[0].n,0);
   const emptyCards=await client.query('select count(*)::int n from public.ggc_scorecards_v4');

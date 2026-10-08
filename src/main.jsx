@@ -434,29 +434,24 @@ async function loadProfile(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/pr
 async function saveProfile(token,p){const r=await fetch(`${SUPA_URL}/rest/v1/profiles`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(p)});if(!r.ok)throw Error(await r.text())}
 async function markPasskey(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({passkey_enabled:true,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text())}
 function readAuth(){try{return JSON.parse(localStorage.getItem('ggc-auth'))}catch{return null}}function writeAuth(a){localStorage.setItem('ggc-auth',JSON.stringify(a))}function clearAuth(){localStorage.removeItem('ggc-auth')}async function restoreAuth(){const a=readAuth();if(!a)return null;if(a.expires_at&&Date.now()/1000<a.expires_at-60)return a;if(!a.refresh_token){clearAuth();return null}try{const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:a.refresh_token})});const n=await r.json();if(!r.ok||!n.access_token)throw Error();writeAuth(n);return n}catch{clearAuth();return null}}
-// Legacy cloud write guard: opt-in only. Compare-and-swap prevents stale tabs/devices overwriting newer state.
+// V4 cloud writes use the server-side compare-and-swap RPC only. Never fall back to an unrestricted upsert.
+// Retain the attempted payload on conflict so it can be recovered rather than silently lost.
 let cloudRevision=null;
+let pendingCloudSave=null;
 async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload,updated_at`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();if(a[0])cloudRevision=a[0].updated_at;return a[0]?.payload}
 async function saveCloud(s,set,token){
  set('Saving…');
+ pendingCloudSave=s;
  try{
-  if(import.meta.env.VITE_GGC_SERVER_CAS==='true'){
-   if(!cloudRevision){set('Cloud save blocked — reload cloud first');return}
-   const r=await fetch(`${SUPA_URL}/rest/v1/rpc/ggc_save_state_cas`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({p_expected_revision:cloudRevision,p_payload:s})});
-   if(!r.ok){if(r.status===409||r.status===400){set('Cloud conflict — reload before saving');return}throw Error(await r.text())}
-   const revision=await r.json();if(!revision)throw Error('Missing server revision');
-   cloudRevision=revision;set('Cloud saved');return;
-  }
-  if(import.meta.env.VITE_GGC_CAS_WRITES==='true'){
-   if(!cloudRevision){set('Cloud save blocked — reload cloud first');return}
-   const previous=cloudRevision;
-   const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&updated_at=eq.${encodeURIComponent(previous)}&select=updated_at`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({payload:s,updated_at:new Date().toISOString()})});
-   if(!r.ok)throw Error(await r.text());
-   const rows=await r.json();
-   if(rows.length!==1){set('Cloud conflict — newer data exists. Reload before saving.');return}
-   cloudRevision=rows[0].updated_at;set('Cloud saved');return;
-  }
-  const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify({id:'main',payload:s,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text());set('Cloud saved');
- }catch{set('Cloud save failed')}
+  if(!cloudRevision){set('Cloud save blocked — load cloud first; local changes retained');return false}
+  const expected=cloudRevision;
+  const r=await fetch(`${SUPA_URL}/rest/v1/rpc/ggc_save_state_cas`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({p_expected_revision:expected,p_payload:s})});
+  if(!r.ok){if(r.status===409||r.status===400){set('Cloud conflict — your changes are retained on this device; reload cloud before retrying');return false}throw Error(await r.text())}
+  const revision=await r.json();if(typeof revision!=='string'||!revision)throw Error('Missing server revision');
+  cloudRevision=revision;
+  if(pendingCloudSave===s)pendingCloudSave=null;
+  set('Cloud saved');return true;
+ }catch{set('Cloud save failed — local changes retained');return false}
 }
+
 createRoot(document.getElementById('root')).render(<App/>);

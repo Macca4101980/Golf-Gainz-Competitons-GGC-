@@ -1,9 +1,12 @@
 // Pure migration planner: no database writes, no automatic identity merges.
-export function planV4Migration(state) {
- const players=state.players??[],groups=state.societies??[];
+export function planV4Migration(state, options={}) {
+ const excludedGroupIds=new Set(options.excludedGroupIds??[]);
+ const players=state.players??[],allGroups=state.societies??[];
+ const groups=allGroups.filter(g=>!excludedGroupIds.has(String(g.id)));
  const ids=new Set(players.map(p=>String(p.id)));
  const groupIds=new Set(groups.map(g=>String(g.id)));
  const issues=[],memberships=[],golfers=[];
+ const excludedGroups=allGroups.filter(g=>excludedGroupIds.has(String(g.id))).map(g=>({id:String(g.id),name:g.name}));
  if(ids.size!==players.length)issues.push({type:'duplicate_golfer_ids'});
  if(groupIds.size!==groups.length)issues.push({type:'duplicate_group_ids'});
  for(const p of players){
@@ -21,6 +24,6 @@ export function planV4Migration(state) {
    memberships.push({group_id:String(g.id),golfer_id:id,role,status:'member'});
   }
  }
- return {golfers,groups:groups.filter(g=>g.id&&String(g.name??'').trim()).map(g=>({id:String(g.id),name:String(g.name)})),memberships,issues,ready:issues.length===0,
+ return {golfers,excludedGroups,groups:groups.filter(g=>g.id&&String(g.name??'').trim()).map(g=>({id:String(g.id),name:String(g.name)})),memberships,issues,ready:issues.length===0,
   preserved:{competitions:(state.comps??[]).length,cards:(state.cards??[]).length,leagues:(state.leagues??[]).length}};
 }

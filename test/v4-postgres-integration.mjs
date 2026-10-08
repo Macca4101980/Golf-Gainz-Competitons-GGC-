@@ -166,15 +166,17 @@ try {
  try {
   fs.writeFileSync(file,JSON.stringify(fixture),{mode:0o600});
   const env={...process.env,GGC_V4_TEST_DATABASE:'1'};
-  const invalidFile=join(tmp,'invalid-backup.json');
-  writeFileSync(invalidFile,JSON.stringify({payload:{players:[],societies:[],comps:[]}}));
+  const invalidFile=path.join(os.tmpdir(),'ggc-v4-invalid-'+process.pid+'.json');
+  fs.writeFileSync(invalidFile,JSON.stringify({payload:{players:[],societies:[],comps:[]}}));
   const invalid=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',invalidFile],{env,encoding:'utf8'});
   assert.equal(invalid.status,2);
   assert.match(invalid.stderr,/snapshot missing required/);
-  const arrayFile=join(tmp,'array-backup.json');
-  writeFileSync(arrayFile,JSON.stringify([{payload:fixture}]));
+  const arrayFile=path.join(os.tmpdir(),'ggc-v4-array-'+process.pid+'.json');
+  fs.writeFileSync(arrayFile,JSON.stringify([{payload:fixture}]));
   const arrayRun=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',arrayFile],{env,encoding:'utf8'});
   assert.equal(arrayRun.status,0,arrayRun.stderr+' '+arrayRun.stdout);
+  fs.unlinkSync(invalidFile);
+  fs.unlinkSync(arrayFile);
   const expected={...env,GGC_V4_EXPECTED_COUNTS:JSON.stringify({golfers:2,groups:1,memberships:1,competitionScopes:1,scorecards:1})};
   const mismatched=spawnSync(process.execPath,['scripts/v4-rehearse-import.mjs',file],{env:{...expected,GGC_V4_EXPECTED_COUNTS:JSON.stringify({golfers:2,groups:1,memberships:1,competitionScopes:1,scorecards:2})},encoding:'utf8'});
   assert.equal(mismatched.status,1,mismatched.stderr+' '+mismatched.stdout);

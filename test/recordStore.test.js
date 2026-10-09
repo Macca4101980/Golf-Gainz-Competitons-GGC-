@@ -5,7 +5,26 @@ import {createRecordStore} from '../src/recordStore.js';
 function fakeDb(){
  const records=new Map();
  const api={
-  from(){return {select(){return {eq(_k,kind){return {eq(_k2,id){return {async maybeSingle(){const row=records.get(kind+':'+id);return {data:row?{...row}:null,error:null}}}}}}}}}},
+  from(){
+   return {
+    select(){
+     return {
+      eq(_field,kind){
+       return {
+        eq(_field2,id){
+         return {
+          async maybeSingle(){
+           const row=records.get(kind+':'+id);
+           return {data:row?{...row}:null,error:null};
+          }
+         };
+        }
+       };
+      }
+     };
+    }
+   };
+  },
   async rpc(_name,args){
    const k=args.p_kind+':'+args.p_id,old=records.get(k);
    if((old?.version??null)!==args.p_expected_version)return {data:null,error:{message:'GGC_VERSION_CONFLICT'}};

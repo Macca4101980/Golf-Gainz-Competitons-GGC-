@@ -20,7 +20,7 @@ export function createLegacyCloudStore({url,key,fetcher=fetch}){
   const payload=structuredClone(snapshot);
   const task=async()=>{
    if(!ready||!version)throw Error('GGC_CLOUD_BASELINE_REQUIRED');
-   const nextVersion=new Date().toISOString();
+   const nextVersion=new Date(Math.max(Date.now(),Date.parse(version)+1)).toISOString();
    const query=`${url}/rest/v1/ggc_state?id=eq.main&updated_at=eq.${encodeURIComponent(version)}&select=updated_at`;
    const r=await fetcher(query,{method:'PATCH',headers:{...headers(token),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({payload,updated_at:nextVersion})});
    if(!r.ok)throw Error(`Cloud write failed: ${r.status}`);

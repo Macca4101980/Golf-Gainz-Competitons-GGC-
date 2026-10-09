@@ -4,6 +4,7 @@ import{createClient}from'@supabase/supabase-js';
 import{Plus,Users,Flag,Wallet,Settings,Home,ChevronRight,UserRound,Save,X,Share2,Copy,LogIn,Building2,Trophy,ArrowLeft,CheckCircle2,Trash2,Mail,LogOut,UserPlus}from'lucide-react';
 import'./style.css';
 import{createTestStateStore}from'./testStateStore.js';
+import{createLegacyCloudStore}from'./legacyCloudStore.js';
 import{createRecordStore}from'./recordStore.js';
 import{createRecordSaveCoordinator}from'./recordSaveCoordinator.js';
 import Leagues from './CompetitionGroups.jsx';
@@ -14,6 +15,7 @@ import{FORMAT_RULES,scoreCard,formatResult,validateFormatStart,oomPointsForField
 const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const IS_ISOLATED_TEST=SUPA_URL==='https://omgnfrybqiqgxnpwgfol.supabase.co';const K=SUPA_URL.includes('omgnfrybqiqgxnpwgfol.supabase.co')?'ggc-isolated-test-v1':'ggc-build2';
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const isolatedStore=IS_ISOLATED_TEST&&supabase?createTestStateStore(supabase):null;
+const legacyStore=CLOUD&&!IS_ISOLATED_TEST?createLegacyCloudStore({url:SUPA_URL,key:SUPA_KEY}):null;
 // Opt-in only. Do not enable until record-level RLS and migration are verified.
 const RECORD_STORE_ENABLED=IS_ISOLATED_TEST&&import.meta.env.VITE_GGC_RECORD_STORE==='true';
 const recordStore=RECORD_STORE_ENABLED?createRecordStore(supabase):null;
@@ -441,7 +443,7 @@ async function loadProfile(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/pr
 async function saveProfile(token,p){const r=await fetch(`${SUPA_URL}/rest/v1/profiles`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(p)});if(!r.ok)throw Error(await r.text())}
 async function markPasskey(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({passkey_enabled:true,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text())}
 function readAuth(){try{return JSON.parse(localStorage.getItem('ggc-auth'))}catch{return null}}function writeAuth(a){localStorage.setItem('ggc-auth',JSON.stringify(a))}function clearAuth(){localStorage.removeItem('ggc-auth')}async function restoreAuth(){const a=readAuth();if(!a)return null;if(a.expires_at&&Date.now()/1000<a.expires_at-60)return a;if(!a.refresh_token){clearAuth();return null}try{const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:a.refresh_token})});const n=await r.json();if(!r.ok||!n.access_token)throw Error();writeAuth(n);return n}catch{clearAuth();return null}}
-async function loadCloud(token){if(IS_ISOLATED_TEST)return isolatedStore.load();const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();return a[0]?.payload}
-async function saveCloud(s,set,token){set('Saving…');try{if(IS_ISOLATED_TEST){await isolatedStore.save(s);set('Cloud saved');return}const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify({id:'main',payload:s,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text());set('Cloud saved')}catch(e){set(IS_ISOLATED_TEST&&/CLOUD_CONFLICT/.test(e.message)?'Save conflict — reload required':'Cloud save failed');console.error('Cloud save failed',e)}}
+async function loadCloud(token){if(IS_ISOLATED_TEST)return isolatedStore.load();return legacyStore.load(token)}
+async function saveCloud(s,set,token){set('Saving…');try{if(IS_ISOLATED_TEST){await isolatedStore.save(s)}else{await legacyStore.save(s,token)}set('Cloud saved');return true}catch(e){set(/GGC_CLOUD_CONFLICT|CLOUD_CONFLICT/.test(e.message)?'Save conflict — cloud unchanged':'Cloud save blocked');console.error('Cloud save blocked',e);return false}}
 
 createRoot(document.getElementById('root')).render(<App/>);

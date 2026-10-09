@@ -2,8 +2,10 @@ import React,{useEffect,useMemo,useState,useRef}from'react';
 import{createRoot}from'react-dom/client';
 import{createClient}from'@supabase/supabase-js';
 import{Plus,Users,Flag,Wallet,Settings,Home,ChevronRight,UserRound,Save,X,Share2,Copy,LogIn,Building2,Trophy,ArrowLeft,CheckCircle2,Trash2,Mail,LogOut,UserPlus}from'lucide-react';
+import {createV4ScorecardSession} from './v4-scorecard-session.js';
 import'./style.css';
 import Leagues from './CompetitionGroups.jsx';
+import{loadV4Memberships}from './lib/v4MembershipShadow.js';
 import GroupScoreScreen from './GroupScoreScreen.jsx';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
 import{winterLeagueTable,leagueHandicapSettings}from'./winterLeague.js';
@@ -164,7 +166,9 @@ function mergeLiveState(local,remote){
 function App(){const claimToken=new URLSearchParams(location.search).get('claim')||'';const[state,setState]=useState(()=>{try{return migrate(JSON.parse(localStorage.getItem(K))||JSON.parse(localStorage.getItem('ggc-build1')))}catch{return clone(seed)}});const[tab,setTab]=useState('home');const[cloud,setCloud]=useState(CLOUD?'Connecting…':'Local only');const[modal,setModal]=useState(null);const[me,setMe]=useState(()=>localStorage.getItem('ggc-me')||'');const[auth,setAuth]=useState(()=>readAuth());const[authReady,setAuthReady]=useState(!CLOUD);const[profileReady,setProfileReady]=useState(()=>!CLOUD||!!readAuth());const[activeComp,setActiveComp]=useState(()=>localStorage.getItem('ggc-active-comp')||null);const[editComp,setEditComp]=useState(null);const[leagueCreatedId,setLeagueCreatedId]=useState(null);const[socId,setSocId]=useState(()=>localStorage.getItem('ggc-society')||'default-society');const[hiddenGroups,setHiddenGroups]=useState(()=>{try{return JSON.parse(localStorage.getItem('ggc-hidden-groups')||'[]')}catch{return[]}});const[updateReady,setUpdateReady]=useState(false);const[waitingWorker,setWaitingWorker]=useState(null);const remoteStateRef=useRef(false);const cloudHydratedRef=useRef(!CLOUD);const[,setClockTick]=useState(0);useEffect(()=>{const id=setInterval(()=>setClockTick(x=>x+1),30000);return()=>clearInterval(id)},[]);
 useEffect(()=>{if(!('serviceWorker'in navigator))return;let reg=null;let timer=null;const offer=worker=>{if(worker&&navigator.serviceWorker.controller){setWaitingWorker(worker);setUpdateReady(true)}};const inspect=r=>{reg=r;if(r.waiting)offer(r.waiting);r.addEventListener('updatefound',()=>{const w=r.installing;if(!w)return;w.addEventListener('statechange',()=>{if(w.state==='installed')offer(w)})})};navigator.serviceWorker.ready.then(inspect).catch(()=>{});const check=()=>reg?.update().catch(()=>{});const visible=()=>{if(document.visibilityState==='visible')check()};window.addEventListener('focus',check);document.addEventListener('visibilitychange',visible);timer=setInterval(check,30*60*1000);return()=>{window.removeEventListener('focus',check);document.removeEventListener('visibilitychange',visible);if(timer)clearInterval(timer)}},[]);
 function applyUpdate(){if(!waitingWorker)return;waitingWorker.postMessage({type:'SKIP_WAITING'});let reloaded=false;const reload=()=>{if(reloaded)return;reloaded=true;window.location.reload()};navigator.serviceWorker.addEventListener('controllerchange',reload,{once:true});setTimeout(reload,2500)}
-useEffect(()=>{localStorage.setItem(K,JSON.stringify(state));if(remoteStateRef.current){remoteStateRef.current=false;return}if(CLOUD&&auth?.access_token&&profileReady){if(!cloudHydratedRef.current){setCloud('Loading cloud…');return}const hasRealData=(state.societies||[]).some(g=>g.id!=='default-society'||(g.members||[]).length)||(state.comps||[]).length||(state.leagues||[]).length;if(!hasRealData){setCloud('Cloud write protected');return}const t=setTimeout(()=>saveCloud(state,setCloud,auth.access_token),600);return()=>clearTimeout(t)}},[state,auth?.access_token,profileReady]);useEffect(()=>{if(!CLOUD)return;let alive=true;supabase.auth.getSession().then(({data})=>{if(!alive)return;const a=data?.session||null;if(a)writeAuth(a);else clearAuth();setAuth(a);setAuthReady(true);if(!a)setProfileReady(true)});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,a)=>{if(!alive)return;if(a)writeAuth(a);else clearAuth();setAuth(a);setAuthReady(true);if(!a)setProfileReady(true)});return()=>{alive=false;subscription?.unsubscribe()}},[]);
+useEffect(()=>{localStorage.setItem(K,JSON.stringify(state));if(import.meta.env.VITE_GGC_V4_SCOPED_SCORECARD_UI==='true'){setCloud('V4 test mode — legacy whole-state autosave disabled');return}if(remoteStateRef.current){remoteStateRef.current=false;return}if(CLOUD&&auth?.access_token&&profileReady){if(!cloudHydratedRef.current){setCloud('Loading cloud…');return}const hasRealData=(state.societies||[]).some(g=>g.id!=='default-society'||(g.members||[]).length)||(state.comps||[]).length||(state.leagues||[]).length;if(!hasRealData){setCloud('Cloud write protected');return}const t=setTimeout(()=>saveCloud(state,setCloud,auth.access_token),600);return()=>clearTimeout(t)}},[state,auth?.access_token,profileReady]);// Stage 6 shadow read: opt-in via build-time flag only; no changes to state or scoring.
+useEffect(()=>{if(import.meta.env.VITE_GGC_V4_SHADOW!=='true'||!CLOUD||!auth?.user?.id)return;let active=true;loadV4Memberships(supabase,{enabled:true,authUserId:auth.user.id}).then(result=>{if(!active)return;const count=result.memberships.length;console.info('[GGC V4 shadow] authenticated memberships loaded:',count)}).catch(error=>{if(active)console.warn('[GGC V4 shadow] read unavailable:',error?.message||'unknown error')});return()=>{active=false}},[auth?.user?.id]);
+useEffect(()=>{if(!CLOUD)return;let alive=true;supabase.auth.getSession().then(({data})=>{if(!alive)return;const a=data?.session||null;if(a)writeAuth(a);else clearAuth();setAuth(a);setAuthReady(true);if(!a)setProfileReady(true)});const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,a)=>{if(!alive)return;if(a)writeAuth(a);else clearAuth();setAuth(a);setAuthReady(true);if(!a)setProfileReady(true)});return()=>{alive=false;subscription?.unsubscribe()}},[]);
 useEffect(()=>{if(!CLOUD||!auth?.access_token)return;let alive=true;let fetching=false;const refresh=async(label='Live synced')=>{if(!alive||fetching)return;fetching=true;try{const latest=await loadCloud(auth.access_token);if(alive&&latest){const remote=migrate(latest);remoteStateRef.current=true;setState(local=>mergeLiveState(local,remote));setCloud(label)}}catch{}finally{fetching=false}};const channel=supabase.channel('ggc-live-main').on('postgres_changes',{event:'*',schema:'public',table:'ggc_state',filter:'id=eq.main'},()=>refresh('Live synced')).subscribe(status=>{if(status==='SUBSCRIBED')setCloud('● Live');if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloud('Reconnecting…')});const wake=()=>{if(document.visibilityState==='visible')refresh('● Live')};const online=()=>refresh('● Live');document.addEventListener('visibilitychange',wake);window.addEventListener('focus',wake);window.addEventListener('online',online);return()=>{alive=false;document.removeEventListener('visibilitychange',wake);window.removeEventListener('focus',wake);window.removeEventListener('online',online);supabase.removeChannel(channel)}},[auth?.access_token]);
 useEffect(()=>{if(!CLOUD||!auth?.access_token||!auth?.user?.id)return;let cancelled=false;Promise.all([loadCloud(auth.access_token).catch(()=>null),loadProfile(auth.access_token,auth.user.id).catch(()=>null)]).then(async ([cloudState,profile])=>{if(cancelled)return;cloudHydratedRef.current=true;let next=cloudState?mergeLiveState(state,migrate(cloudState)):migrate(state);if(!profile){const legacy=next.players.find(p=>p.authUserId===auth.user.id);if(legacy){profile={id:auth.user.id,display_name:legacy.name,handicap_index:+legacy.hi||0,passkey_enabled:!!legacy.passkeyEnabled};try{await saveProfile(auth.access_token,profile)}catch{}}}if(profile){const player={id:profile.id,authUserId:profile.id,name:profile.display_name,hi:+profile.handicap_index||0,passkeyEnabled:!!profile.passkey_enabled};const i=next.players.findIndex(p=>p.authUserId===profile.id||p.id===profile.id);if(i>=0)next.players[i]={...next.players[i],...player};else next.players.push(player);setMe(player.id);localStorage.setItem('ggc-me',player.id)}else{setMe('');localStorage.removeItem('ggc-me')}setState(next);setProfileReady(true);setCloud(cloudState?'Cloud loaded':'Cloud ready')});return()=>{cancelled=true}},[auth?.user?.id,auth?.access_token]);
 const currentMe=state.players.find(p=>p.id===me&&(!auth?.user?.id||!p.authUserId||p.authUserId===auth.user.id));const society=state.societies.find(s=>s.id===socId)||state.societies[0];
@@ -296,6 +300,78 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
  const savedGroup=(c.roundGroups||[]).find(g=>(g.playerIds||[]).includes(me.id));
  const defaultIds=savedGroup?.playerIds?.length?savedGroup.playerIds:[me.id];
  const groupDraftKey=`ggc-score-group-${c.id}-${me.id}`;const savedDraft=(()=>{try{return JSON.parse(sessionStorage.getItem(groupDraftKey)||'null')}catch{return null}})();
+ const[v4Sync,setV4Sync]=useState('');
+ const[v4Session,setV4Session]=useState(null);
+ const[v4Drafts,setV4Drafts]=useState({});
+ const v4SubmitLock=useRef(false);
+ const[v4Submitting,setV4Submitting]=useState(false);
+ async function openV4Session(){
+  if(!CLOUD||!auth?.access_token||!me?.id){setV4Sync('Sign in with a claimed golfer before opening secure cards');return}
+  const ids=groupIds.filter(Boolean);
+  const cards=state.cards.filter(x=>x.compId===c.id&&ids.includes(x.playerId));
+  if(cards.length!==ids.length){setV4Sync('Start the round before opening secure cards');return}
+  const session=createV4ScorecardSession({baseUrl:SUPA_URL,apiKey:SUPA_KEY,accessToken:auth.access_token,actorGolferId:me.id});
+  setV4Sync('Opening server cards…');
+  try{
+   const drafts={};
+   for(const card of cards){
+    const opened=await session.open(card.id);
+    if(!opened)throw Error('Card '+card.id+' not yet migrated to secure storage');
+    drafts[card.id]=opened.card;
+   }
+   // Never establish a trusted baseline while the local scoring view disagrees
+   // with the migrated server card. Reconcile explicitly instead of overwriting.
+   const stable=value=>JSON.stringify(value);
+   const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+   for(const card of cards){
+    const remote=drafts[card.id];
+    if(remote.id!==card.id||remote.compId!==card.compId||remote.societyId!==card.societyId||remote.playerId!==card.playerId)throw Error('Server identity differs for card '+card.id);
+    if(stable(canonical(remote.gross||[]))!==stable(canonical(card.gross||[])))throw Error('Local and server scores differ for card '+card.id+'; reconcile before submitting');
+   }
+   setV4Drafts(drafts);setV4Session(session);
+   setV4Sync('Opened '+cards.length+' server card(s). Secure drafts are separate from local scoring.');
+  }catch(e){setV4Session(null);setV4Drafts({});setV4Sync('Secure open blocked: '+(e?.message||'unknown error'))}
+ }
+ async function verifyV4Drafts(){
+  if(!v4Session){setV4Sync('Open secure cards first');return}
+  setV4Sync('Verifying secure drafts…');
+  try{
+   const {readV4Scorecard}=await import('./v4-scorecard-api.js');
+   let count=0;
+   for(const card of Object.values(v4Drafts)){
+    const current=await readV4Scorecard({baseUrl:SUPA_URL,apiKey:SUPA_KEY,accessToken:auth.access_token,cardId:card.id});
+    if(!current||JSON.stringify(current.card)!==JSON.stringify(card))throw Error('Server card changed: '+card.id);
+    count++;
+   }
+   setV4Sync('Verified '+count+' server draft(s) read-only. No cards written.');
+  }catch(e){setV4Sync('Secure save blocked: '+(e?.message||'unknown error'))}
+ }
+
+ const v4ScopedEnabled=import.meta.env.VITE_GGC_V4_SCOPED_SCORECARD_UI==='true';
+ async function syncV4Cards(){
+  if(!v4ScopedEnabled)return;
+  if(!CLOUD||!auth?.access_token||!me?.id){setV4Sync('Sign in with a claimed golfer before syncing');return}
+  const ids=groupIds.filter(Boolean);
+  if(!ids.length){setV4Sync('Choose golfers first');return}
+  setV4Sync('Checking server revisions…');
+  try{
+   // Existing cards require a server baseline; never assume localStorage is current.
+   const {readV4Scorecard}=await import('./v4-scorecard-api.js');
+   const connection={baseUrl:SUPA_URL,apiKey:SUPA_KEY,accessToken:auth.access_token};
+   const cards=state.cards.filter(x=>x.compId===c.id&&ids.includes(x.playerId));
+   if(cards.length!==ids.length)throw Error('Start the group round before syncing');
+   // Read-only inspection until baseline tracking and migration are complete.
+   // Never seed missing server cards from potentially stale localStorage.
+   let matching=0,missing=0,conflicting=0;
+   for(const card of cards){
+    const baseline=await readV4Scorecard({...connection,cardId:card.id});
+    if(!baseline)missing++;
+    else if(JSON.stringify(baseline.card)===JSON.stringify(card))matching++;
+    else conflicting++;
+   }
+   setV4Sync('Read-only check: '+matching+' matching, '+missing+' not migrated, '+conflicting+' differing. No cards written.');
+  }catch(e){setV4Sync('Secure sync blocked: '+(e?.message||'unknown error'))}
+ }
  const[groupIds,setGroupIds]=useState(savedGroup?.playerIds?.length?savedGroup.playerIds:(savedDraft?.length?savedDraft:defaultIds));const[setup,setSetup]=useState(!savedGroup);const[showBoard,setShowBoard]=useState(false);const[matchDecision,setMatchDecision]=useState(null);
  useEffect(()=>{if(setup)sessionStorage.setItem(groupDraftKey,JSON.stringify(groupIds))},[groupDraftKey,setup,groupIds]);
  const candidateIds=[...new Set([me.id,...(society?.members||[]),...(society?.admins||[]),society?.ownerId,...(c.entries||[])].filter(Boolean))];const candidates=state.players.filter(p=>candidateIds.includes(p.id));
@@ -310,8 +386,47 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
  async function startGroup(){const ids=[...new Set(groupIds.filter(Boolean))];const existingGroup=(state.comps.find(x=>x.id===c.id)?.roundGroups||[]).find(g=>g.id===savedGroup?.id);const locked=existingGroup&&(state.cards||[]).some(card=>card.compId===c.id&&(existingGroup.playerIds||[]).includes(card.playerId)&&(card.gross||[]).some(v=>v!==''&&v!==null&&v!==undefined));if(locked&&JSON.stringify([...(existingGroup.playerIds||[])].sort())!==JSON.stringify([...ids].sort()))return alert('This playing group is locked because scoring has started. Use RESTART ROUND if you need to change the golfers.');if(!ids.length)return alert('Choose at least one golfer.');if(c.format==='4bbb-match'&&ids.length!==4)return alert('Pairs Matchplay needs four golfers.');if(pairFormat&&ids.length%2!==0)return alert('Pairs competitions need an even number of golfers.');const now=new Date().toISOString();let next={...state};const cards=[...state.cards];for(const id of ids){if(!cards.some(x=>x.compId===c.id&&x.playerId===id)){const p=state.players.find(x=>x.id===id),hc={hi:p?.hi??0,ch:courseHandicap(p?.hi,tee,par),ph:playingHandicap(p?.hi,tee,par,allowance)};cards.push({id:uid(),societyId:c.societyId,compId:c.id,playerId:id,gross:Array(hs.length).fill(''),courseId:c.course,tee:c.tee,handicapIndexUsed:hc.hi,courseHandicap:hc.ch,playingHandicap:hc.ph,submitted:false,updatedAt:now,lastEditedBy:me.id})}}
  let pairs=c.pairs||[];if(pairFormat&&ids.length>=2){pairs=[];for(let i=0;i<ids.length;i+=2)pairs.push({id:uid(),ids:[ids[i],ids[i+1]]})}
  const groups=[...(c.roundGroups||[]).filter(g=>!(g.playerIds||[]).some(id=>ids.includes(id))),{id:savedGroup?.id||uid(),playerIds:ids,startedAt:savedGroup?.startedAt||now,startedBy:me.id}];next={...state,cards,comps:state.comps.map(q=>q.id===c.id?{...q,entries:[...new Set([...(q.entries||[]),...ids])],pairs,roundGroups:groups}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'START GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,after:{playerIds:ids}}]};setState(next);setGroupIds(ids);sessionStorage.removeItem(groupDraftKey);setSetup(false);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}
- function changeScore(id,i,fn){if(effectiveCompStatus(c)!=='live')return;const now=new Date().toISOString();setState(prev=>{let cards=[...prev.cards];let old=cards.find(x=>x.compId===c.id&&x.playerId===id);if(!old)return prev;const gross=[...(old.gross||Array(hs.length).fill(''))];gross[i]=fn(gross[i]);const card={...old,gross,submitted:false,submittedAt:null,updatedAt:now,lastEditedBy:me.id};cards=cards.map(x=>x.id===old.id?card:x);return {...prev,cards,audit:[...(prev.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,cardId:card.id,playerId:id,playerName:state.players.find(p=>p.id===id)?.name,editedById:me.id,editedByName:me.name,action:'EDIT LIVE GROUP SCORE',at:now,before:{hole:i+1,score:old.gross?.[i]??''},after:{hole:i+1,score:gross[i]}}]}})}
- async function submitGroup(){const now=new Date().toISOString();const ids=groupIds.filter(Boolean);const next={...state,cards:state.cards.map(x=>x.compId===c.id&&ids.includes(x.playerId)?{...x,submitted:true,submittedAt:x.submittedAt||now,updatedAt:now,lastEditedBy:me.id}:x),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'SUBMIT GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,after:{playerIds:ids}}]};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);localStorage.removeItem('ggc-active-comp');sessionStorage.removeItem(groupDraftKey);alert('Round submitted. It has been removed from the dashboard and remains available in Competitions.');back()}
+ function changeScore(id,i,fn){if(v4SubmitLock.current||effectiveCompStatus(c)!=='live')return;const now=new Date().toISOString();setState(prev=>{let cards=[...prev.cards];let old=cards.find(x=>x.compId===c.id&&x.playerId===id);if(!old)return prev;const gross=[...(old.gross||Array(hs.length).fill(''))];gross[i]=fn(gross[i]);const card={...old,gross,submitted:false,submittedAt:null,updatedAt:now,lastEditedBy:me.id};cards=cards.map(x=>x.id===old.id?card:x);return {...prev,cards,audit:[...(prev.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,cardId:card.id,playerId:id,playerName:state.players.find(p=>p.id===id)?.name,editedById:me.id,editedByName:me.name,action:'EDIT LIVE GROUP SCORE',at:now,before:{hole:i+1,score:old.gross?.[i]??''},after:{hole:i+1,score:gross[i]}}]}})}
+ async function submitGroup(){
+  if(v4ScopedEnabled){
+   if(v4SubmitLock.current)return;
+   if(!v4Session){setV4Sync('Open server scorecards before submitting in V4 test mode');return}
+   const ids=groupIds.filter(Boolean);
+   const localCards=state.cards.filter(x=>x.compId===c.id&&ids.includes(x.playerId));
+   if(localCards.length!==ids.length||localCards.some(x=>!v4Drafts[x.id])){setV4Sync('Submission blocked: server card baseline missing');return}
+   v4SubmitLock.current=true;setV4Submitting(true);
+   const now=new Date().toISOString();
+   const saved=[];
+   let submittedCards=[];
+   try{
+    submittedCards=localCards.map(local=>{
+     const baseline=v4Drafts[local.id];
+     if(local.compId!==baseline.compId||local.societyId!==baseline.societyId||local.playerId!==baseline.playerId)throw Error('Card identity mismatch');
+     return {...baseline,gross:[...local.gross],submitted:true,submittedAt:local.submittedAt||now,updatedAt:now,lastEditedBy:me.id};
+    });
+    setV4Sync('Submitting secure cards individually…');
+    for(const card of submittedCards){
+     await v4Session.save(card);
+     saved.push(card);
+    }
+    // Update only cards whose scoped writes were confirmed. Never trigger legacy cloud saving.
+    const savedById=new Map(saved.map(card=>[card.id,card]));
+    setState(prev=>({...prev,cards:prev.cards.map(card=>savedById.has(card.id)?{...card,...savedById.get(card.id)}:card)}));
+    setV4Drafts(prev=>({...prev,...Object.fromEntries(saved.map(card=>[card.id,card]))}));
+    setV4Sync('All '+saved.length+' cards saved and verified securely. Local cards updated; no legacy cloud write.');
+   }catch(e){
+    // Keep successfully saved cards visible even when another golfer's card conflicts.
+    if(saved.length){
+     const savedById=new Map(saved.map(card=>[card.id,card]));
+     setState(prev=>({...prev,cards:prev.cards.map(card=>savedById.has(card.id)?{...card,...savedById.get(card.id)}:card)}));
+     setV4Drafts(prev=>({...prev,...Object.fromEntries(saved.map(card=>[card.id,card]))}));
+    }
+    setV4Sync('Secure submission stopped after '+saved.length+' of '+submittedCards.length+' cards. Reopen server cards to reconcile: '+(e?.message||'unknown error'));
+   }
+   finally{v4SubmitLock.current=false;setV4Submitting(false)}
+   return;
+  }
+  const now=new Date().toISOString();const ids=groupIds.filter(Boolean);const next={...state,cards:state.cards.map(x=>x.compId===c.id&&ids.includes(x.playerId)?{...x,submitted:true,submittedAt:x.submittedAt||now,updatedAt:now,lastEditedBy:me.id}:x),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'SUBMIT GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,after:{playerIds:ids}}]};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);localStorage.removeItem('ggc-active-comp');sessionStorage.removeItem(groupDraftKey);alert('Round submitted. It has been removed from the dashboard and remains available in Competitions.');back()}
  const currentComp=state.comps.find(x=>x.id===c.id)||c;const activePairs=currentComp.pairs||[];
  useEffect(()=>{if(c.format!=='4bbb-match'||activePairs.length!==2||matchDecision)return;const m=fourballMatchResult(activePairs[0],activePairs[1],currentComp,state);if(m.decided&&m.played){const win=m.up>0?activePairs[0]:activePairs[1];const names=(win.ids||[]).map(id=>state.players.find(p=>p.id===id)?.name||'?').join(' & ');setMatchDecision({text:`${names} win ${m.text}`})}},[state.cards,currentComp.id]);
  if(setup)return <div className="app score"><header><button className="icon" onClick={back}><ArrowLeft/></button><div><b>{c.name}</b><small>V4 Beta 1 · Start group</small></div></header><main><div className="card"><h3>WHO ARE YOU SCORING FOR?</h3><p className="muted">Choose 1–4 golfers. Anyone in this group can later open the same live round and score for the group.</p>{[0,1,2,3].map(i=><label key={i}>Golfer {i+1}<select value={groupIds[i]||''} onChange={e=>setSlot(i,e.target.value)}><option value="">{i===0?'Choose golfer…':'No golfer'}</option>{candidates.filter(p=>!groupIds.includes(p.id)||groupIds[i]===p.id).map(p=><option key={p.id} value={p.id}>{p.name} · HI {formatHI(p.hi)}</option>)}</select></label>)}{pairFormat&&groupIds.length>=2&&<div className="pairPreview"><b>PAIR 1</b><span>{groupIds.slice(0,2).map(id=>state.players.find(p=>p.id===id)?.name).filter(Boolean).join(' & ')}</span>{groupIds.length>=4&&<><b>PAIR 2</b><span>{groupIds.slice(2,4).map(id=>state.players.find(p=>p.id===id)?.name).filter(Boolean).join(' & ')}</span></>}</div>}<button className="primary" onClick={startGroup}>START GROUP SCORECARD</button></div></main></div>;
@@ -319,7 +434,8 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
  return <div className="app score groupScore"><header><button className="icon" onClick={back}><ArrowLeft/></button><div><b>{c.name}</b><small>{course?.name} · {c.tee} · V4 Beta 1</small></div></header><main>
  <button className="secondary" onClick={()=>setShowBoard(v=>!v)}><Trophy/> {showBoard?'HIDE':'VIEW'} LIVE LEADERBOARD</button>{showBoard&&<Leaderboard c={currentComp} state={state} setState={setState} auth={auth} setCloud={setCloud}/>} {liveMatch&&<div className="liveMatchStrip"><b>{liveMatchText}</b><span>{liveMatch.played?`THRU ${liveMatch.played}`:'MATCH READY'}</span></div>}<div className="groupCardWrap"><div className={`groupGrid ${pairFormat?'pairedGrid':''}`} style={{'--players':cols}}>{pairFormat&&<><div className="teamBandCorner"></div><div className="teamBand teamA" style={{gridColumn:'2 / span 2'}}>TEAM A · {players.slice(0,2).map(p=>p.name.split(' ')[0]).join(' & ')}</div><div className="teamBand teamB" style={{gridColumn:'4 / span 2'}}>TEAM B · {players.slice(2,4).map(p=>p.name.split(' ')[0]).join(' & ')}</div></>}<div className="gHead holeHead">HOLE</div>{players.map((p,idx)=><div key={p.id} className={`gHead playerHead ${pairFormat?(idx<2?'teamA':'teamB'):''}`}><b>{p.name.split(' ')[0]}</b><small>HI {formatHI(hcap(p.id).hi)}{c.format==='4bbb-match'?` · M${matchRel[p.id]??0}`:` · PH ${hcap(p.id).ph}`}</small></div>)}
  {holeIdx.flatMap(i=>{const h=hs[i];if(!h)return[];return [<div className="holeMeta" key={`h-${i}`}><b>{h.n}</b><small>P{h.par}<br/>SI {h.si}</small></div>,...players.map((p,pi)=>{const card=cardFor(p.id),v=card?.gross?.[i]??'',sh=shots(p.id,h.si),entered=v!==''&&v!==null&&v!==undefined,g=entered?(+v||0):0,net=entered?g-sh:null,pts=entered?Math.max(0,2+(h.par+sh-g)):null,rel=entered?g-h.par:null,shape=!entered?'':rel<=-2?'eagle':rel===-1?'birdie':rel===1?'bogey':rel>=2?'doubleBogey':'';return <div className={`groupCell ${entered?'scoreEntered ':'scoreEmpty '}${pairFormat?(pi<2?'teamA':'teamB'):''}`} key={`${p.id}-${i}`}><span className="shotDots" title={`${sh} handicap shot${sh===1?'':'s'}`}>{dots(sh)}</span><div className={`grossMark ${shape}`}><input inputMode="numeric" aria-label={`${p.name} hole ${h.n} gross score`} value={v} placeholder={h.par} onChange={e=>changeScore(p.id,i,()=>e.target.value)}/></div><div className="holeCalc">{entered&&<><span>({net})</span>{(c.format==='stableford'||c.format==='4bbb-stableford'||c.format==='aggregate-stableford')&&<b>{pts} pts</b>}</>}</div><div className="scoreButtons"><button onClick={()=>changeScore(p.id,i,x=>Math.max(1,x===''?h.par-1:(+x||h.par)-1))}>−</button><button onClick={()=>changeScore(p.id,i,x=>x===''?h.par:(+x||h.par)+1)}>+</button></div></div>})]})}</div></div>
- <div className="card groupStatus"><b>LIVE GROUP ROUND</b><span>{players.map(p=>p.name).join(' · ')}</span><small>Scores save to each golfer's own card. Any golfer in this group can continue the same round.</small></div><div className="scoreactions"><button className="secondary" onClick={()=>{const scored=(state.cards||[]).some(card=>card.compId===c.id&&groupIds.includes(card.playerId)&&(card.gross||[]).some(v=>v!==''&&v!==null&&v!==undefined));if(scored)return alert('This playing group is locked because scoring has started. Use RESTART ROUND to change the golfers.');setSetup(true)}}>CHANGE GROUP</button><button className="secondary danger" onClick={async()=>{if(!confirm('Restart this round? This will erase all scores entered for this playing group and allow the golfers to be selected again. This cannot be undone.'))return;const ids=[...groupIds];const gid=savedGroup?.id;const now=new Date().toISOString();const next={...state,cards:state.cards.filter(card=>!(card.compId===c.id&&ids.includes(card.playerId))),comps:state.comps.map(q=>q.id===c.id?{...q,roundGroups:(q.roundGroups||[]).filter(g=>g.id!==gid)}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'RESTART GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,before:{playerIds:ids},after:{cleared:true}}]};setState(next);setGroupIds([me.id]);setSetup(true);sessionStorage.removeItem(groupDraftKey);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}>RESTART ROUND</button><button className="primary" onClick={submitGroup}><CheckCircle2/> SUBMIT ROUND</button></div>
+ {v4ScopedEnabled&&<div className="card"><b>V4 SECURE SCORECARDS (TEST MODE)</b><p className="muted">Development-only secure scoring: CHECK and VERIFY are read-only. SUBMIT ROUND writes each card separately after OPEN SERVER SCORECARDS. Partial saves require reconciliation; no automatic retry.</p><button className="secondary" onClick={syncV4Cards}>CHECK SECURE CARDS (READ ONLY)</button><button className="secondary" onClick={openV4Session}>OPEN SERVER SCORECARDS</button><button className="secondary" disabled={!v4Session} onClick={verifyV4Drafts}>VERIFY SERVER DRAFTS</button>{v4Sync&&<p role="status">{v4Sync}</p>}</div>}
+ <div className="card groupStatus"><b>LIVE GROUP ROUND</b><span>{players.map(p=>p.name).join(' · ')}</span><small>Scores save to each golfer's own card. Any golfer in this group can continue the same round.</small></div><div className="scoreactions"><button className="secondary" onClick={()=>{const scored=(state.cards||[]).some(card=>card.compId===c.id&&groupIds.includes(card.playerId)&&(card.gross||[]).some(v=>v!==''&&v!==null&&v!==undefined));if(scored)return alert('This playing group is locked because scoring has started. Use RESTART ROUND to change the golfers.');setSetup(true)}}>CHANGE GROUP</button><button className="secondary danger" onClick={async()=>{if(!confirm('Restart this round? This will erase all scores entered for this playing group and allow the golfers to be selected again. This cannot be undone.'))return;const ids=[...groupIds];const gid=savedGroup?.id;const now=new Date().toISOString();const next={...state,cards:state.cards.filter(card=>!(card.compId===c.id&&ids.includes(card.playerId))),comps:state.comps.map(q=>q.id===c.id?{...q,roundGroups:(q.roundGroups||[]).filter(g=>g.id!==gid)}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'RESTART GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,before:{playerIds:ids},after:{cleared:true}}]};setState(next);setGroupIds([me.id]);setSetup(true);sessionStorage.removeItem(groupDraftKey);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}>RESTART ROUND</button><button className="primary" disabled={v4Submitting} onClick={submitGroup}><CheckCircle2/> {v4Submitting?"SAVING SECURE CARDS…":"SUBMIT ROUND"}</button></div>
  {matchDecision&&<div className="shade matchShade"><div className="modal matchWon"><h2>MATCH WON</h2><div className="big">{matchDecision.text}</div><p>The match is mathematically decided. You can finish now or keep entering scores.</p><button className="primary" onClick={submitGroup}>SAVE ROUND & EXIT</button><button className="secondary" onClick={()=>setMatchDecision(null)}>CONTINUE PLAYING</button></div></div>}
  </main></div>}
 
@@ -431,5 +547,42 @@ async function loadProfile(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/pr
 async function saveProfile(token,p){const r=await fetch(`${SUPA_URL}/rest/v1/profiles`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(p)});if(!r.ok)throw Error(await r.text())}
 async function markPasskey(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({passkey_enabled:true,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text())}
 function readAuth(){try{return JSON.parse(localStorage.getItem('ggc-auth'))}catch{return null}}function writeAuth(a){localStorage.setItem('ggc-auth',JSON.stringify(a))}function clearAuth(){localStorage.removeItem('ggc-auth')}async function restoreAuth(){const a=readAuth();if(!a)return null;if(a.expires_at&&Date.now()/1000<a.expires_at-60)return a;if(!a.refresh_token){clearAuth();return null}try{const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:a.refresh_token})});const n=await r.json();if(!r.ok||!n.access_token)throw Error();writeAuth(n);return n}catch{clearAuth();return null}}
-async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();return a[0]?.payload}async function saveCloud(s,set,token){set('Saving…');try{const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify({id:'main',payload:s,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text());set('Cloud saved')}catch{set('Cloud save failed')}}
+// V4 cloud writes use the server-side compare-and-swap RPC only. Never fall back to an unrestricted upsert.
+// Retain the attempted payload on conflict so it can be recovered rather than silently lost.
+let cloudRevision=null;
+// Keep the latest failed attempt in session storage so a page refresh does not erase it.
+// Do not automatically replay a stale whole-state snapshot: it could overwrite newer scores.
+const PENDING_CLOUD_KEY='ggc-v4-pending-cloud-save';
+function persistPendingCloudSave(payload){
+ try{sessionStorage.setItem(PENDING_CLOUD_KEY,JSON.stringify({payload,savedAt:new Date().toISOString()}));return true}catch{return false}
+}
+function readPendingCloudSave(){try{return JSON.parse(sessionStorage.getItem(PENDING_CLOUD_KEY)||'null')}catch{return null}}
+function clearPendingCloudSave(){try{sessionStorage.removeItem(PENDING_CLOUD_KEY)}catch{}}
+let pendingCloudSave=readPendingCloudSave()?.payload||null;
+async function loadCloud(token){const r=await fetch(`${SUPA_URL}/rest/v1/ggc_state?id=eq.main&select=payload,updated_at`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`}});if(!r.ok)throw Error(await r.text());const a=await r.json();if(a[0])cloudRevision=a[0].updated_at;return a[0]?.payload}
+async function saveCloud(s,set,token){
+ if(import.meta.env.VITE_GGC_V4_SCOPED_SCORECARD_UI==='true'){
+  set('V4 test mode — legacy whole-state cloud save blocked');return false;
+ }
+ set('Saving…');
+ pendingCloudSave=s;
+ const persisted=persistPendingCloudSave(s);
+ if(!persisted){set('Cloud save blocked — could not protect unsaved changes on this device');return false}
+ try{
+  if(!cloudRevision){set('Cloud save blocked — load cloud first; local changes retained');return false}
+  // Fail closed: this whole-state RPC is server-only after V4 cutover.
+  // Browser writes require scoped, authenticated scorecard APIs instead.
+  if(import.meta.env.VITE_GGC_ENABLE_BROWSER_WHOLE_STATE_CAS!=='true'){
+   set('Cloud save held — secure scorecard sync is not yet activated; local changes retained');return false;
+  }
+  const expected=cloudRevision;
+  const r=await fetch(`${SUPA_URL}/rest/v1/rpc/ggc_save_state_cas`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({p_expected_revision:expected,p_payload:s})});
+  if(!r.ok){if(r.status===409||r.status===400){set('Cloud conflict — your changes are retained on this device; reload cloud before retrying');return false}throw Error(await r.text())}
+  const revision=await r.json();if(typeof revision!=='string'||!revision)throw Error('Missing server revision');
+  cloudRevision=revision;
+  if(pendingCloudSave===s){pendingCloudSave=null;clearPendingCloudSave()}
+  set('Cloud saved');return true;
+ }catch{set('Cloud save failed — local changes retained');return false}
+}
+
 createRoot(document.getElementById('root')).render(<App/>);

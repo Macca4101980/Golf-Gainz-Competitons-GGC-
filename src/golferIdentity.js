@@ -14,7 +14,7 @@ export function reconcileGolferIdentity(state,{authId,email,profile}){
  const ambiguous=distinct.size>1;
  // A unique email is evidence; matching display names alone is not.
  const linkedIds=[...new Set([...authenticated.filter(p=>p.id!==authId).map(p=>p.id),...(!ambiguous?eligible.map(p=>p.id):[])])];
- const primary=authenticated.find(p=>p.id===authId)||authenticated[0]||(!ambiguous?eligible[0]:null);
+ const primary=authenticated.find(p=>p.id!==authId&&verified&&normalizedEmail(p.email)===verified)||(!ambiguous?eligible[0]:null)||authenticated.find(p=>p.id===authId)||authenticated[0];
  const playerId=primary?.id||authId;
  const canonical=players.find(p=>p.id===playerId);
  const identityLinks={...(state.identityLinks||{})};

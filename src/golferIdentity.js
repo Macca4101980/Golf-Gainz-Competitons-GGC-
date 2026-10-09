@@ -16,7 +16,7 @@ export function reconcileGolferIdentity(state,{authId,email,profile}){
  const distinct=new Set(eligible.map(p=>p.id));
  const ambiguous=distinct.size>1&&!cluster;
  // A unique email is evidence; matching display names alone is not.
- const linkedIds=[...new Set([...authenticated.filter(p=>p.id!==authId).map(p=>p.id),...(!ambiguous?eligible.map(p=>p.id):[]),...(cluster?cluster.ids:[])])];
+ const linkedIds=[...new Set([...authenticated.map(p=>p.id),...(!ambiguous?eligible.map(p=>p.id):[]),...(cluster?cluster.ids:[])])];
  const primary=(cluster&&players.find(p=>p.id===cluster.masterId))||authenticated.find(p=>p.id!==authId&&verified&&normalizedEmail(p.email)===verified)||(!ambiguous?eligible[0]:null)||authenticated.find(p=>p.id===authId)||authenticated[0];
  const playerId=primary?.id||authId;
  const canonical=players.find(p=>p.id===playerId);

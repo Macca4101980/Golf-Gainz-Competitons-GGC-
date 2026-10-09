@@ -8,7 +8,7 @@ import GroupScoreScreen from './GroupScoreScreen.jsx';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
 import{winterLeagueTable,leagueHandicapSettings}from'./winterLeague.js';
 import{FORMAT_RULES,scoreCard,formatResult,validateFormatStart,oomPointsForField,normaliseBlindPairIds,courseHandicap,playingHandicap,pairScore,fourballMatchResult,fourballMatchHandicaps}from'./scoring.js';
-const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const K='ggc-build2';
+const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const K=SUPA_URL.includes('omgnfrybqiqgxnpwgfol.supabase.co')?'ggc-isolated-test-v1':'ggc-build2';
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const formats=[
 ['stableford','Stableford','Play your own ball. Highest Stableford points wins.','points','Individual'],

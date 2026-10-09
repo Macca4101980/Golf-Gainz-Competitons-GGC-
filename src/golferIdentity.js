@@ -2,19 +2,22 @@
  * Only exact Auth UUIDs or unique verified email matches are linked.
  * Ambiguous email matches are intentionally left untouched for review.
  */
+// Explicitly confirmed historical golfer identity: Summy's 2025/26 and 2026/27 entries are one person.
+const confirmedClusters=[{authId:'bcb8de15-64d9-49aa-beee-c4b8d39d2508',email:'davidsummerfield15@gmail.com',masterId:'wl-summy',ids:['wl-summy','wl2526-summy','bcb8de15-64d9-49aa-beee-c4b8d39d2508']}];
 export const normalizedEmail=v=>String(v||'').trim().toLowerCase();
 export function reconcileGolferIdentity(state,{authId,email,profile}){
  if(!authId||!Array.isArray(state?.players))return {state,playerId:null,linkedIds:[],ambiguous:false};
  const players=state.players;
  const verified=normalizedEmail(email);
+ const cluster=confirmedClusters.find(c=>c.authId===authId&&normalizedEmail(c.email)===verified&&c.ids.every(id=>players.some(p=>p.id===id))&&players.filter(p=>c.ids.includes(p.id)).every(p=>!p.authUserId||p.authUserId===authId));
  const authenticated=players.filter(p=>p.authUserId===authId||p.id===authId);
  const foreign=players.filter(p=>p.authUserId&&p.authUserId!==authId);
  const eligible=players.filter(p=>p.id!==authId&&p.authUserId!==authId&&!foreign.includes(p)&&verified&&normalizedEmail(p.email)===verified);
  const distinct=new Set(eligible.map(p=>p.id));
- const ambiguous=distinct.size>1;
+ const ambiguous=distinct.size>1&&!cluster;
  // A unique email is evidence; matching display names alone is not.
- const linkedIds=[...new Set([...authenticated.filter(p=>p.id!==authId).map(p=>p.id),...(!ambiguous?eligible.map(p=>p.id):[])])];
- const primary=authenticated.find(p=>p.id!==authId&&verified&&normalizedEmail(p.email)===verified)||(!ambiguous?eligible[0]:null)||authenticated.find(p=>p.id===authId)||authenticated[0];
+ const linkedIds=[...new Set([...authenticated.filter(p=>p.id!==authId).map(p=>p.id),...(!ambiguous?eligible.map(p=>p.id):[]),...(cluster?cluster.ids:[])])];
+ const primary=(cluster&&players.find(p=>p.id===cluster.masterId))||authenticated.find(p=>p.id!==authId&&verified&&normalizedEmail(p.email)===verified)||(!ambiguous?eligible[0]:null)||authenticated.find(p=>p.id===authId)||authenticated[0];
  const playerId=primary?.id||authId;
  const canonical=players.find(p=>p.id===playerId);
  const identityLinks={...(state.identityLinks||{})};

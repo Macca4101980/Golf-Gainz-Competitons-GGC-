@@ -49,4 +49,4 @@ jobs:
     needs: [unit-and-build, isolated-postgres]
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Automated stages passed. Real protected-backup rehearsal, multi-device live checks and production approval remain separate manual gates."
+      - run: echo "Automated stages passed. Private real-backup rehearsal passed 2026-10-09; two-user live acceptance, production rollback plan and explicit release approval remain separate manual gates."

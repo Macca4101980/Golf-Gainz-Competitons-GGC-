@@ -138,7 +138,9 @@ function mergeLiveState(local,remote){
  const identityLinks={...(remote.identityLinks||{}),...(local.identityLinks||{})};
  const canonicalId=id=>{let cur=id,seen=new Set();while(identityLinks[cur]&&identityLinks[cur]!==cur&&!seen.has(cur)){seen.add(cur);cur=identityLinks[cur]}return cur};
  const playerMerge=(a,b)=>{const base=newer(a,b),claimed=[a,b].find(p=>p?.authUserId&&!p?.placeholder&&!p?.unclaimed);return claimed?{...base,authUserId:claimed.authUserId,placeholder:false,unclaimed:false,claimToken:null,membershipStatus:'member',emailVerified:claimed.emailVerified??base.emailVerified,claimedAt:claimed.claimedAt||base.claimedAt}:base};
- const players=byId(local.players,remote.players,playerMerge);
+ const players=byId(local.players,remote.players,playerMerge)
+  .filter(p=>canonicalId(p.id)===p.id)
+  .map(p=>({...p,id:canonicalId(p.id)}));
 
  const deletedCourseIds=[...new Set([...(local.deletedCourseIds||[]),...(remote.deletedCourseIds||[])])];
  const deletedCourseSet=new Set(deletedCourseIds);
@@ -149,7 +151,7 @@ function mergeLiveState(local,remote){
  const deletedCompIds=[...new Set([...(local.deletedCompIds||[]),...(remote.deletedCompIds||[])])];
  const deletedLeagueIds=[...new Set([...(local.deletedLeagueIds||[]),...(remote.deletedLeagueIds||[])])];
  const deletedSet=new Set(deletedCompIds);const deletedLeagueSet=new Set(deletedLeagueIds);
- const cards=byId(local.cards,remote.cards,newer).filter(card=>!deletedSet.has(card.compId));
+ const cards=byId(local.cards,remote.cards,newer).filter(card=>!deletedSet.has(card.compId)).map(card=>({...card,playerId:canonicalId(card.playerId)}));
  const audit=byId(local.audit,remote.audit,(a,b)=>b);
  const mergeIdMap=(a={},b={})=>{const out={...b};for(const [owner,ids] of Object.entries(a||{}))out[owner]=[...new Set([...(out[owner]||[]),...(ids||[])])];return out};
  const hiddenContacts=mergeIdMap(local.hiddenContacts,remote.hiddenContacts);

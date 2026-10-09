@@ -12,15 +12,15 @@ const state=()=>({players:[
  contacts:{'wl-james':['friend']},hiddenContacts:{}});
 test('joins an existing registered golfer with a unique email-linked historical golfer',()=>{
  const result=reconcileGolferIdentity(state(),{authId,email:'J@EXAMPLE.COM',profile:{display_name:'James'}});
- assert.equal(result.playerId,authId);
+ assert.equal(result.playerId,'wl-james');
  assert.equal(result.state.players.length,1);
- assert.deepEqual(result.state.societies[0].members,[authId]);
- assert.equal(result.state.societies[0].ownerId,authId);
- assert.deepEqual(result.state.comps[0].entries,[authId]);
- assert.equal(result.state.cards[0].playerId,authId);
+ assert.deepEqual(result.state.societies[0].members,['wl-james']);
+ assert.equal(result.state.societies[0].ownerId,'wl-james');
+ assert.deepEqual(result.state.comps[0].entries,['wl-james']);
+ assert.equal(result.state.cards[0].playerId,'wl-james');
  assert.deepEqual(result.state.cards[0].score,[4,3]);
- assert.equal(result.state.leagues[0].startingHandicaps[authId],12);
- assert.equal(result.state.identityLinks['wl-james'],authId);
+ assert.equal(result.state.leagues[0].startingHandicaps['wl-james'],12);
+ assert.equal(result.state.identityLinks[authId],'wl-james');
 });
 test('never merges a different authenticated account even with matching email',()=>{
  const s=state();s.players[0].authUserId='other-auth';

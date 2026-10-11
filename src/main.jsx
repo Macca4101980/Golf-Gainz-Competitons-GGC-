@@ -215,7 +215,7 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   const local=latestStateRef.current;
   busy=true;
   try{
-   const result=await recordSaveCoordinator.reconcileRecordsFromCloud(local);
+   const result=await recordSaveCoordinator.reconcileRecordsFromCloud(local,{canCommit:()=>active&&latestStateRef.current===local&&!document.querySelector('[data-ggc-dirty="true"]')&&(!document.activeElement||document.activeElement===document.body||!(document.activeElement.matches?.('input,textarea,select,[contenteditable="true"]')||document.activeElement.closest?.('[role="dialog"]')))});
    if(!active||!result)return;
    if(latestStateRef.current!==local){setCloud('Cloud check deferred: local state changed during fetch');return;}
    if(document.querySelector('[data-ggc-dirty="true"]'))return;

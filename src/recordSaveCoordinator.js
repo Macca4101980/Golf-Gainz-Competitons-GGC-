@@ -8,6 +8,21 @@ export function createRecordSaveCoordinator(store){
  let pending=Promise.resolve();
  let generation=0;
  function initialize(snapshot){baseline=structuredClone(snapshot);generation++;}
+ async function initializeFromCloud(snapshot){
+  // Validate every cloud record/version before enabling writes. Never assume a local snapshot is authoritative.
+  const cloud=structuredClone(snapshot);
+  for(const kind of ['players','societies','comps','cards','leagues','courses']){
+   if(!Array.isArray(cloud[kind]))continue;
+   for(const record of cloud[kind]){
+    if(record?.id==null)throw Error('GGC_RECORD_ID_REQUIRED: '+kind);
+    const remote=await store.load(kind,String(record.id));
+    if(remote===null)throw Error('GGC_RECORD_MIGRATION_REQUIRED: '+kind+'/'+record.id);
+    if(JSON.stringify(remote)!==JSON.stringify(record))throw Error('GGC_RECORD_BASELINE_MISMATCH: '+kind+'/'+record.id);
+   }
+  }
+  initialize(cloud);
+ }
+
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   const work=async()=>{
@@ -29,5 +44,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.catch(()=>{});
   return result;
  }
- return {initialize,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline)};
+ return {initialize,initializeFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline)};
 }

@@ -37,7 +37,9 @@ function fakeDb(){
 }
 test('different records save independently',async()=>{
  const db=fakeDb(),a=createRecordStore(db),b=createRecordStore(db);
+ await a.load('players','one');
  await a.save('players','one',{hi:9});
+ await b.load('players','two');
  await b.save('players','two',{hi:12});
  assert.deepEqual(await a.load('players','two'),{hi:12});
  assert.deepEqual(await b.load('players','one'),{hi:9});
@@ -52,6 +54,7 @@ test('stale same-record writes are rejected',async()=>{
 });
 test('deletion marker blocks stale resurrection',async()=>{
  const db=fakeDb(),a=createRecordStore(db),b=createRecordStore(db);
+ await a.load('players','old');
  await a.save('players','old',{name:'old'});
  await b.load('players','old');
  await a.save('players','old',{name:'old'},{deleted:true});

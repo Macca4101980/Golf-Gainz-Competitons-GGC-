@@ -209,9 +209,6 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
  }).subscribe(status=>{if(status==='SUBSCRIBED')setCloud('● Live connected');if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloud('Realtime reconnecting…')});
  const catchUp=async()=>{
   if(!active||busy||!navigator.onLine||!cloudHydratedRef.current||!recordSaveCoordinator.isInitialized())return;
-  if(document.querySelector('[data-ggc-dirty="true"]'))return;
-  const el=document.activeElement;
-  if(el&&el!==document.body&&(el.matches?.('input,textarea,select,[contenteditable="true"]')||el.closest?.('[role="dialog"]')))return;
   const before=recordSaveCoordinator.getBaseline();if(!before)return;
   if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
   busy=true;
@@ -220,7 +217,7 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
    if(!active||!next)return;
    // Never apply a remote snapshot over edits made while fetching it.
    if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
-   if(document.querySelector('[data-ggc-dirty="true"]'))return;
+   if(document.querySelector('[data-ggc-dirty="true"]')){setCloud('Cloud data available — active form protected');return;}
    remoteStateRef.current=true;
    latestStateRef.current={...latestStateRef.current,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))};
    setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))}));

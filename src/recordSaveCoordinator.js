@@ -9,9 +9,12 @@ export function createRecordSaveCoordinator(store){
  let generation=0;
  let latestDesired=null;
  let initialization=null;
+ let initializationSignature=null;
  function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;generation++;}
  async function initializeFromCloud(snapshot){
-  if(initialization)return initialization;
+  const signature=JSON.stringify(snapshot);
+  if(initialization){if(signature!==initializationSignature)throw Error('GGC_BASELINE_INITIALIZATION_IN_PROGRESS');return initialization;}
+  initializationSignature=signature;
   initialization=(async()=>{
   // Validate every cloud record/version before enabling writes. Never assume a local snapshot is authoritative.
   const cloud=structuredClone(snapshot);
@@ -26,7 +29,7 @@ export function createRecordSaveCoordinator(store){
   }
   initialize(cloud);
   })();
-  try{return await initialization}finally{initialization=null}
+  try{return await initialization}finally{initialization=null;initializationSignature=null}
  }
 
  function enqueue(snapshot){

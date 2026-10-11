@@ -13,6 +13,7 @@ export function createRecordSaveCoordinator(store){
  // A verified baseline must not be silently replaced by a later cloud refresh.
  function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;generation++;}
  async function initializeFromCloud(snapshot){
+  if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
   const signature=JSON.stringify(snapshot);
   if(initialization){if(signature!==initializationSignature)throw Error('GGC_BASELINE_INITIALIZATION_IN_PROGRESS');return initialization;}
   initializationSignature=signature;

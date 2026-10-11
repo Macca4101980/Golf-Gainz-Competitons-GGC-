@@ -218,6 +218,8 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
    // Never apply a remote snapshot over edits made while fetching it.
    if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
    if(document.querySelector('[data-ggc-dirty="true"]')){setCloud('Cloud data available — active form protected');return;}
+   const focused=document.activeElement;
+   if(focused&&focused!==document.body&&(focused.matches?.('input,textarea,select,[contenteditable="true"]')||focused.closest?.('[role="dialog"]'))){setCloud('Cloud data available — focused form protected');return;}
    remoteStateRef.current=true;
    latestStateRef.current={...latestStateRef.current,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))};
    setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))}));

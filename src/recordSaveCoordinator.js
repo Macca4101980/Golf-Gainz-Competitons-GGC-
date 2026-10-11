@@ -80,13 +80,13 @@ export function createRecordSaveCoordinator(store){
   latestDesired=structuredClone(next);
   return next;
  }
- async function reconcileRecordsFromCloud(currentSnapshot){
+ async function reconcileRecordsFromCloud(currentSnapshot,{canCommit=()=>true}={}){
   if(!baseline||lastFailure||failedDesired||!store.loadAll)return null;
   await pending;
   if(lastFailure||failedDesired)return null;
   const start=structuredClone(baseline);
   const staged=await store.loadAll(['players','societies','comps','cards','leagues','courses'],{commitVersions:false});
-  if(JSON.stringify(baseline)!==JSON.stringify(start)||lastFailure||failedDesired)return null;
+  if(JSON.stringify(baseline)!==JSON.stringify(start)||lastFailure||failedDesired||!canCommit())return null;
   const next=structuredClone(currentSnapshot);
   const acceptedVersions=new Map();
   let accepted=0,protectedRecords=0;
@@ -116,6 +116,7 @@ export function createRecordSaveCoordinator(store){
     if(i>=0)baseline[kind][i]=structuredClone(record);else baseline[kind].push(structuredClone(record));
    }}
   }
+  if(!canCommit())return null;
   store.commitLoadedVersions(acceptedVersions);
   if(!protectedRecords)latestDesired=structuredClone(baseline);
   return {snapshot:next,accepted,protectedRecords};

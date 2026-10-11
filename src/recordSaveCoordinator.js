@@ -88,6 +88,7 @@ export function createRecordSaveCoordinator(store){
   const staged=await store.loadAll(['players','societies','comps','cards','leagues','courses'],{commitVersions:false});
   if(JSON.stringify(baseline)!==JSON.stringify(start)||lastFailure||failedDesired||!canCommit())return null;
   const next=structuredClone(currentSnapshot);
+  const nextBaseline=structuredClone(start);
   const acceptedVersions=new Map();
   let accepted=0,protectedRecords=0;
   for(const kind of ['players','societies','comps','cards','leagues','courses']){
@@ -109,14 +110,15 @@ export function createRecordSaveCoordinator(store){
     if(staged.versions.has(versionKey))acceptedVersions.set(versionKey,staged.versions.get(versionKey));
    }
    next[kind]=output;
-   baseline[kind]=structuredClone(output.filter(record=>JSON.stringify(local.get(String(record.id)))===JSON.stringify(base.get(String(record.id)))));
+   nextBaseline[kind]=structuredClone(output.filter(record=>JSON.stringify(local.get(String(record.id)))===JSON.stringify(base.get(String(record.id)))));
    // Retain the original acknowledged version of every locally edited record.
    for(const [id,record] of base){if(JSON.stringify(local.get(id))!==JSON.stringify(record)){
-    const i=baseline[kind].findIndex(x=>String(x.id)===id);
-    if(i>=0)baseline[kind][i]=structuredClone(record);else baseline[kind].push(structuredClone(record));
+    const i=nextBaseline[kind].findIndex(x=>String(x.id)===id);
+    if(i>=0)nextBaseline[kind][i]=structuredClone(record);else nextBaseline[kind].push(structuredClone(record));
    }}
   }
   if(!canCommit())return null;
+  baseline=nextBaseline;
   store.commitLoadedVersions(acceptedVersions);
   if(!protectedRecords)latestDesired=structuredClone(baseline);
   return {snapshot:next,accepted,protectedRecords};

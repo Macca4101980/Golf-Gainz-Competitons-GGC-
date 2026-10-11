@@ -207,9 +207,30 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   if(!row||!kinds.includes(row.kind))return;
   pending.set(row.kind+':'+row.record_id,{kind:row.kind,id:row.record_id});void flush();
  }).subscribe(status=>{if(status==='SUBSCRIBED')setCloud('● Live connected');if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloud('Realtime reconnecting…')});
- const wake=()=>{if(document.visibilityState==='visible')void flush()};
- const timer=setInterval(flush,2500);document.addEventListener('visibilitychange',wake);window.addEventListener('focus',flush);
- return()=>{active=false;clearInterval(timer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('focus',flush);supabase.removeChannel(channel)};
+ const catchUp=async()=>{
+  if(!active||busy||!navigator.onLine||!cloudHydratedRef.current||!recordSaveCoordinator.isInitialized())return;
+  if(document.querySelector('[data-ggc-dirty="true"]'))return;
+  const el=document.activeElement;
+  if(el&&el!==document.body&&(el.matches?.('input,textarea,select,[contenteditable="true"]')||el.closest?.('[role="dialog"]')))return;
+  const before=recordSaveCoordinator.getBaseline();if(!before)return;
+  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[])))return;
+  busy=true;
+  try{
+   const next=await recordSaveCoordinator.catchUpFromCloud();
+   if(!active||!next)return;
+   // Never apply a remote snapshot over edits made while fetching it.
+   if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[])))return;
+   if(document.querySelector('[data-ggc-dirty="true"]'))return;
+   remoteStateRef.current=true;
+   latestStateRef.current={...latestStateRef.current,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))};
+   setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))}));
+   pending.clear();setCloud('● Reconnected and synced');
+  }catch(e){console.error('Offline catch-up deferred',e)}finally{busy=false}
+ };
+ const wake=()=>{if(document.visibilityState==='visible'){void catchUp();void flush()}};
+ const online=()=>{void catchUp()};
+ const timer=setInterval(flush,2500);document.addEventListener('visibilitychange',wake);window.addEventListener('focus',online);window.addEventListener('online',online);
+ return()=>{active=false;clearInterval(timer);document.removeEventListener('visibilitychange',wake);window.removeEventListener('focus',online);window.removeEventListener('online',online);supabase.removeChannel(channel)};
 },[auth?.access_token,profileReady]);
 useEffect(()=>{if(!CLOUD||!auth?.access_token)return;/* Disable unsafe legacy background merges until per-record sync is ready. */return;let alive=true;let fetching=false;const refresh=async(label='Live synced')=>{if(!alive||fetching)return;fetching=true;try{const latest=await loadCloud(auth.access_token);if(alive&&latest){const active=document.activeElement;const editing=active&&active!==document.body&&(active.matches?.('input,textarea,select,[contenteditable="true"]')||active.closest?.('[role="dialog"]'));if(editing||document.querySelector('[data-ggc-dirty="true"]')){pendingCloudRefreshRef.current=latest;setCloud('Live update pending — finish editing');return}pendingCloudRefreshRef.current=null;const remote=migrate(latest);remoteStateRef.current=true;setState(local=>mergeLiveState(local,remote));setCloud(label)}}catch{}finally{fetching=false}};const channel=supabase.channel('ggc-live-main').on('postgres_changes',{event:'*',schema:'public',table:'ggc_state',filter:'id=eq.main'},()=>refresh('Live synced')).subscribe(status=>{if(status==='SUBSCRIBED')setCloud('● Live');if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloud('Reconnecting…')});const wake=()=>{if(document.visibilityState==='visible')refresh('● Live')};const online=()=>refresh('● Live');document.addEventListener('visibilitychange',wake);window.addEventListener('focus',wake);window.addEventListener('online',online);return()=>{alive=false;document.removeEventListener('visibilitychange',wake);window.removeEventListener('focus',wake);window.removeEventListener('online',online);supabase.removeChannel(channel)}},[auth?.access_token]);
 useEffect(()=>{if(!CLOUD||!auth?.access_token||!auth?.user?.id)return;let cancelled=false;Promise.all([loadCloud(auth.access_token),loadProfile(auth.access_token,auth.user.id).catch(()=>null)]).then(async ([cloudState,profile])=>{if(cancelled)return;let next=cloudState?migrate(cloudState):migrate(state);if(RECORD_STORE_ENABLED){if(cloudState){await recordSaveCoordinator.initializeFromCloud(next)}else{next=await recordSaveCoordinator.initializeFromRecords(migrate(seed))}if(cancelled)return;}if(!profile){const legacy=next.players.find(p=>p.authUserId===auth.user.id);if(legacy){profile={id:auth.user.id,display_name:legacy.name,handicap_index:+legacy.hi||0,passkey_enabled:!!legacy.passkeyEnabled};try{await saveProfile(auth.access_token,profile)}catch{}}}if(profile){const linked=reconcileGolferIdentity(next,{authId:auth.user.id,email:auth.user.email,profile});next=linked.state;setMe(linked.playerId);localStorage.setItem('ggc-me',linked.playerId);if(linked.ambiguous)console.warn('Ambiguous golfer email — manual identity review required')}else{setMe('');localStorage.removeItem('ggc-me')}setState(next);cloudHydratedRef.current=true;setProfileReady(true);setCloud(cloudState?'Cloud loaded':'Cloud ready')}).catch(e=>{if(!cancelled){setCloud('Cloud load failed — saving blocked');console.error('Cloud load failed',e)}});return()=>{cancelled=true}},[auth?.user?.id,auth?.access_token]);

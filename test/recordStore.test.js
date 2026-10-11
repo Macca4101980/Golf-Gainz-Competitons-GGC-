@@ -46,6 +46,7 @@ test('different records save independently',async()=>{
 });
 test('stale same-record writes are rejected',async()=>{
  const db=fakeDb(),a=createRecordStore(db),b=createRecordStore(db);
+ await a.load('players','one');
  await a.save('players','one',{hi:9});
  await b.load('players','one');
  await a.save('players','one',{hi:8});

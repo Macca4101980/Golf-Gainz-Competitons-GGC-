@@ -7,7 +7,8 @@ export function createRecordSaveCoordinator(store){
  let baseline=null;
  let pending=Promise.resolve();
  let generation=0;
- function initialize(snapshot){baseline=structuredClone(snapshot);generation++;}
+ let latestDesired=null;
+ function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;generation++;}
  async function initializeFromCloud(snapshot){
   // Validate every cloud record/version before enabling writes. Never assume a local snapshot is authoritative.
   const cloud=structuredClone(snapshot);
@@ -25,12 +26,17 @@ export function createRecordSaveCoordinator(store){
 
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
+  latestDesired=desired;
   const work=async()=>{
    if(requestGeneration!==generation)throw Error('GGC_BASELINE_CHANGED');
    if(!baseline)throw Error('GGC_BASELINE_REQUIRED');
+   // Only the newest snapshot may be persisted; an older queued snapshot must never roll back a newer edit.
+   if(desired!==latestDesired)return 0;
    const changes=planRecordChanges(baseline,desired);
    for(const change of changes){
     if(requestGeneration!==generation)throw Error('GGC_BASELINE_CHANGED');
+    // Skip stale queued writes when a more recent snapshot has superseded this one.
+    if(desired!==latestDesired)return 0;
     await store.save(change.kind,change.id,change.data,{deleted:change.deleted});
     // Acknowledge only this confirmed record; preserve other pending edits.
     const collection=baseline[change.kind];

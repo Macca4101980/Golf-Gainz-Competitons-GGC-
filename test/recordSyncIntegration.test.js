@@ -16,7 +16,7 @@ test('isolated record sync blocks saving before cloud migration',async()=>{
 
 test('isolated record sync writes only the edited record after cloud verification',async()=>{
  const existing=base(),saved=[];
- const store={async load(kind,id){assert.equal(kind,'players');assert.equal(id,'p1');return existing.players[0]},async save(kind,id,data){saved.push({kind,id,data})}};
+ const store={hasBaseline(){return true},async load(kind,id){assert.equal(kind,'players');assert.equal(id,'p1');return existing.players[0]},async save(kind,id,data){saved.push({kind,id,data})}};
  const sync=createRecordSaveCoordinator(store);
  await sync.initializeFromCloud(existing);
  const changed=base();changed.players[0].email='richard-hook@live.co.uk';

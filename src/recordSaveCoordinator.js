@@ -8,8 +8,11 @@ export function createRecordSaveCoordinator(store){
  let pending=Promise.resolve();
  let generation=0;
  let latestDesired=null;
+ let initialization=null;
  function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;generation++;}
  async function initializeFromCloud(snapshot){
+  if(initialization)return initialization;
+  initialization=(async()=>{
   // Validate every cloud record/version before enabling writes. Never assume a local snapshot is authoritative.
   const cloud=structuredClone(snapshot);
   for(const kind of ['players','societies','comps','cards','leagues','courses']){
@@ -22,6 +25,8 @@ export function createRecordSaveCoordinator(store){
    }
   }
   initialize(cloud);
+  })();
+  try{return await initialization}finally{initialization=null}
  }
 
  function enqueue(snapshot){

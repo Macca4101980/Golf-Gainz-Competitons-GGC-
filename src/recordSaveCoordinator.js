@@ -10,6 +10,7 @@ export function createRecordSaveCoordinator(store){
  let latestDesired=null;
  let initialization=null;
  let initializationSignature=null;
+ let lastFailure=null;
  // A verified baseline must not be silently replaced by a later cloud refresh.
  function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;generation++;}
  async function initializeFromCloud(snapshot){
@@ -62,8 +63,8 @@ export function createRecordSaveCoordinator(store){
    return changes.length;
   };
   const result=pending.then(work);
-  pending=result.catch(()=>{});
+  pending=result.then(value=>{lastFailure=null;return value},error=>{lastFailure=error;});
   return result;
  }
- return {initialize,initializeFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline)};
+ return {initialize,initializeFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure};
 }

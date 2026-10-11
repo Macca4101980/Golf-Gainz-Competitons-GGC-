@@ -36,6 +36,17 @@ export function createRecordSaveCoordinator(store){
   try{return await initialization}finally{initialization=null;initializationSignature=null}
  }
 
+ async function initializeFromRecords(snapshot){
+  if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
+  if(!store.loadAll)throw Error('GGC_RECORD_LIST_UNAVAILABLE');
+  const kinds=['players','societies','comps','cards','leagues','courses'];
+  const records=await store.loadAll(kinds);
+  if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
+  const next=structuredClone(snapshot);
+  for(const kind of kinds)next[kind]=records[kind];
+  initialize(next);
+  return structuredClone(next);
+ }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   latestDesired=desired;
@@ -67,5 +78,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{lastFailure=null;failedDesired=null;return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+ return {initialize,initializeFromCloud,initializeFromRecords,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

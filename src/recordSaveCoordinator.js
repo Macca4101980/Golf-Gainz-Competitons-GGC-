@@ -91,6 +91,7 @@ export function createRecordSaveCoordinator(store){
   const nextBaseline=structuredClone(start);
   const acceptedVersions=new Map();
   let accepted=0,protectedRecords=0;
+  const protectedDetails=[];
   for(const kind of ['players','societies','comps','cards','leagues','courses']){
    const base=new Map((start[kind]||[]).map(record=>[String(record.id),record]));
    const local=new Map((currentSnapshot[kind]||[]).map(record=>[String(record.id),record]));
@@ -101,6 +102,8 @@ export function createRecordSaveCoordinator(store){
     const before=base.get(id),mine=local.get(id),theirs=remote.get(id);
     if(JSON.stringify(mine)!==JSON.stringify(before)){
      if(mine!==undefined)output.push(mine);
+     const changedFields=[...new Set([...Object.keys(before||{}),...Object.keys(mine||{})])].filter(field=>JSON.stringify(before?.[field])!==JSON.stringify(mine?.[field]));
+     protectedDetails.push({kind,id,reason:before===undefined?'local-only':mine===undefined?'locally-removed':'locally-modified',changedFields});
      protectedRecords++;
      continue;
     }
@@ -121,7 +124,7 @@ export function createRecordSaveCoordinator(store){
   baseline=nextBaseline;
   store.commitLoadedVersions(acceptedVersions);
   if(!protectedRecords)latestDesired=structuredClone(baseline);
-  return {snapshot:next,accepted,protectedRecords};
+  return {snapshot:next,accepted,protectedRecords,protectedDetails};
  }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;

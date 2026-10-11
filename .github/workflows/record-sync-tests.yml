@@ -1,0 +1,27 @@
+name: GGC Record Sync Tests
+on:
+  push:
+    branches:
+      - fix/record-sync-data-integrity-20261011
+  pull_request:
+    paths:
+      - 'src/record*.js'
+      - 'src/editProtection.js'
+      - 'test/*.test.js'
+      - 'src/main.jsx'
+      - 'package.json'
+      - '.github/workflows/record-sync-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

@@ -189,7 +189,7 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   const el=document.activeElement;
   if(el&&el!==document.body&&(el.matches?.('input,textarea,select,[contenteditable="true"]')||el.closest?.('[role="dialog"]')))return;
   const base=recordSaveCoordinator.getBaseline();if(!base)return;
-  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(base[kind]||[])))return;
+  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(base[kind]||[]))){setCloud('Incoming sync paused: local changes pending');return;}
   busy=true;
   try{for(const [key,change] of [...pending]){
    if(!active)break;
@@ -213,13 +213,13 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   const el=document.activeElement;
   if(el&&el!==document.body&&(el.matches?.('input,textarea,select,[contenteditable="true"]')||el.closest?.('[role="dialog"]')))return;
   const before=recordSaveCoordinator.getBaseline();if(!before)return;
-  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[])))return;
+  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
   busy=true;
   try{
    const next=await recordSaveCoordinator.catchUpFromCloud();
    if(!active||!next)return;
    // Never apply a remote snapshot over edits made while fetching it.
-   if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[])))return;
+   if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
    if(document.querySelector('[data-ggc-dirty="true"]'))return;
    remoteStateRef.current=true;
    latestStateRef.current={...latestStateRef.current,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))};

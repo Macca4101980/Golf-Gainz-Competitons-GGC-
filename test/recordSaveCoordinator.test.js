@@ -46,3 +46,13 @@ test('two devices editing different golfers preserve both changes',async()=>{
  assert.deepEqual(writes,['a','b']);
  assert.equal(cloud.get('a').hi,9);assert.equal(cloud.get('b').hi,19);
 });
+
+
+test('cloud refresh cannot replace an initialized baseline containing unsaved edits',async()=>{
+ const store={hasBaseline(){return true},async save(){throw Error('offline')}};
+ const coordinator=createRecordSaveCoordinator(store);
+ coordinator.initialize({players:[{id:'p',hi:10}]});
+ await assert.rejects(coordinator.enqueue({players:[{id:'p',hi:9}]}),/offline/);
+ await assert.rejects(coordinator.initializeFromCloud({players:[{id:'p',hi:10}]}),/GGC_BASELINE_ALREADY_INITIALIZED/);
+ assert.equal(coordinator.getBaseline().players[0].hi,10);
+});

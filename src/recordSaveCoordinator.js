@@ -70,10 +70,12 @@ export function createRecordSaveCoordinator(store){
   const original=JSON.stringify(baseline);
   if(lastFailure||failedDesired||(latestDesired&&JSON.stringify(latestDesired)!==original))return null;
   const kinds=['players','societies','comps','cards','leagues','courses'];
-  const records=await store.loadAll(kinds);
+  const staged=await store.loadAll(kinds,{commitVersions:false});
+  const records=staged.records;
   if(lastFailure||failedDesired||JSON.stringify(baseline)!==original||(latestDesired&&JSON.stringify(latestDesired)!==original))return null;
   const next=structuredClone(baseline);
   for(const kind of kinds)next[kind]=records[kind];
+  store.commitLoadedVersions(staged.versions);
   baseline=structuredClone(next);
   latestDesired=structuredClone(next);
   return next;

@@ -10,6 +10,7 @@ export function createRecordSaveCoordinator(store){
  let latestDesired=null;
  let initialization=null;
  let initializationSignature=null;
+ // A verified baseline must not be silently replaced by a later cloud refresh.
  function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;generation++;}
  async function initializeFromCloud(snapshot){
   const signature=JSON.stringify(snapshot);

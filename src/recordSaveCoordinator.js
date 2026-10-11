@@ -80,6 +80,46 @@ export function createRecordSaveCoordinator(store){
   latestDesired=structuredClone(next);
   return next;
  }
+ async function reconcileRecordsFromCloud(currentSnapshot){
+  if(!baseline||lastFailure||failedDesired||!store.loadAll)return null;
+  await pending;
+  if(lastFailure||failedDesired)return null;
+  const start=structuredClone(baseline);
+  const staged=await store.loadAll(['players','societies','comps','cards','leagues','courses'],{commitVersions:false});
+  if(JSON.stringify(baseline)!==JSON.stringify(start)||lastFailure||failedDesired)return null;
+  const next=structuredClone(currentSnapshot);
+  const acceptedVersions=new Map();
+  let accepted=0,protectedRecords=0;
+  for(const kind of ['players','societies','comps','cards','leagues','courses']){
+   const base=new Map((start[kind]||[]).map(record=>[String(record.id),record]));
+   const local=new Map((currentSnapshot[kind]||[]).map(record=>[String(record.id),record]));
+   const remote=new Map((staged.records[kind]||[]).map(record=>[String(record.id),record]));
+   const ids=new Set([...base.keys(),...local.keys(),...remote.keys()]);
+   const output=[];
+   for(const id of ids){
+    const before=base.get(id),mine=local.get(id),theirs=remote.get(id);
+    if(JSON.stringify(mine)!==JSON.stringify(before)){
+     if(mine!==undefined)output.push(mine);
+     protectedRecords++;
+     continue;
+    }
+    if(theirs!==undefined)output.push(theirs);
+    if(JSON.stringify(theirs)!==JSON.stringify(before))accepted++;
+    const versionKey=kind+':'+id;
+    if(staged.versions.has(versionKey))acceptedVersions.set(versionKey,staged.versions.get(versionKey));
+   }
+   next[kind]=output;
+   baseline[kind]=structuredClone(output.filter(record=>JSON.stringify(local.get(String(record.id)))===JSON.stringify(base.get(String(record.id)))));
+   // Retain the original acknowledged version of every locally edited record.
+   for(const [id,record] of base){if(JSON.stringify(local.get(id))!==JSON.stringify(record)){
+    const i=baseline[kind].findIndex(x=>String(x.id)===id);
+    if(i>=0)baseline[kind][i]=structuredClone(record);else baseline[kind].push(structuredClone(record));
+   }}
+  }
+  store.commitLoadedVersions(acceptedVersions);
+  if(!protectedRecords)latestDesired=structuredClone(baseline);
+  return {snapshot:next,accepted,protectedRecords};
+ }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   latestDesired=desired;
@@ -111,5 +151,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{lastFailure=null;failedDesired=null;return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+ return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

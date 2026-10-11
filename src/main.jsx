@@ -210,13 +210,13 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
  const catchUp=async()=>{
   if(!active||busy||!navigator.onLine||!cloudHydratedRef.current||!recordSaveCoordinator.isInitialized())return;
   const before=recordSaveCoordinator.getBaseline();if(!before)return;
-  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
+  const mismatched=kinds.filter(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]));if(mismatched.length){setCloud('Cloud check paused: local changes pending ('+mismatched.join(', ')+')');return;}
   busy=true;
   try{
    const next=await recordSaveCoordinator.catchUpFromCloud();
    if(!active||!next)return;
    // Never apply a remote snapshot over edits made while fetching it.
-   if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]))){setCloud('Cloud check paused: local changes pending');return;}
+   const mismatched=kinds.filter(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]));if(mismatched.length){setCloud('Cloud check paused: local changes pending ('+mismatched.join(', ')+')');return;}
    if(document.querySelector('[data-ggc-dirty="true"]')){setCloud('Cloud data available — active form protected');return;}
    const focused=document.activeElement;
    if(focused&&focused!==document.body&&(focused.matches?.('input,textarea,select,[contenteditable="true"]')||focused.closest?.('[role="dialog"]'))){setCloud('Cloud data available — focused form protected');return;}

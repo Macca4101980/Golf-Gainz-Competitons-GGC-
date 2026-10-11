@@ -45,6 +45,11 @@ export function createRecordSaveCoordinator(store){
     if(requestGeneration!==generation)throw Error('GGC_BASELINE_CHANGED');
     // Skip stale queued writes when a more recent snapshot has superseded this one.
     if(desired!==latestDesired)return 0;
+    // New records must first establish that the ID is absent remotely.
+    if(!store.hasBaseline(change.kind,change.id)){
+     const existing=await store.load(change.kind,change.id);
+     if(existing!==null)throw Error('GGC_RECORD_ALREADY_EXISTS: '+change.kind+'/'+change.id);
+    }
     await store.save(change.kind,change.id,change.data,{deleted:change.deleted});
     // Acknowledge only this confirmed record; preserve other pending edits.
     const collection=baseline[change.kind];

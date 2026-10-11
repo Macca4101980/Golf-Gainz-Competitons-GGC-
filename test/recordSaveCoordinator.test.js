@@ -56,3 +56,25 @@ test('cloud refresh cannot replace an initialized baseline containing unsaved ed
  await assert.rejects(coordinator.initializeFromCloud({players:[{id:'p',hi:10}]}),/GGC_BASELINE_ALREADY_INITIALIZED/);
  assert.equal(coordinator.getBaseline().players[0].hi,10);
 });
+
+test('empty isolated cloud can hydrate from authoritative record rows',async()=>{
+ const store={async loadAll(kinds){return Object.fromEntries(kinds.map(k=>[k,k==='players'?[{id:'cloud-player',hi:12}]:[]]));},hasBaseline(){return true},async save(){return 1}};
+ const coordinator=createRecordSaveCoordinator(store);
+ const hydrated=await coordinator.initializeFromRecords({players:[{id:'stale-local',hi:20}],societies:[],comps:[],cards:[],leagues:[],courses:[]});
+ assert.deepEqual(hydrated.players,[{id:'cloud-player',hi:12}]);
+ assert.equal(coordinator.isInitialized(),true);
+ assert.deepEqual(coordinator.getBaseline().players,hydrated.players);
+ await assert.rejects(coordinator.initializeFromRecords(hydrated),/GGC_BASELINE_ALREADY_INITIALIZED/);
+});
+test('failed snapshot is retained and cleared only after a confirmed retry',async()=>{
+ let offline=true;
+ const store={hasBaseline(){return true},async save(){if(offline)throw Error('offline');return 2}};
+ const coordinator=createRecordSaveCoordinator(store);
+ coordinator.initialize({players:[{id:'p',hi:10}]});
+ const desired={players:[{id:'p',hi:9}]};
+ await assert.rejects(coordinator.enqueue(desired),/offline/);
+ assert.deepEqual(coordinator.getFailedDesired(),desired);
+ offline=false;await coordinator.enqueue(desired);
+ assert.equal(coordinator.getFailedDesired(),null);
+ assert.equal(coordinator.getLastFailure(),null);
+});

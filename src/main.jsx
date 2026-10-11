@@ -227,6 +227,14 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
     setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,result.snapshot[kind]]))}));
    }
    pending.clear();
+   if(result.protectedDetails?.length){
+    const diagnostic=result.protectedDetails.map(({kind,id,reason,changedFields})=>({kind,id,reason,changedFields}));
+    const signature=JSON.stringify(diagnostic);
+    if(window.__ggcLastProtectedDiagnostic!==signature){
+     window.__ggcLastProtectedDiagnostic=signature;
+     console.info('[GGC sync] Protected local records (field names only; no values):',diagnostic);
+    }
+   }else if(window.__ggcLastProtectedDiagnostic){window.__ggcLastProtectedDiagnostic=null;console.info('[GGC sync] No protected local records remain')}
    setCloud(result.protectedRecords?'● Synced safe records; '+result.protectedRecords+' local record(s) protected':'● Cloud checked and synced');
   }catch(e){console.error('Record catch-up deferred',e);setCloud('Cloud check failed — retrying')}
   finally{busy=false}

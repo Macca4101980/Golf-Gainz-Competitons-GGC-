@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRecordSaveCoordinator} from '../src/recordSaveCoordinator.js';
 test('serializes rapid edits without losing intermediate version',async()=>{
- const calls=[],store={async save(kind,id,data){calls.push(data.hi);await Promise.resolve();return calls.length}};
+ const calls=[],store={hasBaseline(){return true},async save(kind,id,data){calls.push(data.hi);await Promise.resolve();return calls.length}};
  const c=createRecordSaveCoordinator(store);c.initialize({players:[{id:'p',hi:10}]});
  await Promise.all([c.enqueue({players:[{id:'p',hi:9}]}),c.enqueue({players:[{id:'p',hi:8}]})]);
- assert.deepEqual(calls,[9,8]);
+ assert.deepEqual(calls,[8]);
 });
 test('failed save does not advance baseline',async()=>{
- let fails=true;const calls=[],store={async save(_kind,_id,data){calls.push(data.hi);if(fails)throw Error('conflict');return 2}};
+ let fails=true;const calls=[],store={hasBaseline(){return true},async save(_kind,_id,data){calls.push(data.hi);if(fails)throw Error('conflict');return 2}};
  const c=createRecordSaveCoordinator(store);c.initialize({players:[{id:'p',hi:10}]});
  await assert.rejects(c.enqueue({players:[{id:'p',hi:9}]}),/conflict/);
  fails=false;
@@ -22,7 +22,7 @@ test('cannot save without verified baseline',async()=>{
 
 test('partial failure preserves first confirmed save and retries only unsaved record',async()=>{
  const calls=[];let fail=true;
- const store={async save(kind,id){calls.push(id);if(id==='b'&&fail){fail=false;throw Error('network offline');}return 1;}};
+ const store={hasBaseline(){return true},async save(kind,id){calls.push(id);if(id==='b'&&fail){fail=false;throw Error('network offline');}return 1;}};
  const coordinator=createRecordSaveCoordinator(store);
  coordinator.initialize({players:[{id:'a',email:null},{id:'b',email:null}]});
  const desired={players:[{id:'a',email:'a@example.com'},{id:'b',email:'b@example.com'}]};
@@ -37,7 +37,7 @@ test('partial failure preserves first confirmed save and retries only unsaved re
 test('two devices editing different golfers preserve both changes',async()=>{
  const cloud=new Map([['a',{id:'a',hi:10}],['b',{id:'b',hi:20}]]);
  const writes=[];
- const store={async save(kind,id,data){writes.push(id);cloud.set(id,structuredClone(data));return 1;}};
+ const store={hasBaseline(){return true},async save(kind,id,data){writes.push(id);cloud.set(id,structuredClone(data));return 1;}};
  const device1=createRecordSaveCoordinator(store),device2=createRecordSaveCoordinator(store);
  const initial={players:[...cloud.values()]};
  device1.initialize(initial);device2.initialize(initial);

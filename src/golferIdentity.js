@@ -14,10 +14,11 @@ export function reconcileGolferIdentity(state,{authId,email,profile}){
  const foreign=players.filter(p=>p.authUserId&&p.authUserId!==authId);
  const eligible=players.filter(p=>p.id!==authId&&p.authUserId!==authId&&!foreign.includes(p)&&verified&&normalizedEmail(p.email)===verified);
  const distinct=new Set(eligible.map(p=>p.id));
- const ambiguous=distinct.size>1&&!cluster;
+ const ambiguous=distinct.size>0&&!cluster;
  // A unique email is evidence; matching display names alone is not.
- const linkedIds=[...new Set([...authenticated.map(p=>p.id),...(!ambiguous?eligible.map(p=>p.id):[]),...(cluster?cluster.ids:[])])];
- const primary=(cluster&&players.find(p=>p.id===cluster.masterId))||authenticated.find(p=>p.id!==authId&&verified&&normalizedEmail(p.email)===verified)||(!ambiguous?eligible[0]:null)||authenticated.find(p=>p.id===authId)||authenticated[0];
+ // An email match alone is never permission to merge golfer records. Explicitly confirmed historical clusters remain supported.
+ const linkedIds=[...new Set([...authenticated.map(p=>p.id),...(cluster?cluster.ids:[])])];
+ const primary=(cluster&&players.find(p=>p.id===cluster.masterId))||authenticated.find(p=>p.id!==authId&&verified&&normalizedEmail(p.email)===verified)||authenticated.find(p=>p.id===authId)||authenticated[0];
  const playerId=primary?.id||authId;
  const canonical=players.find(p=>p.id===playerId);
  const identityLinks={...(state.identityLinks||{})};

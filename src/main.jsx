@@ -209,22 +209,27 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
  }).subscribe(status=>{if(status==='SUBSCRIBED')setCloud('● Live connected');if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')setCloud('Realtime reconnecting…')});
  const catchUp=async()=>{
   if(!active||busy||!navigator.onLine||!cloudHydratedRef.current||!recordSaveCoordinator.isInitialized())return;
-  const before=recordSaveCoordinator.getBaseline();if(!before)return;
-  const mismatched=kinds.filter(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]));if(mismatched.length){setCloud('Cloud check paused: local changes pending ('+mismatched.join(', ')+')');return;}
+  if(document.querySelector('[data-ggc-dirty="true"]'))return;
+  const focused=document.activeElement;
+  if(focused&&focused!==document.body&&(focused.matches?.('input,textarea,select,[contenteditable="true"]')||focused.closest?.('[role="dialog"]')))return;
+  const local=latestStateRef.current;
   busy=true;
   try{
-   const next=await recordSaveCoordinator.catchUpFromCloud();
-   if(!active||!next)return;
-   // Never apply a remote snapshot over edits made while fetching it.
-   const mismatched=kinds.filter(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(before[kind]||[]));if(mismatched.length){setCloud('Cloud check paused: local changes pending ('+mismatched.join(', ')+')');return;}
-   if(document.querySelector('[data-ggc-dirty="true"]')){setCloud('Cloud data available — active form protected');return;}
-   const focused=document.activeElement;
-   if(focused&&focused!==document.body&&(focused.matches?.('input,textarea,select,[contenteditable="true"]')||focused.closest?.('[role="dialog"]'))){setCloud('Cloud data available — focused form protected');return;}
-   remoteStateRef.current=true;
-   latestStateRef.current={...latestStateRef.current,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))};
-   setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,next[kind]]))}));
-   pending.clear();setCloud('● Reconnected and synced');
-  }catch(e){console.error('Offline catch-up deferred',e)}finally{busy=false}
+   const result=await recordSaveCoordinator.reconcileRecordsFromCloud(local);
+   if(!active||!result)return;
+   if(latestStateRef.current!==local){setCloud('Cloud check deferred: local state changed during fetch');return;}
+   if(document.querySelector('[data-ggc-dirty="true"]'))return;
+   const activeElement=document.activeElement;
+   if(activeElement&&activeElement!==document.body&&(activeElement.matches?.('input,textarea,select,[contenteditable="true"]')||activeElement.closest?.('[role="dialog"]')))return;
+   if(result.accepted){
+    remoteStateRef.current=result.protectedRecords===0;
+    latestStateRef.current=result.snapshot;
+    setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,result.snapshot[kind]]))}));
+   }
+   pending.clear();
+   setCloud(result.protectedRecords?'● Synced safe records; '+result.protectedRecords+' local record(s) protected':'● Cloud checked and synced');
+  }catch(e){console.error('Record catch-up deferred',e);setCloud('Cloud check failed — retrying')}
+  finally{busy=false}
  };
  const wake=()=>{if(document.visibilityState==='visible'){void catchUp();void flush()}};
  const online=()=>{void catchUp()};

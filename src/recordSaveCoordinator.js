@@ -64,6 +64,20 @@ export function createRecordSaveCoordinator(store){
   latestDesired=structuredClone(next);
   return next;
  }
+ async function catchUpFromCloud(){
+  if(!baseline||lastFailure||failedDesired||!store.loadAll)return null;
+  await pending;
+  const original=JSON.stringify(baseline);
+  if(lastFailure||failedDesired||(latestDesired&&JSON.stringify(latestDesired)!==original))return null;
+  const kinds=['players','societies','comps','cards','leagues','courses'];
+  const records=await store.loadAll(kinds);
+  if(lastFailure||failedDesired||JSON.stringify(baseline)!==original||(latestDesired&&JSON.stringify(latestDesired)!==original))return null;
+  const next=structuredClone(baseline);
+  for(const kind of kinds)next[kind]=records[kind];
+  baseline=structuredClone(next);
+  latestDesired=structuredClone(next);
+  return next;
+ }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   latestDesired=desired;
@@ -95,5 +109,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{lastFailure=null;failedDesired=null;return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+ return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

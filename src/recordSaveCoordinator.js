@@ -47,6 +47,23 @@ export function createRecordSaveCoordinator(store){
   initialize(next);
   return structuredClone(next);
  }
+ async function acceptRemoteRecord(kind,id){
+  if(!baseline) return null;
+  if(lastFailure||failedDesired) return null;
+  if(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)) return null;
+  const current=baseline[kind];
+  if(!Array.isArray(current))return null;
+  const remote=await store.load(kind,String(id));
+  // Recheck after the network round trip: never replace an edit made meanwhile.
+  if(lastFailure||failedDesired||(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)))return null;
+  const next=structuredClone(baseline);
+  const index=next[kind].findIndex(r=>String(r?.id)===String(id));
+  if(index>=0)next[kind].splice(index,1);
+  if(remote!==null)next[kind].push(remote);
+  baseline=structuredClone(next);
+  latestDesired=structuredClone(next);
+  return next;
+ }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   latestDesired=desired;
@@ -78,5 +95,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{lastFailure=null;failedDesired=null;return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,initializeFromRecords,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+ return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

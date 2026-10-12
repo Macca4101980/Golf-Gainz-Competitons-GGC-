@@ -1,8 +1,9 @@
 /** Retrieve versioned records by collection; never replace an unrelated collection. */
 import {RECORD_COLLECTIONS} from './recordChanges.js';
-export async function loadRecordSnapshot(supabase,base,{kinds=RECORD_COLLECTIONS}={}){
+export async function loadRecordSnapshot(supabase,base,{kinds=RECORD_COLLECTIONS,onVersionsLoaded}={}){
  if(!supabase)throw Error('GGC_RECORD_CLIENT_REQUIRED');
  const next=structuredClone(base);
+ const loadedVersions=[];
  for(const kind of kinds){
   if(!RECORD_COLLECTIONS.includes(kind))throw Error('GGC_UNKNOWN_RECORD_COLLECTION');
   // PostgREST defaults to a maximum page size. Fetch all pages or fail closed.
@@ -26,11 +27,14 @@ export async function loadRecordSnapshot(supabase,base,{kinds=RECORD_COLLECTIONS
    const id=String(row.record_id);
    if(ids.has(id))throw Error('GGC_DUPLICATE_RECORD');
    ids.add(id);
+   loadedVersions.push({kind,id,version:Number(row.version)});
    if(row.deleted)continue;
    if(!row.data||typeof row.data!=='object'||Array.isArray(row.data)||String(row.data.id)!==id)throw Error('GGC_INVALID_RECORD_DATA');
    records.push(structuredClone(row.data));
   }
   next[kind]=records;
  }
+ // Publish versions only after every requested collection was validated.
+ if(onVersionsLoaded)onVersionsLoaded(loadedVersions);
  return next;
 }

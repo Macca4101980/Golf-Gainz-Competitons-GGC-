@@ -49,7 +49,6 @@ export function createRecordStore(supabase){
   return result;
  }
  function seedVersions(rows){
-  if(queues.size)throw Error('GGC_SEED_DURING_SAVE');
   const incoming=new Map();
   for(const row of rows){
    if(!row||!row.kind||row.id==null||!Number.isSafeInteger(row.version)||row.version<1)throw Error('GGC_INVALID_RECORD_VERSION');
@@ -57,6 +56,7 @@ export function createRecordStore(supabase){
    if(incoming.has(k))throw Error('GGC_DUPLICATE_RECORD_VERSION');
    incoming.set(k,row.version);
   }
+  if(queues.size)throw Error('GGC_SEED_DURING_SAVE');
   versions.clear();
   for(const [k,v] of incoming)versions.set(k,v);
  }

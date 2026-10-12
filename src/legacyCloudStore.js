@@ -9,6 +9,8 @@ export function createLegacyCloudStore({url,key,fetcher=fetch}){
  let queue=Promise.resolve();
  const headers=token=>({apikey:key,Authorization:`Bearer ${token}`});
  async function load(token){
+  // Never replace the acknowledged version while a write is in flight.
+  await queue;
   const r=await fetcher(`${url}/rest/v1/ggc_state?id=eq.main&select=payload,updated_at`,{headers:headers(token),cache:'no-store'});
   if(!r.ok)throw Error(`Cloud read failed: ${r.status}`);
   const rows=await r.json();
@@ -23,14 +25,16 @@ export function createLegacyCloudStore({url,key,fetcher=fetch}){
    const nextVersion=new Date(Math.max(Date.now(),Date.parse(version)+1)).toISOString();
    const query=`${url}/rest/v1/ggc_state?id=eq.main&updated_at=eq.${encodeURIComponent(version)}&select=updated_at`;
    const r=await fetcher(query,{method:'PATCH',headers:{...headers(token),'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({payload,updated_at:nextVersion})});
-   if(!r.ok)throw Error(`Cloud write failed: ${r.status}`);
+   if(!r.ok){ready=false;throw Error(`Cloud write failed: ${r.status}; reload required before retry`);}
    const rows=await r.json();
    if(rows.length!==1){ready=false;throw Error('GGC_CLOUD_CONFLICT: another device saved; reload and reconcile');}
    version=rows[0].updated_at;
    return version;
   };
   const result=queue.then(task);
-  queue=result.catch(()=>{});
+  // A failed write can have reached the server despite a lost response.
+  // Require a fresh cloud baseline before any further write.
+  queue=result.catch(()=>{ready=false;});
   return result;
  }
  return {load,save,isReady:()=>ready,getVersion:()=>version,invalidate:()=>{ready=false}};

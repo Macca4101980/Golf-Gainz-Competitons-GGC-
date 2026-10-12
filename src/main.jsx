@@ -17,9 +17,10 @@ const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const isolatedStore=IS_ISOLATED_TEST&&supabase?createTestStateStore(supabase):null;
 const legacyStore=CLOUD&&!IS_ISOLATED_TEST?createLegacyCloudStore({url:SUPA_URL,key:SUPA_KEY}):null;
-// Opt-in only. Do not enable until record-level RLS and migration are verified.
-const RECORD_STORE_ENABLED=IS_ISOLATED_TEST&&import.meta.env.VITE_GGC_RECORD_STORE==='true';
-const RECORD_READ_ENABLED=RECORD_STORE_ENABLED&&import.meta.env.VITE_GGC_RECORD_READ==='true';
+// Explicitly opt in per deployment; never enable writes without versioned record reads.
+// The same code path works with both production and isolated Supabase projects.
+const RECORD_READ_ENABLED=CLOUD&&import.meta.env.VITE_GGC_RECORD_READ==='true';
+const RECORD_STORE_ENABLED=RECORD_READ_ENABLED&&import.meta.env.VITE_GGC_RECORD_STORE==='true';
 const recordStore=RECORD_STORE_ENABLED?createRecordStore(supabase):null;
 const recordSaveCoordinator=RECORD_STORE_ENABLED?createRecordSaveCoordinator(recordStore):null;
 const formats=[

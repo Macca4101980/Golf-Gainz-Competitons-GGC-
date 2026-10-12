@@ -32,3 +32,13 @@ test('paginates through more than 500 individual records',async()=>{
  assert.equal(result.players.length,503);
  assert.deepEqual(ranges,[[0,499],[500,999]]);
 });
+
+test('unmigrated collection cannot erase populated legacy state',async()=>{
+ const base={players:[{id:'legacy1'}]};
+ await assert.rejects(loadRecordSnapshot(fake([]),base,{kinds:['players']}),/GGC_RECORD_MIGRATION_INCOMPLETE/);
+ assert.deepEqual(base.players,[{id:'legacy1'}]);
+});
+test('empty record collection is valid if legacy collection is empty',async()=>{
+ const result=await loadRecordSnapshot(fake([]),{players:[]},{kinds:['players']});
+ assert.deepEqual(result.players,[]);
+});

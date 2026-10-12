@@ -58,3 +58,33 @@ test('deletion marker blocks stale resurrection',async()=>{
  await assert.rejects(b.save('players','old',{name:'old'}),/GGC_VERSION_CONFLICT/);
  assert.equal(await b.load('players','old'),null);
 });
+
+test('parallel saves for the same record use successive versions',async()=>{
+ const db=fakeDb(),store=createRecordStore(db);
+ const versions=await Promise.all([
+  store.save('cards','round-1',{score:36}),
+  store.save('cards','round-1',{score:37}),
+  store.save('cards','round-1',{score:38})
+ ]);
+ assert.deepEqual(versions,[1,2,3]);
+ assert.deepEqual(await store.load('cards','round-1'),{score:38});
+});
+test('a failed stale write invalidates the local record version',async()=>{
+ const db=fakeDb(),a=createRecordStore(db),b=createRecordStore(db);
+ await a.save('cards','round-2',{score:36});
+ await b.load('cards','round-2');
+ await a.save('cards','round-2',{score:40});
+ await assert.rejects(b.save('cards','round-2',{score:30}),/GGC_VERSION_CONFLICT/);
+ assert.equal(b.getVersion('cards','round-2'),null);
+ await b.load('cards','round-2');
+ assert.equal(b.getVersion('cards','round-2'),2);
+});
+test('records with different IDs save independently',async()=>{
+ const db=fakeDb(),store=createRecordStore(db);
+ await Promise.all([
+  store.save('cards','player-a',{score:32}),
+  store.save('cards','player-b',{score:41})
+ ]);
+ assert.deepEqual(await store.load('cards','player-a'),{score:32});
+ assert.deepEqual(await store.load('cards','player-b'),{score:41});
+});

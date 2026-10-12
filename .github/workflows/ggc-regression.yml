@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - test/isolated-supabase-regression
+      - ggc-001-live-record-migration
   workflow_dispatch:
 jobs:
   verify:

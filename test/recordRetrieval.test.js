@@ -52,3 +52,9 @@ test('publishes versions only after successful validation',async()=>{
  await assert.rejects(loadRecordSnapshot(fake([{record_id:'bad',version:0,data:{id:'bad'}}]),{players:[]},{kinds:['players'],onVersionsLoaded:v=>{published=v;}}),/GGC_INVALID_RECORD_ROW/);
  assert.equal(published,null);
 });
+
+test('partial RLS-visible record collection cannot replace complete legacy state',async()=>{
+ const base={players:[{id:'p1'},{id:'p2'}]};
+ await assert.rejects(loadRecordSnapshot(fake([{record_id:'p1',version:1,deleted:false,data:{id:'p1'}}]),base,{kinds:['players']}),/GGC_RECORD_MIGRATION_INCOMPLETE/);
+ assert.equal(base.players.length,2);
+});

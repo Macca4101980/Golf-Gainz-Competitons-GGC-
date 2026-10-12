@@ -17,8 +17,8 @@ export async function loadRecordSnapshot(supabase,base,{kinds=RECORD_COLLECTIONS
    if(result.data.length<pageSize)break;
    if(offset>100000)throw Error('GGC_RECORD_READ_LIMIT');
   }
-  // Until migration is verified, an empty record collection cannot replace populated legacy data.
-  if(data.length===0&&Array.isArray(base?.[kind])&&base[kind].length>0)
+  // Fail closed if a partial RLS-visible result would silently replace the legacy collection.
+  if(Array.isArray(base?.[kind])&&new Set(base[kind].map(item=>String(item?.id))).size>data.filter(row=>!row.deleted).length)
    throw Error('GGC_RECORD_MIGRATION_INCOMPLETE: '+kind);
   const ids=new Set();
   const records=[];

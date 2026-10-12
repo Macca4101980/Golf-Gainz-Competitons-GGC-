@@ -16,3 +16,12 @@ test('saves only planned changes and propagates conflicts',async()=>{
  assert.equal(calls.length,1);assert.equal(result[0].version,2);
  await assert.rejects(saveRecordChanges({async save(){throw Error('GGC_VERSION_CONFLICT')}},changes),/GGC_VERSION_CONFLICT/);
 });
+
+test('duplicate IDs fail closed instead of silently discarding one player',()=>{
+ const before={players:[{id:'a',hi:10}]};
+ const after={players:[{id:'a',hi:9},{id:'a',hi:8}]};
+ assert.throws(()=>planRecordChanges(before,after),/GGC_DUPLICATE_RECORD_ID/);
+});
+test('missing record IDs cannot be written as anonymous records',()=>{
+ assert.throws(()=>planRecordChanges({cards:[]},{cards:[{points:36}]}),/GGC_RECORD_ID_REQUIRED/);
+});

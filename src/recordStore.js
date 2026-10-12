@@ -28,7 +28,6 @@ export function createRecordStore(supabase){
   const k=key(kind,id),payload=structuredClone(data);
   revisions.set(k,(revisions.get(k)||0)+1);
   const work=async()=>{
-   if(!seeded.has(k))throw Error('GGC_RECORD_BASELINE_REQUIRED: retrieve record versions before saving');
    const expected=versions.has(k)?versions.get(k):null;
    let result;
    try{

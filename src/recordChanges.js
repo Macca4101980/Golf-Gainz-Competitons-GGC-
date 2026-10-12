@@ -21,7 +21,12 @@ export function planRecordChanges(previous,next){
   };
   const old=indexed(before);
   const current=indexed(after);
-  // Never infer deletions from an incomplete cloud refresh.
+  // Only explicit deletion markers authorise tombstones; never infer deletion from missing cloud rows.
+  const deletionFields={societies:'deletedSocietyIds',comps:'deletedCompIds',leagues:'deletedLeagueIds',courses:'deletedCourseIds'};
+  const deletedIds=new Set(Array.isArray(next?.[deletionFields[kind]])?next[deletionFields[kind]].map(String):[]);
+  for(const [id,data] of old){
+   if(!current.has(id)&&deletedIds.has(id))changes.push({kind,id,data,deleted:true});
+  }
   for(const [id,data] of current){
    if(!old.has(id)||JSON.stringify(old.get(id))!==JSON.stringify(data))
     changes.push({kind,id,data,deleted:false});

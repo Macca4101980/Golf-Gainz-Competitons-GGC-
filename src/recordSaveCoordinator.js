@@ -5,7 +5,11 @@ export function createRecordSaveCoordinator(store){
  let pending=Promise.resolve();
  let generation=0;
  let blocked=false;
- function initialize(snapshot){baseline=structuredClone(snapshot);generation++;blocked=false;}
+ let queued=0;
+ function initialize(snapshot){
+  if(queued)throw Error('GGC_REINITIALIZE_DURING_SAVE: wait for pending writes');
+  baseline=structuredClone(snapshot);generation++;blocked=false;
+ }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   const work=async()=>{
@@ -17,9 +21,10 @@ export function createRecordSaveCoordinator(store){
    baseline=desired;
    return changes.length;
   };
+  queued++;
   const result=pending.then(work);
   pending=result.catch(()=>{});
-  return result;
+  return result.finally(()=>{queued--;});
  }
  return {initialize,enqueue,isInitialized:()=>baseline!==null,isBlocked:()=>blocked};
 }

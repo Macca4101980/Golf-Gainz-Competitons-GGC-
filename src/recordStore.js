@@ -4,7 +4,6 @@ export function createRecordStore(supabase){
  const versions=new Map();
  const queues=new Map();
  const revisions=new Map();
- const loaded=new Set();
  const key=(kind,id)=>kind+':'+id;
  async function load(kind,id){
   const k=key(kind,id);
@@ -14,9 +13,8 @@ export function createRecordStore(supabase){
   const revision=revisions.get(k)||0;
   const {data,error}=await supabase.from('ggc_records').select('data,version,deleted').eq('kind',kind).eq('record_id',id).maybeSingle();
   if((revisions.get(k)||0)!==revision)throw new Error('GGC_STALE_RECORD_LOAD: save started during refresh');
-  if(error){versions.delete(k);loaded.delete(k);throw error;}
-  if(data&&(!Number.isSafeInteger(Number(data.version))||Number(data.version)<1)){versions.delete(k);loaded.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
-  loaded.add(k);
+  if(error){versions.delete(k);throw error;}
+  if(data&&(!Number.isSafeInteger(Number(data.version))||Number(data.version)<1)){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
   if(data)versions.set(k,Number(data.version));
   else versions.delete(k);
   return data?.deleted?null:data?.data??null;
@@ -25,20 +23,19 @@ export function createRecordStore(supabase){
   const k=key(kind,id),payload=structuredClone(data);
   revisions.set(k,(revisions.get(k)||0)+1);
   const work=async()=>{
-   if(!loaded.has(k))throw Error('GGC_RECORD_BASELINE_REQUIRED: load record before saving');
    const expected=versions.has(k)?versions.get(k):null;
    let result;
    try{
     result=await supabase.rpc('ggc_save_record',{p_kind:kind,p_id:id,p_data:payload,p_expected_version:expected,p_deleted:deleted});
-   }catch(error){versions.delete(k);loaded.delete(k);throw error;}
+   }catch(error){versions.delete(k);throw error;}
    const {data:version,error}=result;
    if(error){
-    versions.delete(k);loaded.delete(k);
+    versions.delete(k);
     if(/GGC_VERSION_CONFLICT|version conflict/i.test(error.message||''))throw new Error('GGC_VERSION_CONFLICT: record changed elsewhere; reload and reconcile');
     throw error;
    }
    const nextVersion=Number(version);
-   if(!Number.isSafeInteger(nextVersion)||nextVersion<1){versions.delete(k);loaded.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
+   if(!Number.isSafeInteger(nextVersion)||nextVersion<1){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
    versions.set(k,nextVersion);
    return nextVersion;
   };

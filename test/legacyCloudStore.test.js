@@ -128,3 +128,26 @@ test('explicit invalidation prevents saving against an old baseline',async()=>{
  await s.save({n:5},'token');
  assert.deepEqual(db.read().payload,{n:5});
 });
+
+test('failed refresh revokes previously writable baseline',async()=>{
+ const db=mockServer();let reads=0;
+ const fetcher=async(url,opts)=>{
+  if(!opts.method&&++reads===2)return {ok:false,status:503};
+  return db.fetcher(url,opts);
+ };
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher});
+ await s.load('token');
+ await assert.rejects(s.load('token'),/Cloud read failed/);
+ assert.equal(s.isReady(),false);
+ assert.equal(s.getVersion(),null);
+ await assert.rejects(s.save({n:3},'token'),/GGC_CLOUD_BASELINE_REQUIRED/);
+});
+test('conflict clears writable version, not just readiness',async()=>{
+ const db=mockServer(),args={url:'https://example.supabase.co',key:'test',fetcher:db.fetcher};
+ const a=createLegacyCloudStore(args),b=createLegacyCloudStore(args);
+ await a.load('token');await b.load('token');
+ await a.save({n:1},'token');
+ await assert.rejects(b.save({n:2},'token'),/GGC_CLOUD_CONFLICT/);
+ assert.equal(b.isReady(),false);
+ assert.equal(b.getVersion(),null);
+});

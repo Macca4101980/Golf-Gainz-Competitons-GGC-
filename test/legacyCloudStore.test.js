@@ -69,3 +69,41 @@ test('baseline refresh waits for pending write',async()=>{
  await save;await load;
  assert.deepEqual(db.read().payload,{n:7});
 });
+
+test('older overlapping load cannot replace the newest baseline',async()=>{
+ const db=mockServer();
+ let releaseOld;
+ const oldGate=new Promise(resolve=>{releaseOld=resolve});
+ let reads=0;
+ const fetcher=async(url,opts)=>{
+  if(!opts.method){
+   reads++;
+   if(reads===1){const snapshot=await db.fetcher(url,opts);await oldGate;return snapshot;}
+  }
+  return db.fetcher(url,opts);
+ };
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher});
+ const old=s.load('token');
+ const latest=s.load('token');
+ await latest;
+ releaseOld();
+ await assert.rejects(old,/GGC_CLOUD_LOAD_SUPERSEDED/);
+ assert.equal(s.isReady(),true);
+});
+test('an in-flight load cannot re-authorise a stale write baseline',async()=>{
+ const db=mockServer();
+ let releaseRead;
+ const gate=new Promise(resolve=>{releaseRead=resolve});
+ let reads=0;
+ const fetcher=async(url,opts)=>{
+  if(!opts.method&&++reads===2){const result=await db.fetcher(url,opts);await gate;return result;}
+  return db.fetcher(url,opts);
+ };
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher});
+ await s.load('token');
+ const pendingLoad=s.load('token');
+ await s.save({n:9},'token');
+ releaseRead();
+ await assert.rejects(pendingLoad,/GGC_CLOUD_LOAD_SUPERSEDED/);
+ assert.deepEqual(db.read().payload,{n:9});
+});

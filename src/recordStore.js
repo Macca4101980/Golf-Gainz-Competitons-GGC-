@@ -4,6 +4,7 @@ export function createRecordStore(supabase){
  const versions=new Map();
  const queues=new Map();
  const revisions=new Map();
+ const seeded=new Set();
  const key=(kind,id)=>kind+':'+id;
  async function load(kind,id){
   const k=key(kind,id);
@@ -20,12 +21,14 @@ export function createRecordStore(supabase){
   if(data&&(!Number.isSafeInteger(Number(data.version))||Number(data.version)<1)){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
   if(data)versions.set(k,Number(data.version));
   else versions.delete(k);
+  seeded.add(k);
   return data?.deleted?null:data?.data??null;
  }
  function save(kind,id,data,{deleted=false}={}){
   const k=key(kind,id),payload=structuredClone(data);
   revisions.set(k,(revisions.get(k)||0)+1);
   const work=async()=>{
+   if(!seeded.has(k))throw Error('GGC_RECORD_BASELINE_REQUIRED: retrieve record versions before saving');
    const expected=versions.has(k)?versions.get(k):null;
    let result;
    try{
@@ -48,5 +51,17 @@ export function createRecordStore(supabase){
   void settled.then(()=>{if(queues.get(k)===settled)queues.delete(k);});
   return result;
  }
- return {load,save,getVersion:(kind,id)=>versions.get(key(kind,id))??null};
+ function seedVersions(rows){
+  if(queues.size)throw Error('GGC_SEED_DURING_SAVE');
+  const incoming=new Map();
+  for(const row of rows){
+   if(!row||!row.kind||row.id==null||!Number.isSafeInteger(row.version)||row.version<1)throw Error('GGC_INVALID_RECORD_VERSION');
+   const k=key(row.kind,row.id);
+   if(incoming.has(k))throw Error('GGC_DUPLICATE_RECORD_VERSION');
+   incoming.set(k,row.version);
+  }
+  versions.clear();seeded.clear();
+  for(const [k,v] of incoming){versions.set(k,v);seeded.add(k);}
+ }
+ return {load,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null};
 }

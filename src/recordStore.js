@@ -3,12 +3,16 @@ export function createRecordStore(supabase){
  if(!supabase)throw new Error('Supabase client required');
  const versions=new Map();
  const queues=new Map();
+ const revisions=new Map();
  const key=(kind,id)=>kind+':'+id;
  async function load(kind,id){
   const k=key(kind,id);
   // Wait for this record's pending writes before refreshing its baseline.
   await (queues.get(k)||Promise.resolve());
+  // A save can start while this network read is in flight. Never accept its stale baseline.
+  const revision=revisions.get(k)||0;
   const {data,error}=await supabase.from('ggc_records').select('data,version,deleted').eq('kind',kind).eq('record_id',id).maybeSingle();
+  if((revisions.get(k)||0)!==revision)throw new Error('GGC_STALE_RECORD_LOAD: save started during refresh');
   if(error){versions.delete(k);throw error;}
   if(data)versions.set(k,Number(data.version));
   else versions.delete(k);
@@ -16,6 +20,7 @@ export function createRecordStore(supabase){
  }
  function save(kind,id,data,{deleted=false}={}){
   const k=key(kind,id),payload=structuredClone(data);
+  revisions.set(k,(revisions.get(k)||0)+1);
   const work=async()=>{
    const expected=versions.has(k)?versions.get(k):null;
    let result;

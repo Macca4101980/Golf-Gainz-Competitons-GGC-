@@ -5,8 +5,17 @@ export async function loadRecordSnapshot(supabase,base,{kinds=RECORD_COLLECTIONS
  const next=structuredClone(base);
  for(const kind of kinds){
   if(!RECORD_COLLECTIONS.includes(kind))throw Error('GGC_UNKNOWN_RECORD_COLLECTION');
-  const {data,error}=await supabase.from('ggc_records').select('record_id,data,version,deleted').eq('kind',kind);
-  if(error)throw error;
+  // PostgREST defaults to a maximum page size. Fetch all pages or fail closed.
+  const data=[];
+  const pageSize=500;
+  for(let offset=0;;offset+=pageSize){
+   const result=await supabase.from('ggc_records').select('record_id,data,version,deleted').eq('kind',kind).order('record_id',{ascending:true}).range(offset,offset+pageSize-1);
+   if(result.error)throw result.error;
+   if(!Array.isArray(result.data))throw Error('GGC_RECORD_READ_INCOMPLETE');
+   data.push(...result.data);
+   if(result.data.length<pageSize)break;
+   if(offset>100000)throw Error('GGC_RECORD_READ_LIMIT');
+  }
   if(!Array.isArray(data))throw Error('GGC_RECORD_READ_INCOMPLETE');
   const ids=new Set();
   const records=[];

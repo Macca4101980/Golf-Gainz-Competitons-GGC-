@@ -123,3 +123,13 @@ test('an in-flight stale load cannot replace a version after a concurrent save',
  db.from=originalFrom;
  assert.deepEqual(await store.load('cards','round-race'),{score:40});
 });
+
+test('network exception during retrieval invalidates a previously cached version',async()=>{
+ const db=fakeDb(),store=createRecordStore(db);
+ await store.save('cards','network',{score:35});
+ await store.load('cards','network');
+ assert.equal(store.getVersion('cards','network'),1);
+ db.from=()=>{throw Error('connection dropped')};
+ await assert.rejects(store.load('cards','network'),/connection dropped/);
+ assert.equal(store.getVersion('cards','network'),null);
+});

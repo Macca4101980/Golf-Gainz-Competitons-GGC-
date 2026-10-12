@@ -11,7 +11,10 @@ export function createRecordStore(supabase){
   await (queues.get(k)||Promise.resolve());
   // A save can start while this network read is in flight. Never accept its stale baseline.
   const revision=revisions.get(k)||0;
-  const {data,error}=await supabase.from('ggc_records').select('data,version,deleted').eq('kind',kind).eq('record_id',id).maybeSingle();
+  let response;
+  try{response=await supabase.from('ggc_records').select('data,version,deleted').eq('kind',kind).eq('record_id',id).maybeSingle();}
+  catch(error){versions.delete(k);throw error;}
+  const {data,error}=response;
   if((revisions.get(k)||0)!==revision)throw new Error('GGC_STALE_RECORD_LOAD: save started during refresh');
   if(error){versions.delete(k);throw error;}
   if(data&&(!Number.isSafeInteger(Number(data.version))||Number(data.version)<1)){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}

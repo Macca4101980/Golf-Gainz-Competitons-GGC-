@@ -32,3 +32,40 @@ test('queued saves use latest acknowledged version',async()=>{
  await Promise.all([s.save({n:1},'token'),s.save({n:2},'token')]);
  assert.deepEqual(db.read().payload,{n:2});
 });
+
+test('uncertain HTTP failure blocks later writes until fresh load',async()=>{
+ const db=mockServer();let fail=true;
+ const fetcher=async(url,opts)=>{
+  if(opts.method==='PATCH'&&fail){fail=false;return {ok:false,status:503};}
+  return db.fetcher(url,opts);
+ };
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher});
+ await s.load('token');
+ await assert.rejects(s.save({n:1},'token'),/reload required/);
+ await assert.rejects(s.save({n:2},'token'),/GGC_CLOUD_BASELINE_REQUIRED/);
+ await s.load('token');
+ await s.save({n:3},'token');
+ assert.deepEqual(db.read().payload,{n:3});
+});
+test('baseline refresh waits for pending write',async()=>{
+ const db=mockServer();let release;
+ const gate=new Promise(resolve=>{release=resolve});
+ let pendingWrite=false;
+ const fetcher=async(url,opts)=>{
+  if(opts.method==='PATCH'){pendingWrite=true;await gate;}
+  return db.fetcher(url,opts);
+ };
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher});
+ await s.load('token');
+ const save=s.save({n:7},'token');
+ // Wait until the queued write enters the mocked server.
+ for(let i=0;i<20&&!pendingWrite;i++)await Promise.resolve();
+ assert.equal(pendingWrite,true);
+ let loaded=false;
+ const load=s.load('token').then(()=>{loaded=true});
+ await Promise.resolve();
+ assert.equal(loaded,false);
+ release();
+ await save;await load;
+ assert.deepEqual(db.read().payload,{n:7});
+});

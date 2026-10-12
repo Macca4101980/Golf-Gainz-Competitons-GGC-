@@ -42,3 +42,13 @@ test('empty record collection is valid if legacy collection is empty',async()=>{
  const result=await loadRecordSnapshot(fake([]),{players:[]},{kinds:['players']});
  assert.deepEqual(result.players,[]);
 });
+
+test('publishes versions only after successful validation',async()=>{
+ let published=null;
+ const rows=[{record_id:'p1',version:7,deleted:false,data:{id:'p1'}}];
+ await loadRecordSnapshot(fake(rows),{players:[]},{kinds:['players'],onVersionsLoaded:v=>{published=v;}});
+ assert.deepEqual(published,[{kind:'players',id:'p1',version:7}]);
+ published=null;
+ await assert.rejects(loadRecordSnapshot(fake([{record_id:'bad',version:0,data:{id:'bad'}}]),{players:[]},{kinds:['players'],onVersionsLoaded:v=>{published=v;}}),/GGC_INVALID_RECORD_ROW/);
+ assert.equal(published,null);
+});

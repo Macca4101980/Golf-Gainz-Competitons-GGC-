@@ -88,3 +88,38 @@ test('records with different IDs save independently',async()=>{
  assert.deepEqual(await store.load('cards','player-a'),{score:32});
  assert.deepEqual(await store.load('cards','player-b'),{score:41});
 });
+
+test('an in-flight stale load cannot replace a version after a concurrent save',async()=>{
+ const db=fakeDb(),store=createRecordStore(db);
+ await store.save('cards','round-race',{score:30});
+ const originalFrom=db.from.bind(db);
+ let releaseRead,readStarted;
+ const started=new Promise(resolve=>{readStarted=resolve;});
+ const release=new Promise(resolve=>{releaseRead=resolve;});
+ db.from=(table)=>{
+  const query=originalFrom(table);
+  return {select(...args){
+   const selection=query.select(...args);
+   return {eq(field,kind){
+    const byKind=selection.eq(field,kind);
+    return {eq(field2,id){
+     const byId=byKind.eq(field2,id);
+     return {async maybeSingle(){
+      const result=await byId.maybeSingle();
+      readStarted();
+      await release;
+      return result;
+     }};
+    }};
+   }};
+  }};
+ };
+ const staleLoad=store.load('cards','round-race');
+ await started;
+ await store.save('cards','round-race',{score:40});
+ releaseRead();
+ await assert.rejects(staleLoad,/GGC_STALE_RECORD_LOAD/);
+ assert.equal(store.getVersion('cards','round-race'),2);
+ db.from=originalFrom;
+ assert.deepEqual(await store.load('cards','round-race'),{score:40});
+});

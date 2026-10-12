@@ -25,3 +25,9 @@ test('duplicate IDs fail closed instead of silently discarding one player',()=>{
 test('missing record IDs cannot be written as anonymous records',()=>{
  assert.throws(()=>planRecordChanges({cards:[]},{cards:[{points:36}]}),/GGC_RECORD_ID_REQUIRED/);
 });
+
+test('explicit competition deletion produces a versioned tombstone',()=>{
+ const before={comps:[{id:'c1',name:'Round'}]};
+ const after={comps:[],deletedCompIds:['c1']};
+ assert.deepEqual(planRecordChanges(before,after),[{kind:'comps',id:'c1',data:{id:'c1',name:'Round'},deleted:true}]);
+});

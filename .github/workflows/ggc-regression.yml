@@ -1,4 +1,5 @@
 name: GGC Regression Gate
+# Verify GGC-001 development branch before any production promotion.
 on:
   push:
     branches:

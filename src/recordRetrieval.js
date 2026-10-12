@@ -11,7 +11,7 @@ export async function loadRecordSnapshot(supabase,base,{kinds=RECORD_COLLECTIONS
   const pageSize=500;
   for(let offset=0;;offset+=pageSize){
    const result=await supabase.from('ggc_records').select('record_id,data,version,deleted').eq('kind',kind).order('record_id',{ascending:true}).range(offset,offset+pageSize-1);
-   if(result.error)throw result.error;
+   if(result.error)throw result.error instanceof Error?result.error:new Error(result.error.message||'GGC_RECORD_READ_FAILED');
    if(!Array.isArray(result.data))throw Error('GGC_RECORD_READ_INCOMPLETE');
    data.push(...result.data);
    if(result.data.length<pageSize)break;

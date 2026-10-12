@@ -107,3 +107,24 @@ test('an in-flight load cannot re-authorise a stale write baseline',async()=>{
  await assert.rejects(pendingLoad,/GGC_CLOUD_LOAD_SUPERSEDED/);
  assert.deepEqual(db.read().payload,{n:9});
 });
+
+test('different auth session cannot reuse an existing cloud baseline',async()=>{
+ const db=mockServer();
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher:db.fetcher});
+ await s.load('user-a');
+ await assert.rejects(s.save({n:1},'user-b'),/GGC_CLOUD_BASELINE_REQUIRED/);
+ assert.deepEqual(db.read().payload,{players:[{id:'a',hi:10}]});
+ await s.load('user-b');
+ await s.save({n:2},'user-b');
+ assert.deepEqual(db.read().payload,{n:2});
+});
+test('explicit invalidation prevents saving against an old baseline',async()=>{
+ const db=mockServer();
+ const s=createLegacyCloudStore({url:'https://example.supabase.co',key:'test',fetcher:db.fetcher});
+ await s.load('token');
+ s.invalidate();
+ await assert.rejects(s.save({n:4},'token'),/GGC_CLOUD_BASELINE_REQUIRED/);
+ await s.load('token');
+ await s.save({n:5},'token');
+ assert.deepEqual(db.read().payload,{n:5});
+});

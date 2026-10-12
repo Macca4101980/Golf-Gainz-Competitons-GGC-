@@ -8,8 +8,19 @@ export function planRecordChanges(previous,next){
  for(const kind of RECORD_COLLECTIONS){
   const before=previous?.[kind],after=next?.[kind];
   if(!Array.isArray(before)||!Array.isArray(after))continue;
-  const old=new Map(before.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x]));
-  const current=new Map(after.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x]));
+  // Duplicate or missing IDs would make a partial snapshot silently overwrite records.
+  const indexed=(items)=>{
+   const map=new Map();
+   for(const item of items){
+    if(!item||item.id==null||String(item.id).trim()==='')throw Error('GGC_RECORD_ID_REQUIRED');
+    const id=String(item.id);
+    if(map.has(id))throw Error('GGC_DUPLICATE_RECORD_ID: '+kind+':'+id);
+    map.set(id,item);
+   }
+   return map;
+  };
+  const old=indexed(before);
+  const current=indexed(after);
   // Never infer deletions from an incomplete cloud refresh.
   for(const [id,data] of current){
    if(!old.has(id)||JSON.stringify(old.get(id))!==JSON.stringify(data))

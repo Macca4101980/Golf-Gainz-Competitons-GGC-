@@ -133,3 +133,24 @@ test('network exception during retrieval invalidates a previously cached version
  await assert.rejects(store.load('cards','network'),/connection dropped/);
  assert.equal(store.getVersion('cards','network'),null);
 });
+
+test('retrieved version baselines allow safe updates to existing records',async()=>{
+ const db=fakeDb(),first=createRecordStore(db),second=createRecordStore(db);
+ await first.save('cards','existing',{points:36});
+ second.seedVersions([{kind:'cards',id:'existing',version:1}]);
+ assert.equal(await second.save('cards','existing',{points:39}),2);
+ assert.deepEqual(await first.load('cards','existing'),{points:39});
+});
+test('stale seeded version rejects overwrite',async()=>{
+ const db=fakeDb(),first=createRecordStore(db),second=createRecordStore(db);
+ await first.save('cards','existing',{points:36});
+ second.seedVersions([{kind:'cards',id:'existing',version:1}]);
+ await first.save('cards','existing',{points:42});
+ await assert.rejects(second.save('cards','existing',{points:31}),/GGC_VERSION_CONFLICT/);
+});
+test('seeding invalid versions does not discard existing versions',async()=>{
+ const db=fakeDb(),store=createRecordStore(db);
+ await store.save('cards','one',{points:36});
+ assert.throws(()=>store.seedVersions([{kind:'cards',id:'one',version:0}]),/GGC_INVALID_RECORD_VERSION/);
+ assert.equal(store.getVersion('cards','one'),1);
+});

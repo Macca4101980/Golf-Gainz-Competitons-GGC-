@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadRecordSnapshot} from '../src/recordRetrieval.js';
-const fake=(rows,error=null)=>({from:()=>({select:()=>({eq:()=>Promise.resolve({data:rows,error})})})});
+const fake=(rows,error=null)=>({from:()=>({select:()=>({eq:()=>({order:()=>({range:async()=>({data:rows,error})})})})})});
 test('retrieves one collection without touching unrelated competition records',async()=>{
  const base={players:[{id:'old'}],comps:[{id:'comp1',name:'Existing'}],cards:[{id:'card1'}]};
  const result=await loadRecordSnapshot(fake([{record_id:'p1',version:2,deleted:false,data:{id:'p1',name:'Golfer'}}]),base,{kinds:['players']});
@@ -20,4 +20,15 @@ test('failed retrieval never returns a partially overwritten snapshot',async()=>
 test('rejects malformed and duplicate rows',async()=>{
  await assert.rejects(loadRecordSnapshot(fake([{record_id:'p',version:1,data:{id:'wrong'}}]),{}, {kinds:['players']}),/GGC_INVALID_RECORD_DATA/);
  await assert.rejects(loadRecordSnapshot(fake([{record_id:'p',version:1,data:{id:'p'}},{record_id:'p',version:2,data:{id:'p'}}]),{}, {kinds:['players']}),/GGC_DUPLICATE_RECORD/);
+});
+
+test('paginates through more than 500 individual records',async()=>{
+ const rows=Array.from({length:503},(_,i)=>({record_id:'p'+String(i).padStart(4,'0'),version:1,deleted:false,data:{id:'p'+String(i).padStart(4,'0')}}));
+ const ranges=[];
+ const db={from:()=>({select:()=>({eq:()=>({order:()=>({range:async(start,end)=>{
+  ranges.push([start,end]);return {data:rows.slice(start,end+1),error:null};
+ }})})})})};
+ const result=await loadRecordSnapshot(db,{players:[]},{kinds:['players']});
+ assert.equal(result.players.length,503);
+ assert.deepEqual(ranges,[[0,499],[500,999]]);
 });

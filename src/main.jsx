@@ -215,7 +215,9 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
    if(latestStateRef.current!==before||editing||document.querySelector('[data-ggc-dirty="true"]')){
     setCloud('Incoming sync paused: local edits protected');break;
    }
-   pending.delete(key);
+   // An event for this same record may have arrived while its fetch was in flight.
+   // Retain that newer event so it can be fetched on the next flush.
+   if(pending.get(key)===change)pending.delete(key);
    remoteStateRef.current=true;
    latestStateRef.current={...before,[change.kind]:next[change.kind]};
    setState(previous=>({...previous,[change.kind]:next[change.kind]}));

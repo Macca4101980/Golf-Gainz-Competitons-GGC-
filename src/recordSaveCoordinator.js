@@ -3,6 +3,7 @@
  * The queue serialises saves from a single device.
  */
 import {planRecordChanges} from './recordChanges.js';
+import {changedFields,reconcileRecord} from './editProtection.js';
 export function createRecordSaveCoordinator(store){
  let baseline=null;
  let pending=Promise.resolve();
@@ -13,7 +14,7 @@ export function createRecordSaveCoordinator(store){
  let lastFailure=null;
  let failedDesired=null;
  // A verified baseline must not be silently replaced by a later cloud refresh.
- function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;failedDesired=null;lastFailure=null;generation++;}
+ function initialize(snapshot){if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');baseline=structuredClone(snapshot);latestDesired=null;failedDesired=null;lastFailure=null;generation++;}
  async function initializeFromCloud(snapshot){
   if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
   const signature=JSON.stringify(snapshot);
@@ -47,7 +48,7 @@ export function createRecordSaveCoordinator(store){
   initialize(next);
   return structuredClone(next);
  }
- async function acceptRemoteRecord(kind,id){
+ async function acceptRemoteRecord(kind,id,{canCommit=()=>true}={}){
   if(!baseline) return null;
   if(lastFailure||failedDesired) return null;
   if(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)) return null;
@@ -55,7 +56,7 @@ export function createRecordSaveCoordinator(store){
   if(!Array.isArray(current))return null;
   const remote=await store.load(kind,String(id));
   // Recheck after the network round trip: never replace an edit made meanwhile.
-  if(lastFailure||failedDesired||(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)))return null;
+  if(lastFailure||failedDesired||!canCommit()||(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)))return null;
   const next=structuredClone(baseline);
   const index=next[kind].findIndex(r=>String(r?.id)===String(id));
   if(index>=0)next[kind].splice(index,1);
@@ -101,9 +102,15 @@ export function createRecordSaveCoordinator(store){
    for(const id of ids){
     const before=base.get(id),mine=local.get(id),theirs=remote.get(id);
     if(JSON.stringify(mine)!==JSON.stringify(before)){
-     if(mine!==undefined)output.push(mine);
-     const changedFields=[...new Set([...Object.keys(before||{}),...Object.keys(mine||{})])].filter(field=>JSON.stringify(before?.[field])!==JSON.stringify(mine?.[field]));
-     protectedDetails.push({kind,id,reason:before===undefined?'local-only':mine===undefined?'locally-removed':'locally-modified',changedFields});
+     const dirtyFields=changedFields(before,mine);
+     // Merge unrelated remote fields without replacing locally edited fields.
+     // Preserve the original acknowledged baseline/version so conflicting writes
+     // must pass optimistic concurrency checks before reaching Supabase.
+     const merged=(before!==undefined&&mine!==undefined&&theirs!==undefined)
+      ?reconcileRecord({baseline:before,local:mine,remote:theirs,dirtyFields})
+      :{merged:mine,conflicts:[]};
+     if(mine!==undefined)output.push(merged.merged);
+     protectedDetails.push({kind,id,reason:before===undefined?'local-only':mine===undefined?'locally-removed':'locally-modified',changedFields:dirtyFields,conflicts:merged.conflicts});
      protectedRecords++;
      continue;
     }
@@ -154,7 +161,7 @@ export function createRecordSaveCoordinator(store){
    return changes.length;
   };
   const result=pending.then(work);
-  pending=result.then(value=>{lastFailure=null;failedDesired=null;return value},error=>{lastFailure=error;failedDesired=desired;});
+  pending=result.then(value=>{if(desired===latestDesired){lastFailure=null;failedDesired=null;}return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
  return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};

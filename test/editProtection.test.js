@@ -29,3 +29,26 @@ test('failed save keeps edits protected until confirmed',()=>{
  edit.confirm('cards','c1',{id:'c1',scores:[4,4]});
  assert.equal(edit.pending('cards','c1'),null);
 });
+
+test('remote update to a dirty field is protected after a second refresh',()=>{
+ const edit=createEditProtection();
+ edit.begin('cards','c1',{id:'c1',score:4,notes:''});
+ edit.update('cards','c1',{id:'c1',score:3,notes:''});
+ const first=edit.receive('cards','c1',{id:'c1',score:4,notes:'cloud'});
+ assert.equal(first.merged.score,3);
+ assert.deepEqual(edit.pending('cards','c1').fields,['score']);
+ const second=edit.receive('cards','c1',{id:'c1',score:5,notes:'cloud'});
+ assert.deepEqual(second.conflicts,['score']);
+ assert.equal(second.merged.score,3);
+});
+
+test('save acknowledgement cannot erase edits made while save was in flight',()=>{
+ const edit=createEditProtection();
+ edit.begin('cards','c1',{id:'c1',score:4});
+ edit.update('cards','c1',{id:'c1',score:3});
+ edit.markSaving('cards','c1',true);
+ edit.update('cards','c1',{id:'c1',score:2});
+ edit.confirm('cards','c1',{id:'c1',score:3});
+ assert.equal(edit.pending('cards','c1').local.score,2);
+ assert.deepEqual(edit.pending('cards','c1').fields,['score']);
+});

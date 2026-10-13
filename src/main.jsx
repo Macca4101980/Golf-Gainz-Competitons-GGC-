@@ -198,12 +198,20 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   busy=true;
   try{for(const [key,change] of [...pending]){
    if(!active)break;
-   const next=await recordSaveCoordinator.acceptRemoteRecord(change.kind,change.id);
+   const before=latestStateRef.current;
+   const next=await recordSaveCoordinator.acceptRemoteRecord(change.kind,change.id,{canCommit:()=>active&&latestStateRef.current===before&&!document.querySelector('[data-ggc-dirty="true"]')&&(!document.activeElement||document.activeElement===document.body||!(document.activeElement.matches?.('input,textarea,select,[contenteditable="true"]')||document.activeElement.closest?.('[role="dialog"]')))});
    if(!next)break;
+   // A form may become dirty while the remote fetch is in flight.
+   // Defer applying the result rather than replacing newly entered scores.
+   const focused=document.activeElement;
+   const editing=!!(focused&&focused!==document.body&&(focused.matches?.('input,textarea,select,[contenteditable="true"]')||focused.closest?.('[role="dialog"]')));
+   if(latestStateRef.current!==before||editing||document.querySelector('[data-ggc-dirty="true"]')){
+    setCloud('Incoming sync paused: local edits protected');break;
+   }
    pending.delete(key);
    remoteStateRef.current=true;
+   latestStateRef.current={...before,[change.kind]:next[change.kind]};
    setState(previous=>({...previous,[change.kind]:next[change.kind]}));
-   latestStateRef.current={...latestStateRef.current,[change.kind]:next[change.kind]};
    setCloud('● Live synced');
   }}catch(e){console.error('Realtime refresh deferred',e)}finally{busy=false}
  };
@@ -240,7 +248,8 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
      console.info('[GGC sync] Protected local records (field names only; no values):',diagnostic);
     }
    }else if(window.__ggcLastProtectedDiagnostic){window.__ggcLastProtectedDiagnostic=null;console.info('[GGC sync] No protected local records remain')}
-   setCloud(result.protectedRecords?'● Protected local: '+(result.protectedDetails||[]).map(d=>d.kind+'/'+d.id+' ('+d.reason+'; fields: '+(d.changedFields.length?d.changedFields.join(', '):'none')+')').join('; '):'● Cloud checked and synced');
+   const fieldConflicts=(result.protectedDetails||[]).filter(d=>d.conflicts?.length);
+   setCloud(fieldConflicts.length?'Record conflict — local edits retained; review before saving: '+fieldConflicts.map(d=>d.kind+'/'+d.id+' ('+d.conflicts.join(', ')+')').join('; '):result.protectedRecords?'● Protected local: '+(result.protectedDetails||[]).map(d=>d.kind+'/'+d.id+' ('+d.reason+'; fields: '+(d.changedFields.length?d.changedFields.join(', '):'none')+')').join('; '):'● Cloud checked and synced');
   }catch(e){console.error('Record catch-up deferred',e);setCloud('Cloud check failed — retrying')}
   finally{busy=false}
  };

@@ -2,7 +2,7 @@
 export function createGroupMembershipApi(supabase){
  const rpc=async(name,args={})=>{
   const {data,error}=await supabase.rpc(name,args);
-  if(error)throw error;
+  if(error)throw Error(error.message||String(error));
   if(data?.ok===false)throw Error('GGC_GROUP_'+(data.reason||'FAILED').toUpperCase());
   return data;
  };

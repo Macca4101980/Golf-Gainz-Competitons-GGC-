@@ -48,6 +48,30 @@ export function createRecordStore(supabase){
   void settled.then(()=>{if(queues.get(k)===settled)queues.delete(k);});
   return result;
  }
+ async function loadAll(kinds,{commitVersions=true}={}){
+  if(queues.size)throw Error('GGC_RECORD_READ_DURING_SAVE');
+  const output=Object.fromEntries(kinds.map(kind=>[kind,[]]));
+  const staged=new Map();
+  for(const kind of kinds){
+   for(let offset=0;;offset+=500){
+    const {data,error}=await supabase.from('ggc_records').select('record_id,data,version,deleted').eq('kind',kind).order('record_id',{ascending:true}).range(offset,offset+499);
+    if(error)throw error;
+    if(!Array.isArray(data))throw Error('GGC_RECORD_READ_INCOMPLETE');
+    for(const row of data){
+     const id=String(row.record_id),v=Number(row.version),k=key(kind,id);
+     if(!Number.isSafeInteger(v)||v<1||staged.has(k))throw Error('GGC_INVALID_OR_DUPLICATE_RECORD');
+     staged.set(k,v);
+     if(!row.deleted){if(!row.data||String(row.data.id)!==id)throw Error('GGC_INVALID_RECORD_DATA');output[kind].push(row.data)}
+    }
+    if(data.length<500)break;
+   }
+  }
+  if(queues.size)throw Error('GGC_RECORD_READ_DURING_SAVE');
+  if(commitVersions)commitLoadedVersions(staged);
+  return commitVersions?output:{records:output,versions:staged};
+ }
+ function commitLoadedVersions(staged){if(queues.size)throw Error('GGC_SEED_DURING_SAVE');for(const [k,v] of staged)versions.set(k,v)}
+ function invalidate(kind,id){versions.delete(key(kind,id))}
  function seedVersions(rows){
   const incoming=new Map();
   for(const row of rows){
@@ -60,5 +84,5 @@ export function createRecordStore(supabase){
   versions.clear();
   for(const [k,v] of incoming)versions.set(k,v);
  }
- return {load,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null};
+ return {load,loadAll,commitLoadedVersions,invalidate,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
 }

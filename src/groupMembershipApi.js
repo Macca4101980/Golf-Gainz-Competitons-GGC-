@@ -18,8 +18,12 @@ export function createGroupMembershipApi(supabase){
    const {data:members,error:memberError}=await supabase.rpc('ggc_group_members',{p_group_id:groupId});
    if(memberError)throw memberError;
    const ownerId=data.data.ownerId;
-   const memberIds=[...new Set([...(data.data.members||[]),...(members||[]).map(x=>x.player_id)])];
-   return {...data.data,members:memberIds,admins:[...new Set([...(data.data.admins||[]),...(members||[]).filter(x=>x.role==='admin').map(x=>x.player_id)])],ownerId};
+   const authoritative=members||[];
+   // Do not merge stale membership snapshots from ggc_records back into the RPC result.
+   // The membership table is the source of truth after FIX 02 is enabled.
+   const memberIds=[...new Set(authoritative.map(x=>x.player_id))];
+   const admins=[...new Set(authoritative.filter(x=>x.role==='admin'||x.role==='owner').map(x=>x.player_id))];
+   return {...data.data,members:memberIds,admins,ownerId};
   }
  };
 }

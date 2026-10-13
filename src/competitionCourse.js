@@ -6,7 +6,7 @@ export function snapshotCompetitionCourse(course,teeName){
  return JSON.parse(JSON.stringify({...course,tees:[selected],snapshotVersion:1}));
 }
 export function competitionCourse(comp,state){
- return comp?.courseSnapshot||null;
+ return comp?.courseSnapshot||(state?.courses||[]).find(x=>x.id===comp?.course)||null;
 }
 export function competitionTee(comp,state){
  return competitionCourse(comp,state)?.tees?.find(t=>t.name===comp.tee)||null;

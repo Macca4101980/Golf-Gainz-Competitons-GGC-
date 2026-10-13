@@ -3,6 +3,7 @@
  * The queue serialises saves from a single device.
  */
 import {planRecordChanges} from './recordChanges.js';
+import {changedFields,reconcileRecord} from './editProtection.js';
 export function createRecordSaveCoordinator(store){
  let baseline=null;
  let pending=Promise.resolve();
@@ -101,9 +102,15 @@ export function createRecordSaveCoordinator(store){
    for(const id of ids){
     const before=base.get(id),mine=local.get(id),theirs=remote.get(id);
     if(JSON.stringify(mine)!==JSON.stringify(before)){
-     if(mine!==undefined)output.push(mine);
-     const changedFields=[...new Set([...Object.keys(before||{}),...Object.keys(mine||{})])].filter(field=>JSON.stringify(before?.[field])!==JSON.stringify(mine?.[field]));
-     protectedDetails.push({kind,id,reason:before===undefined?'local-only':mine===undefined?'locally-removed':'locally-modified',changedFields});
+     const dirtyFields=changedFields(before,mine);
+     // Merge unrelated remote fields without replacing locally edited fields.
+     // Preserve the original acknowledged baseline/version so conflicting writes
+     // must pass optimistic concurrency checks before reaching Supabase.
+     const merged=(before!==undefined&&mine!==undefined&&theirs!==undefined)
+      ?reconcileRecord({baseline:before,local:mine,remote:theirs,dirtyFields})
+      :{merged:mine,conflicts:[]};
+     if(mine!==undefined)output.push(merged.merged);
+     protectedDetails.push({kind,id,reason:before===undefined?'local-only':mine===undefined?'locally-removed':'locally-modified',changedFields:dirtyFields,conflicts:merged.conflicts});
      protectedRecords++;
      continue;
     }

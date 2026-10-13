@@ -4,6 +4,7 @@
  */
 import {planRecordChanges} from './recordChanges.js';
 import {changedFields,reconcileRecord} from './editProtection.js';
+import {mergeScorecardConflict} from './scorecardConflict.js';
 export function createRecordSaveCoordinator(store){
  let baseline=null;
  let pending=Promise.resolve();
@@ -133,6 +134,40 @@ export function createRecordSaveCoordinator(store){
   if(!protectedRecords)latestDesired=structuredClone(baseline);
   return {snapshot:next,accepted,protectedRecords,protectedDetails};
  }
+ /** Rebase a rejected card save against the server without ever dropping a hole edit.
+  * Return conflicts for human review instead of automatically choosing a winner.
+  */
+ async function recoverVersionConflict(currentSnapshot){
+  if(!baseline||!lastFailure||!/GGC_VERSION_CONFLICT/.test(lastFailure.message||''))return null;
+  await pending;
+  const original=structuredClone(baseline);
+  const changes=planRecordChanges(original,currentSnapshot);
+  if(!changes.length)return null;
+  // Non-card conflicts and deletions require a separate explicit review path.
+  if(changes.some(change=>change.kind!=='cards'||change.deleted))return {conflicts:['non-scorecard changes require review']};
+  const rebased=structuredClone(currentSnapshot);
+  const remoteBaseline=structuredClone(original);
+  const conflicts=[];
+  for(const change of changes){
+   const before=(original.cards||[]).find(record=>String(record.id)===change.id);
+   const mine=(currentSnapshot.cards||[]).find(record=>String(record.id)===change.id);
+   if(!before||!mine)return {conflicts:['new or missing scorecard requires review']};
+   const remote=await store.load('cards',change.id);
+   if(!remote)return {conflicts:['scorecard deleted remotely: '+change.id]};
+   const result=mergeScorecardConflict({baseline:before,local:mine,remote});
+   if(result.conflicts.length){conflicts.push(...result.conflicts.map(field=>change.id+'/'+field));continue;}
+   rebased.cards=rebased.cards.map(card=>String(card.id)===change.id?result.merged:card);
+   remoteBaseline.cards=remoteBaseline.cards.map(card=>String(card.id)===change.id?remote:card);
+  }
+  if(conflicts.length)return {conflicts};
+  if(JSON.stringify(baseline)!==JSON.stringify(original))return null;
+  if(JSON.stringify(currentSnapshot)!==JSON.stringify(latestDesired))return null;
+  baseline=remoteBaseline;
+  latestDesired=structuredClone(rebased);
+  failedDesired=null;
+  lastFailure=null;
+  return {snapshot:rebased,conflicts:[]};
+ }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
   latestDesired=desired;
@@ -167,5 +202,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{if(desired===latestDesired){lastFailure=null;failedDesired=null;}return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+ return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,recoverVersionConflict,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

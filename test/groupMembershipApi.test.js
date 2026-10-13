@@ -26,11 +26,14 @@ test('join not found is reported instead of pretending success',async()=>{
 });
 
 test('group membership RPC overrides stale snapshot members and admins',async()=>{
- const db={
-  from:()=>({select:()=>({eq:()=>({eq:()=>({eq:()=>({single:async()=>({data:{data:{id:'g1',ownerId:'p1',members:['p1','removed'],admins:['removed']}},error:null})})})})})}),
-  rpc:async()=>({data:[{player_id:'p1',role:'owner'},{player_id:'p2',role:'member'}],error:null})
- };
+ const db={rpc:async(name)=>name==='ggc_group_get'
+  ?{data:{id:'g1',ownerId:'p1',members:['p1','removed'],admins:['removed']},error:null}
+  :{data:[{player_id:'p1',role:'owner'},{player_id:'p2',role:'member'}],error:null}};
  const group=await createGroupMembershipApi(db).group('g1');
  assert.deepEqual(group.members,['p1','p2']);
  assert.deepEqual(group.admins,['p1']);
+});
+test('myGroups uses server membership discovery',async()=>{
+ const db={rpc:async(name)=>({data:name==='ggc_group_my_groups'?['g1','g2']:[],error:null})};
+ assert.deepEqual(await createGroupMembershipApi(db).myGroups(),['g1','g2']);
 });

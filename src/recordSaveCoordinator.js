@@ -47,7 +47,7 @@ export function createRecordSaveCoordinator(store){
   initialize(next);
   return structuredClone(next);
  }
- async function acceptRemoteRecord(kind,id){
+ async function acceptRemoteRecord(kind,id,{canCommit=()=>true}={}){
   if(!baseline) return null;
   if(lastFailure||failedDesired) return null;
   if(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)) return null;
@@ -55,7 +55,7 @@ export function createRecordSaveCoordinator(store){
   if(!Array.isArray(current))return null;
   const remote=await store.load(kind,String(id));
   // Recheck after the network round trip: never replace an edit made meanwhile.
-  if(lastFailure||failedDesired||(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)))return null;
+  if(lastFailure||failedDesired||!canCommit()||(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)))return null;
   const next=structuredClone(baseline);
   const index=next[kind].findIndex(r=>String(r?.id)===String(id));
   if(index>=0)next[kind].splice(index,1);

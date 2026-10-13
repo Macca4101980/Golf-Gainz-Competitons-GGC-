@@ -17,8 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
+      - name: Install dependencies (repository has no lockfile)
+        run: npm install --no-package-lock --no-audit --no-fund
       - name: Automated test suite
         run: npm test
       - name: Production build verification

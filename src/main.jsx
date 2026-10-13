@@ -199,7 +199,7 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   try{for(const [key,change] of [...pending]){
    if(!active)break;
    const before=latestStateRef.current;
-   const next=await recordSaveCoordinator.acceptRemoteRecord(change.kind,change.id);
+   const next=await recordSaveCoordinator.acceptRemoteRecord(change.kind,change.id,{canCommit:()=>active&&latestStateRef.current===before&&!document.querySelector('[data-ggc-dirty="true"]')&&(!document.activeElement||document.activeElement===document.body||!(document.activeElement.matches?.('input,textarea,select,[contenteditable="true"]')||document.activeElement.closest?.('[role="dialog"]')))});
    if(!next)break;
    // A form may become dirty while the remote fetch is in flight.
    // Defer applying the result rather than replacing newly entered scores.

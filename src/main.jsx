@@ -198,12 +198,20 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   busy=true;
   try{for(const [key,change] of [...pending]){
    if(!active)break;
+   const before=latestStateRef.current;
    const next=await recordSaveCoordinator.acceptRemoteRecord(change.kind,change.id);
    if(!next)break;
+   // A form may become dirty while the remote fetch is in flight.
+   // Defer applying the result rather than replacing newly entered scores.
+   const focused=document.activeElement;
+   const editing=!!(focused&&focused!==document.body&&(focused.matches?.('input,textarea,select,[contenteditable="true"]')||focused.closest?.('[role="dialog"]')));
+   if(latestStateRef.current!==before||editing||document.querySelector('[data-ggc-dirty="true"]')){
+    setCloud('Incoming sync paused: local edits protected');break;
+   }
    pending.delete(key);
    remoteStateRef.current=true;
+   latestStateRef.current={...before,[change.kind]:next[change.kind]};
    setState(previous=>({...previous,[change.kind]:next[change.kind]}));
-   latestStateRef.current={...latestStateRef.current,[change.kind]:next[change.kind]};
    setCloud('● Live synced');
   }}catch(e){console.error('Realtime refresh deferred',e)}finally{busy=false}
  };

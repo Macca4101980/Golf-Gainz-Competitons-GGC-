@@ -41,5 +41,5 @@ test('a newer event for the same scorecard is not acknowledged by an older fetch
  assert.deepEqual(pending.get('cards:card1'),newerEvent);
 });
 test('realtime source uses identity check before acknowledging an event',()=>{
- assert.match(realtime,/if\(pending\.get\(key\)===change\)pending\.delete\(key\)/);
+ assert.match(main,/if\(pending\.get\(key\)===change\)pending\.delete\(key\)/);
 });

@@ -84,5 +84,5 @@ export function createRecordStore(supabase){
   versions.clear();
   for(const [k,v] of incoming)versions.set(k,v);
  }
- return {load,loadAll,commitLoadedVersions,invalidate,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null};
+ return {load,loadAll,commitLoadedVersions,invalidate,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
 }

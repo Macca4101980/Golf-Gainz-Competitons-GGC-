@@ -24,3 +24,13 @@ test('join not found is reported instead of pretending success',async()=>{
  const api=createGroupMembershipApi({rpc:async()=>({data:{ok:false,reason:'code_not_found'},error:null})});
  await assert.rejects(api.joinCode('invalid'),/GGC_GROUP_CODE_NOT_FOUND/);
 });
+
+test('group membership RPC overrides stale snapshot members and admins',async()=>{
+ const db={
+  from:()=>({select:()=>({eq:()=>({eq:()=>({eq:()=>({single:async()=>({data:{data:{id:'g1',ownerId:'p1',members:['p1','removed'],admins:['removed']}},error:null})})})})})}),
+  rpc:async()=>({data:[{player_id:'p1',role:'owner'},{player_id:'p2',role:'member'}],error:null})
+ };
+ const group=await createGroupMembershipApi(db).group('g1');
+ assert.deepEqual(group.members,['p1','p2']);
+ assert.deepEqual(group.admins,['p1']);
+});

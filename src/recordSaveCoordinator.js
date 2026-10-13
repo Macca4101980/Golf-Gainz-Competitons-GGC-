@@ -142,7 +142,10 @@ export function createRecordSaveCoordinator(store){
    // Only the newest snapshot may be persisted; an older queued snapshot must never roll back a newer edit.
    if(desired!==latestDesired)return 0;
    const changes=planRecordChanges(baseline,desired);
-   for(const change of changes){
+   const newIds=new Set(changes.filter(c=>c.kind==='players'&&!c.deleted&&!baseline.players.some(p=>String(p.id)===c.id)).map(c=>c.id));
+   const priority=changes.filter(c=>c.kind==='societies'&&!c.deleted&&(c.data.members||[]).some(id=>newIds.has(String(id))));
+   const ordered=[...priority,...changes.filter(c=>!priority.includes(c))];
+   for(const change of ordered){
     if(requestGeneration!==generation)throw Error('GGC_BASELINE_CHANGED');
     // Skip stale queued writes when a more recent snapshot has superseded this one.
     if(desired!==latestDesired)return 0;

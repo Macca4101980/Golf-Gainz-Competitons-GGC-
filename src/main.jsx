@@ -248,7 +248,8 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
      console.info('[GGC sync] Protected local records (field names only; no values):',diagnostic);
     }
    }else if(window.__ggcLastProtectedDiagnostic){window.__ggcLastProtectedDiagnostic=null;console.info('[GGC sync] No protected local records remain')}
-   setCloud(result.protectedRecords?'● Protected local: '+(result.protectedDetails||[]).map(d=>d.kind+'/'+d.id+' ('+d.reason+'; fields: '+(d.changedFields.length?d.changedFields.join(', '):'none')+')').join('; '):'● Cloud checked and synced');
+   const fieldConflicts=(result.protectedDetails||[]).filter(d=>d.conflicts?.length);
+   setCloud(fieldConflicts.length?'Record conflict — local edits retained; review before saving: '+fieldConflicts.map(d=>d.kind+'/'+d.id+' ('+d.conflicts.join(', ')+')').join('; '):result.protectedRecords?'● Protected local: '+(result.protectedDetails||[]).map(d=>d.kind+'/'+d.id+' ('+d.reason+'; fields: '+(d.changedFields.length?d.changedFields.join(', '):'none')+')').join('; '):'● Cloud checked and synced');
   }catch(e){console.error('Record catch-up deferred',e);setCloud('Cloud check failed — retrying')}
   finally{busy=false}
  };

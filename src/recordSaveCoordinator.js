@@ -13,7 +13,7 @@ export function createRecordSaveCoordinator(store){
  let lastFailure=null;
  let failedDesired=null;
  // A verified baseline must not be silently replaced by a later cloud refresh.
- function initialize(snapshot){baseline=structuredClone(snapshot);latestDesired=null;failedDesired=null;lastFailure=null;generation++;}
+ function initialize(snapshot){if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');baseline=structuredClone(snapshot);latestDesired=null;failedDesired=null;lastFailure=null;generation++;}
  async function initializeFromCloud(snapshot){
   if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
   const signature=JSON.stringify(snapshot);

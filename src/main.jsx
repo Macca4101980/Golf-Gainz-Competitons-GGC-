@@ -4,7 +4,6 @@ import{createClient}from'@supabase/supabase-js';
 import{Plus,Users,Flag,Wallet,Settings,Home,ChevronRight,UserRound,Save,X,Share2,Copy,LogIn,Building2,Trophy,ArrowLeft,CheckCircle2,Trash2,Mail,LogOut,UserPlus}from'lucide-react';
 import'./style.css';
 import{createTestStateStore}from'./testStateStore.js';
-import{createLegacyCloudStore}from'./legacyCloudStore.js';
 import{createRecordStore}from'./recordStore.js';
 import{createRecordSaveCoordinator}from'./recordSaveCoordinator.js';
 import{loadRecordSnapshot}from'./recordRetrieval.js';
@@ -16,7 +15,7 @@ import{FORMAT_RULES,scoreCard,formatResult,validateFormatStart,oomPointsForField
 const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const IS_ISOLATED_TEST=SUPA_URL==='https://omgnfrybqiqgxnpwgfol.supabase.co';const K=SUPA_URL.includes('omgnfrybqiqgxnpwgfol.supabase.co')?'ggc-isolated-test-v1':'ggc-build2';
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const isolatedStore=IS_ISOLATED_TEST&&supabase?createTestStateStore(supabase):null;
-const legacyStore=CLOUD&&!IS_ISOLATED_TEST?createLegacyCloudStore({url:SUPA_URL,key:SUPA_KEY}):null;
+
 // Explicitly opt in per deployment; never enable writes without versioned record reads.
 // The same code path works with both production and isolated Supabase projects.
 const RECORD_READ_ENABLED=CLOUD&&import.meta.env.VITE_GGC_RECORD_READ==='true';
@@ -530,7 +529,7 @@ async function loadProfile(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/pr
 async function saveProfile(token,p){const r=await fetch(`${SUPA_URL}/rest/v1/profiles`,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(p)});if(!r.ok)throw Error(await r.text())}
 async function markPasskey(token,id){const r=await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{apikey:SUPA_KEY,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({passkey_enabled:true,updated_at:new Date().toISOString()})});if(!r.ok)throw Error(await r.text())}
 function readAuth(){try{return JSON.parse(localStorage.getItem('ggc-auth'))}catch{return null}}function writeAuth(a){localStorage.setItem('ggc-auth',JSON.stringify(a))}function clearAuth(){localStorage.removeItem('ggc-auth')}async function restoreAuth(){const a=readAuth();if(!a)return null;if(a.expires_at&&Date.now()/1000<a.expires_at-60)return a;if(!a.refresh_token){clearAuth();return null}try{const r=await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{apikey:SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:a.refresh_token})});const n=await r.json();if(!r.ok||!n.access_token)throw Error();writeAuth(n);return n}catch{clearAuth();return null}}
-async function loadCloud(token){if(IS_ISOLATED_TEST)return isolatedStore.load();return legacyStore.load(token)}
+async function loadCloud(token){throw Error('GGC_RECORD_MODE_REQUIRED: legacy ggc_state reads are disabled')}
 async function saveCloud(s,set,token){
  if(!RECORD_STORE_ENABLED)throw Error('GGC_RECORD_MODE_REQUIRED: legacy whole-state writes are permanently disabled');
  if(!recordSaveCoordinator.isInitialized())throw Error('GGC_RECORD_BASELINE_REQUIRED');

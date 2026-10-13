@@ -32,11 +32,12 @@ export function createEditProtection(){
   const result=reconcileRecord({baseline:edit.baseline,local:edit.local,remote,dirtyFields:[...edit.dirty]});
   edit.local=structuredClone(result.merged);
   edit.baseline=structuredClone(remote);
+  edit.dirty=new Set(changedFields(edit.baseline,edit.local));
   return result;
  }
  function pending(kind,id){const e=edits.get(key(kind,id));return e?{local:structuredClone(e.local),fields:[...e.dirty],saving:e.saving}:null;}
  function markSaving(kind,id,value){const e=edits.get(key(kind,id));if(e)e.saving=Boolean(value);}
- function confirm(kind,id,saved){const e=edits.get(key(kind,id));if(!e)return;e.baseline=structuredClone(saved);e.local=structuredClone(saved);e.dirty.clear();e.saving=false;edits.delete(key(kind,id));}
+ function confirm(kind,id,saved){const k=key(kind,id);const e=edits.get(k);if(!e)return;e.baseline=structuredClone(saved);e.dirty=new Set(changedFields(e.baseline,e.local));e.saving=false;if(!e.dirty.size)edits.delete(k);}
  function discard(kind,id){edits.delete(key(kind,id));}
  return {begin,update,receive,pending,markSaving,confirm,discard};
 }

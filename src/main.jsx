@@ -246,7 +246,8 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
     latestStateRef.current=result.snapshot;
     setState(previous=>({...previous,...Object.fromEntries(kinds.map(kind=>[kind,result.snapshot[kind]]))}));
    }
-   pending.clear();
+   // Do not discard realtime events received while catch-up was awaiting the cloud.
+   // Flush them after the catch-up lock is released; a repeated fetch is safe.
    if(result.protectedDetails?.length){
     const diagnostic=result.protectedDetails.map(({kind,id,reason,changedFields})=>({kind,id,reason,changedFields}));
     const signature=JSON.stringify(diagnostic);
@@ -258,7 +259,7 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
    const fieldConflicts=(result.protectedDetails||[]).filter(d=>d.conflicts?.length);
    setCloud(fieldConflicts.length?'Record conflict — local edits retained; review before saving: '+fieldConflicts.map(d=>d.kind+'/'+d.id+' ('+d.conflicts.join(', ')+')').join('; '):result.protectedRecords?'● Sync protection active — '+result.protectedRecords+' records kept safe; details in browser console':'● Cloud checked and synced');
   }catch(e){console.error('Record catch-up deferred',e);setCloud('Cloud check failed — retrying')}
-  finally{busy=false}
+  finally{busy=false;if(active&&pending.size)void flush()}
  };
  const wake=()=>{if(document.visibilityState==='visible'){void catchUp();void flush()}};
  const online=()=>{void catchUp()};

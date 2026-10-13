@@ -29,3 +29,17 @@ test('incoming notification during catch-up remains available for replay',async(
  assert.deepEqual(received,[{score:3}]);
  assert.equal(pending.size,0);
 });
+
+test('a newer event for the same scorecard is not acknowledged by an older fetch',()=>{
+ const pending=new Map();
+ const oldEvent={kind:'cards',id:'card1',version:10};
+ pending.set('cards:card1',oldEvent);
+ const inFlight=pending.get('cards:card1');
+ const newerEvent={kind:'cards',id:'card1',version:11};
+ pending.set('cards:card1',newerEvent);
+ if(pending.get('cards:card1')===inFlight)pending.delete('cards:card1');
+ assert.deepEqual(pending.get('cards:card1'),newerEvent);
+});
+test('realtime source uses identity check before acknowledging an event',()=>{
+ assert.match(realtime,/if\(pending\.get\(key\)===change\)pending\.delete\(key\)/);
+});

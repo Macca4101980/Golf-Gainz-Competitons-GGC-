@@ -11,19 +11,20 @@ export function createGroupMembershipApi(supabase){
   invite:(groupId,playerId)=>rpc('ggc_group_invite_player',{p_group_id:groupId,p_player_id:playerId}),
   pending:async()=>{const {data,error}=await supabase.rpc('ggc_group_pending_invitations');if(error)throw error;return data||[]},
   respond:(invitationId,accept)=>rpc('ggc_group_respond_invitation',{p_invitation_id:invitationId,p_accept:accept}),
+  async myGroups(){const {data,error}=await supabase.rpc('ggc_group_my_groups');if(error)throw error;return data||[]},
   async group(groupId){
-   const {data,error}=await supabase.from('ggc_records').select('data').eq('kind','societies').eq('record_id',groupId).eq('deleted',false).single();
+   const {data,error}=await supabase.rpc('ggc_group_get',{p_group_id:groupId});
    if(error)throw error;
-   if(!data?.data)throw Error('GGC_GROUP_NOT_FOUND');
+   if(!data)throw Error('GGC_GROUP_NOT_FOUND');
    const {data:members,error:memberError}=await supabase.rpc('ggc_group_members',{p_group_id:groupId});
    if(memberError)throw memberError;
-   const ownerId=data.data.ownerId;
+   const ownerId=data.ownerId;
    const authoritative=members||[];
    // Do not merge stale membership snapshots from ggc_records back into the RPC result.
    // The membership table is the source of truth after FIX 02 is enabled.
    const memberIds=[...new Set(authoritative.map(x=>x.player_id))];
    const admins=[...new Set(authoritative.filter(x=>x.role==='admin'||x.role==='owner').map(x=>x.player_id))];
-   return {...data.data,members:memberIds,admins,ownerId};
+   return {...data,members:memberIds,admins,ownerId};
   }
  };
 }

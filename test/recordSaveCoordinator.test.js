@@ -87,3 +87,14 @@ test('verified baseline cannot be replaced by a later stale snapshot',async()=>{
  await c.enqueue({players:[{id:'p',hi:9}]});
  assert.equal(c.getBaseline().players[0].hi,9);
 });
+
+test('version conflict retains local edits and does not advance cloud baseline',async()=>{
+ const c=createRecordSaveCoordinator({hasBaseline(){return true},async save(){throw Error('GGC_VERSION_CONFLICT');}});
+ const initial={players:[{id:'p',hi:10}]};
+ const edited={players:[{id:'p',hi:8}]};
+ c.initialize(initial);
+ await assert.rejects(c.enqueue(edited),/GGC_VERSION_CONFLICT/);
+ assert.deepEqual(c.getBaseline(),initial);
+ assert.deepEqual(c.getFailedDesired(),edited);
+ assert.match(c.getLastFailure().message,/GGC_VERSION_CONFLICT/);
+});

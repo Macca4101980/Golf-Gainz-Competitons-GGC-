@@ -78,3 +78,12 @@ test('failed snapshot is retained and cleared only after a confirmed retry',asyn
  assert.equal(coordinator.getFailedDesired(),null);
  assert.equal(coordinator.getLastFailure(),null);
 });
+
+test('verified baseline cannot be replaced by a later stale snapshot',async()=>{
+ const c=createRecordSaveCoordinator({hasBaseline(){return true},async save(){return 2}});
+ c.initialize({players:[{id:'p',hi:10}]});
+ assert.throws(()=>c.initialize({players:[{id:'p',hi:30}]}),/GGC_BASELINE_ALREADY_INITIALIZED/);
+ assert.equal(c.getBaseline().players[0].hi,10);
+ await c.enqueue({players:[{id:'p',hi:9}]});
+ assert.equal(c.getBaseline().players[0].hi,9);
+});

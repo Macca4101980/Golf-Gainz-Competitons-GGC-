@@ -176,6 +176,18 @@ function mergeLiveState(local,remote){
  const societyInvites=byId(local.societyInvites||[],remote.societyInvites||[],newer);
  return {...remote,players,societies,courses,cards,audit,comps,leagues,societyInvites,identityLinks,deletedCompIds,deletedSocietyIds,deletedCourseIds,deletedLeagueIds,contacts,hiddenContacts};
 }
+// Resolve the signed-in golfer without mutating cloud records or silently merging identities.
+function reconcileGolferIdentity(state,{authId,email}){
+ const players=state.players||[];
+ const linked=players.filter(p=>p.authUserId===authId||p.id===authId);
+ if(linked.length===1)return{state,playerId:linked[0].id,ambiguous:false};
+ if(linked.length>1)return{state,playerId:'',ambiguous:true};
+ const verifiedEmail=String(email||'').trim().toLowerCase();
+ const matches=verifiedEmail?players.filter(p=>String(p.email||'').trim().toLowerCase()===verifiedEmail):[];
+ // Never claim an unlinked or differently linked record automatically.
+ // Account linking requires a separate, audited, permission-safe operation.
+ return{state,playerId:'',ambiguous:matches.length>0};
+}
 function App(){const claimToken=new URLSearchParams(location.search).get('claim')||'';const[state,setState]=useState(()=>{try{return migrate(JSON.parse(localStorage.getItem(K))||(IS_ISOLATED_TEST?null:JSON.parse(localStorage.getItem('ggc-build1'))))}catch{return clone(seed)}});const[tab,setTab]=useState('home');const[cloud,setCloud]=useState(CLOUD?'Connecting…':'Local only');const[modal,setModal]=useState(null);const[me,setMe]=useState(()=>localStorage.getItem('ggc-me')||'');const[auth,setAuth]=useState(()=>readAuth());const[authReady,setAuthReady]=useState(!CLOUD);const[profileReady,setProfileReady]=useState(()=>!CLOUD||!!readAuth());const[activeComp,setActiveComp]=useState(()=>localStorage.getItem('ggc-active-comp')||null);const[editComp,setEditComp]=useState(null);const[leagueCreatedId,setLeagueCreatedId]=useState(null);const[socId,setSocId]=useState(()=>localStorage.getItem('ggc-society')||'default-society');const[hiddenGroups,setHiddenGroups]=useState(()=>{try{return JSON.parse(localStorage.getItem('ggc-hidden-groups')||'[]')}catch{return[]}});const[updateReady,setUpdateReady]=useState(false);const[waitingWorker,setWaitingWorker]=useState(null);const pendingCloudRefreshRef=useRef(null);const remoteStateRef=useRef(false);const cloudHydratedRef=useRef(!CLOUD);const[,setClockTick]=useState(0);useEffect(()=>{const id=setInterval(()=>setClockTick(x=>x+1),30000);return()=>clearInterval(id)},[]);
 useEffect(()=>{if(!('serviceWorker'in navigator))return;let reg=null;let timer=null;const offer=worker=>{if(worker&&navigator.serviceWorker.controller){setWaitingWorker(worker);setUpdateReady(true)}};const inspect=r=>{reg=r;if(r.waiting)offer(r.waiting);r.addEventListener('updatefound',()=>{const w=r.installing;if(!w)return;w.addEventListener('statechange',()=>{if(w.state==='installed')offer(w)})})};navigator.serviceWorker.ready.then(inspect).catch(()=>{});const check=()=>reg?.update().catch(()=>{});const visible=()=>{if(document.visibilityState==='visible')check()};window.addEventListener('focus',check);document.addEventListener('visibilitychange',visible);timer=setInterval(check,30*60*1000);return()=>{window.removeEventListener('focus',check);document.removeEventListener('visibilitychange',visible);if(timer)clearInterval(timer)}},[]);
 function applyUpdate(){if(!waitingWorker)return;waitingWorker.postMessage({type:'SKIP_WAITING'});let reloaded=false;const reload=()=>{if(reloaded)return;reloaded=true;window.location.reload()};navigator.serviceWorker.addEventListener('controllerchange',reload,{once:true});setTimeout(reload,2500)}

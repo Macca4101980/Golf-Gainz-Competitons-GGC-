@@ -143,21 +143,39 @@ export function createRecordSaveCoordinator(store){
   const original=structuredClone(baseline);
   const changes=planRecordChanges(original,currentSnapshot);
   if(!changes.length)return null;
-  // Non-card conflicts and deletions require a separate explicit review path.
-  if(changes.some(change=>change.kind!=='cards'||change.deleted))return {conflicts:['non-scorecard changes require review']};
+  // Only safe field-level changes are automatically rebased. Membership removals,
+  // concurrent membership edits and deletions must be reviewed explicitly.
+  if(changes.some(change=>!['cards','societies'].includes(change.kind)||change.deleted))
+   return {conflicts:['unsupported record change requires review']};
   const rebased=structuredClone(currentSnapshot);
   const remoteBaseline=structuredClone(original);
   const conflicts=[];
   for(const change of changes){
-   const before=(original.cards||[]).find(record=>String(record.id)===change.id);
-   const mine=(currentSnapshot.cards||[]).find(record=>String(record.id)===change.id);
-   if(!before||!mine)return {conflicts:['new or missing scorecard requires review']};
-   const remote=await store.load('cards',change.id);
-   if(!remote)return {conflicts:['scorecard deleted remotely: '+change.id]};
-   const result=mergeScorecardConflict({baseline:before,local:mine,remote});
-   if(result.conflicts.length){conflicts.push(...result.conflicts.map(field=>change.id+'/'+field));continue;}
-   rebased.cards=rebased.cards.map(card=>String(card.id)===change.id?result.merged:card);
-   remoteBaseline.cards=remoteBaseline.cards.map(card=>String(card.id)===change.id?remote:card);
+   const kind=change.kind;
+   const before=(original[kind]||[]).find(record=>String(record.id)===change.id);
+   const mine=(currentSnapshot[kind]||[]).find(record=>String(record.id)===change.id);
+   if(!before||!mine)return {conflicts:['new or missing '+kind+' record requires review']};
+   const remote=await store.load(kind,change.id);
+   if(!remote)return {conflicts:[kind+' record deleted remotely: '+change.id]};
+   let result;
+   if(kind==='cards'){
+    result=mergeScorecardConflict({baseline:before,local:mine,remote});
+   }else{
+    const dirty=changedFields(before,mine);
+    result=reconcileRecord({baseline:before,local:mine,remote,dirtyFields:dirty});
+    // Membership changes must use authoritative membership actions, never a generic retry.
+    if(dirty.includes('members') && !result.conflicts.includes('members'))
+     result.conflicts.push('members require authoritative membership action');
+    // Owner/admin permission changes are always reviewed rather than auto-retried.
+    if(dirty.some(field=>['ownerId','admins'].includes(field)))
+     result.conflicts.push('membership permissions require review');
+   }
+   if(result.conflicts.length){
+    conflicts.push(...result.conflicts.map(field=>(kind==='cards'?'':kind+'/')+change.id+'/'+field));
+    continue;
+   }
+   rebased[kind]=rebased[kind].map(record=>String(record.id)===change.id?result.merged:record);
+   remoteBaseline[kind]=remoteBaseline[kind].map(record=>String(record.id)===change.id?remote:record);
   }
   if(conflicts.length)return {conflicts};
   if(JSON.stringify(baseline)!==JSON.stringify(original))return null;

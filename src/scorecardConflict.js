@@ -9,6 +9,13 @@ export function mergeScorecardConflict({baseline,local,remote}){
   if(field==='id')continue;
   const before=baseline[field],mine=local[field],theirs=remote[field];
   if(JSON.stringify(before)===JSON.stringify(mine))continue;
+  // Edit provenance is bookkeeping, not a competing golf score. Both devices
+  // update these fields on every stroke, so treating them as user conflicts
+  // prevents otherwise independent hole edits from merging.
+  if(field==='updatedAt'||field==='lastEditedBy'){
+   if(Object.prototype.hasOwnProperty.call(local,field))merged[field]=structuredClone(mine);
+   continue;
+  }
   if(field==='gross'&&Array.isArray(before)&&Array.isArray(mine)&&Array.isArray(theirs)){
    const gross=structuredClone(theirs);
    for(let hole=0;hole<Math.max(before.length,mine.length,theirs.length);hole++){

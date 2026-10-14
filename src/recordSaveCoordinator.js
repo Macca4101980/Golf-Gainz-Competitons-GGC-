@@ -171,7 +171,7 @@ export function createRecordSaveCoordinator(store){
      result.conflicts.push('membership permissions require review');
    }
    if(result.conflicts.length){
-    conflicts.push(...result.conflicts.map(field=>kind+'/'+change.id+'/'+field));
+    conflicts.push(...result.conflicts.map(field=>(kind==='cards'?'':kind+'/')+change.id+'/'+field));
     continue;
    }
    rebased[kind]=rebased[kind].map(record=>String(record.id)===change.id?result.merged:record);

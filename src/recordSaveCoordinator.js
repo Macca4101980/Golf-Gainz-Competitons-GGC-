@@ -163,12 +163,9 @@ export function createRecordSaveCoordinator(store){
    }else{
     const dirty=changedFields(before,mine);
     result=reconcileRecord({baseline:before,local:mine,remote,dirtyFields:dirty});
-    // Never automatically restore or delete members after a concurrent membership edit.
-    // A membership change is safe to carry forward only when the cloud's membership
-    // field has not changed since the original baseline.
-    if(dirty.includes('members') &&
-       JSON.stringify(before.members)!==JSON.stringify(remote.members) &&
-       !result.conflicts.includes('members'))result.conflicts.push('members');
+    // Membership changes must use authoritative membership actions, never a generic retry.
+    if(dirty.includes('members') && !result.conflicts.includes('members'))
+     result.conflicts.push('members require authoritative membership action');
     // Owner/admin permission changes are always reviewed rather than auto-retried.
     if(dirty.some(field=>['ownerId','admins'].includes(field)))
      result.conflicts.push('membership permissions require review');

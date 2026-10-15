@@ -246,7 +246,7 @@ export function createRecordSaveCoordinator(store){
      const existing=await store.load(change.kind,change.id);
      if(existing!==null)throw Error('GGC_RECORD_ALREADY_EXISTS: '+change.kind+'/'+change.id);
     }
-    await store.save(change.kind,change.id,change.data,{deleted:change.deleted});
+    try{await store.save(change.kind,change.id,change.data,{deleted:change.deleted});}catch(error){throw new Error('GGC_RECORD_SAVE_FAILED ['+change.kind+'/'+change.id+']: '+(error?.message||String(error)),{cause:error});}
     // Acknowledge only this confirmed record; preserve other pending edits.
     const collection=baseline[change.kind];
     const index=collection.findIndex(record=>String(record?.id)===change.id);

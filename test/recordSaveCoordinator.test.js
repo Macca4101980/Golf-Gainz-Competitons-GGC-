@@ -173,3 +173,11 @@ test('score conflict resolution refuses to overwrite a newer third-device edit',
  await assert.rejects(c.resolveScorecardConflicts(edited,{'card1/gross[0]':5},review.conflictDetails),/GGC_CLOUD_SCORE_CHANGED_AGAIN/);
  assert.equal(c.getBaseline().cards[0].gross[0],4);
 });
+
+test('failed record save identifies rejected kind and ID without advancing baseline',async()=>{
+ const store={hasBaseline(){return true},async save(){throw Error('new row violates row-level security policy for table "ggc_records"')}};
+ const c=createRecordSaveCoordinator(store);
+ c.initialize({players:[{id:'owner',hi:8}],societies:[]});
+ await assert.rejects(c.enqueue({players:[{id:'owner',hi:8},{id:'unclaimed-test',hi:18}],societies:[]}),/GGC_RECORD_SAVE_FAILED \[players\/unclaimed-test\].*row-level security/);
+ assert.deepEqual(c.getBaseline().players.map(p=>p.id),['owner']);
+});

@@ -288,3 +288,19 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 
 /* FIX 05: shared email/password login controls */
 .authPasswordHeading{text-align:center;margin:12px 0 20px;font-size:1.15rem}.authPasswordField{position:relative}.authPasswordField input{width:100%;padding-right:72px}.authShowPassword{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:#70e748;font-size:.8rem;font-weight:700;padding:8px;cursor:pointer}.authRecovery{display:flex;justify-content:flex-end;margin:4px 0 12px}.authRecovery .textbtn{color:#70e748;text-decoration:underline;padding:6px 0}.authRecovery .textbtn:disabled{opacity:.45}
+
+/* Compact password-first sign-in tabs, using the existing GGC palette */
+.ggcCompactLogin{padding-top:18px;padding-bottom:18px}
+.ggcCompactLogin .authbrand{margin-bottom:16px}
+.ggcCompactLogin .authbrand h1{margin:12px 0 5px}
+.ggcCompactLogin .authbrand p{margin:0 0 12px}
+.ggcCompactLogin label{margin-bottom:10px}
+.ggcCompactLogin .primary,.ggcCompactLogin .secondary{margin-top:8px}
+.ggcCompactLogin .authRecovery{margin:0 0 5px}
+.ggcCompactLogin .authdivider{margin:12px 0 7px}
+.ggcCompactLogin .ggcCreateAccount{margin-top:12px}
+.ggcLoginTabs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #35453b;border-radius:15px;overflow:hidden;margin:10px 0 18px}
+.ggcLoginTabs button{background:transparent;color:#c4ccc6;border:0;padding:13px 8px;font:inherit;font-weight:750;cursor:pointer;min-height:48px}
+.ggcLoginTabs button.selected{color:#70e840;background:#102819;box-shadow:inset 0 0 0 1px #70e840;border-radius:14px}
+.ggcLoginTabs button:focus-visible{outline:2px solid #70e840;outline-offset:-3px}
+@media(max-width:420px){.ggcCompactLogin{padding:14px}.ggcLoginTabs{margin:8px 0 13px}.ggcLoginTabs button{padding:11px 5px}}

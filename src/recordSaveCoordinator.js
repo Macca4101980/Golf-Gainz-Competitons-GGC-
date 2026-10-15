@@ -150,6 +150,7 @@ export function createRecordSaveCoordinator(store){
   const rebased=structuredClone(currentSnapshot);
   const remoteBaseline=structuredClone(original);
   const conflicts=[];
+  const conflictDetails=[];
   for(const change of changes){
    const kind=change.kind;
    const before=(original[kind]||[]).find(record=>String(record.id)===change.id);
@@ -172,12 +173,13 @@ export function createRecordSaveCoordinator(store){
    }
    if(result.conflicts.length){
     conflicts.push(...result.conflicts.map(field=>(kind==='cards'?'':kind+'/')+change.id+'/'+field));
+    if(kind==='cards')for(const field of result.conflicts){const match=/^gross\[(\d+)\]$/.exec(field);if(match){const hole=Number(match[1]);conflictDetails.push({cardId:change.id,playerId:mine.playerId,compId:mine.compId,hole,localScore:mine.gross?.[hole]??'',cloudScore:remote.gross?.[hole]??''});}}
     continue;
    }
    rebased[kind]=rebased[kind].map(record=>String(record.id)===change.id?result.merged:record);
    remoteBaseline[kind]=remoteBaseline[kind].map(record=>String(record.id)===change.id?remote:record);
   }
-  if(conflicts.length)return {conflicts};
+  if(conflicts.length)return {conflicts,conflictDetails};
   if(JSON.stringify(baseline)!==JSON.stringify(original))return null;
   if(JSON.stringify(currentSnapshot)!==JSON.stringify(latestDesired))return null;
   baseline=remoteBaseline;
@@ -185,6 +187,44 @@ export function createRecordSaveCoordinator(store){
   failedDesired=null;
   lastFailure=null;
   return {snapshot:rebased,conflicts:[]};
+ }
+ /** Resolve only explicitly reviewed score conflicts. Recheck every remote score
+  * before applying the decision; a newly changed cloud score needs new review.
+  */
+ async function resolveScorecardConflicts(currentSnapshot,decisions,expectedDetails){
+  if(!baseline||!lastFailure||!/GGC_VERSION_CONFLICT/.test(lastFailure.message||''))throw Error('GGC_CONFLICT_NOT_ACTIVE');
+  await pending;
+  if(JSON.stringify(currentSnapshot)!==JSON.stringify(latestDesired))throw Error('GGC_LOCAL_CHANGES_SINCE_REVIEW');
+  const original=structuredClone(baseline);
+  const changes=planRecordChanges(original,currentSnapshot);
+  if(!changes.length||changes.some(c=>c.kind!=='cards'||c.deleted))throw Error('GGC_UNSUPPORTED_CONFLICT');
+  const rebased=structuredClone(currentSnapshot),remoteBaseline=structuredClone(original);
+  for(const change of changes){
+   const before=(original.cards||[]).find(x=>String(x.id)===change.id);
+   const mine=(currentSnapshot.cards||[]).find(x=>String(x.id)===change.id);
+   if(!before||!mine)throw Error('GGC_CARD_MISSING');
+   const remote=await store.load('cards',change.id);
+   if(!remote)throw Error('GGC_CARD_DELETED');
+   const {merged,conflicts}=mergeScorecardConflict({baseline:before,local:mine,remote});
+   for(const field of conflicts){
+    const match=/^gross\[(\d+)\]$/.exec(field);
+    if(!match)throw Error('GGC_OTHER_CONFLICT_REQUIRES_REVIEW: '+field);
+    const hole=Number(match[1]),key=change.id+'/gross['+hole+']';
+    const expected=expectedDetails.find(d=>d.cardId===change.id&&d.hole===hole);
+    if(!expected||JSON.stringify(remote.gross?.[hole]??'')!==JSON.stringify(expected.cloudScore))throw Error('GGC_CLOUD_SCORE_CHANGED_AGAIN');
+    if(!Object.prototype.hasOwnProperty.call(decisions,key))throw Error('GGC_SCORE_DECISION_REQUIRED');
+    merged.gross[hole]=decisions[key];
+   }
+   // A conflict that disappeared since review is also a new cloud state: request review again.
+   for(const detail of expectedDetails.filter(d=>d.cardId===change.id)){
+    if(JSON.stringify(remote.gross?.[detail.hole]??'')!==JSON.stringify(detail.cloudScore))throw Error('GGC_CLOUD_SCORE_CHANGED_AGAIN');
+   }
+   rebased.cards=rebased.cards.map(x=>String(x.id)===change.id?merged:x);
+   remoteBaseline.cards=remoteBaseline.cards.map(x=>String(x.id)===change.id?remote:x);
+  }
+  if(JSON.stringify(baseline)!==JSON.stringify(original)||JSON.stringify(latestDesired)!==JSON.stringify(currentSnapshot))throw Error('GGC_CONFLICT_STATE_CHANGED');
+  baseline=remoteBaseline;latestDesired=structuredClone(rebased);lastFailure=null;failedDesired=null;
+  return rebased;
  }
  function enqueue(snapshot){
   const desired=structuredClone(snapshot),requestGeneration=generation;
@@ -220,5 +260,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{if(desired===latestDesired){lastFailure=null;failedDesired=null;}return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,recoverVersionConflict,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+ return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,recoverVersionConflict,resolveScorecardConflicts,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

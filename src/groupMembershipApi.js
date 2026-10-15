@@ -9,6 +9,7 @@ export function createGroupMembershipApi(supabase){
  return {
   joinCode:code=>rpc('ggc_group_join_code',{p_code:code.trim()}),
   invite:(groupId,playerId)=>rpc('ggc_group_invite_player',{p_group_id:groupId,p_player_id:playerId}),
+  addTemporary:(groupId,playerId)=>rpc('ggc_group_add_temporary_golfer',{p_group_id:groupId,p_player_id:playerId}),
   leave:groupId=>rpc('ggc_group_leave',{p_group_id:groupId}),
   removeMember:(groupId,playerId)=>rpc('ggc_group_remove_member',{p_group_id:groupId,p_player_id:playerId}),
   pending:async()=>{const {data,error}=await supabase.rpc('ggc_group_pending_invitations');if(error)throw error;return data||[]},

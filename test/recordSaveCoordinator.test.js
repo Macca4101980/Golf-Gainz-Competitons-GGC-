@@ -143,3 +143,33 @@ test('remote fetch cannot advance baseline when a form becomes dirty during requ
  assert.equal(await request,null);
  assert.equal(c.getBaseline().players[0].score,4);
 });
+
+test('same-hole conflict offers values and saves explicitly chosen cloud score',async()=>{
+ const base={id:'card1',playerId:'p1',compId:'comp1',gross:[4,4],updatedAt:'t0',lastEditedBy:'a'};
+ const remote={...base,gross:[3,4],updatedAt:'t1',lastEditedBy:'tablet'};
+ const local={...base,gross:[5,4],updatedAt:'t2',lastEditedBy:'phone'};
+ let writes=0,cloud=structuredClone(remote);
+ const store={hasBaseline(){return true},async load(){return structuredClone(cloud)},async save(_kind,_id,data){if(!writes++){throw Error('GGC_VERSION_CONFLICT')}cloud=structuredClone(data)}};
+ const c=createRecordSaveCoordinator(store);
+ const initial={cards:[base]},edited={cards:[local]};c.initialize(initial);
+ await assert.rejects(c.enqueue(edited),/GGC_VERSION_CONFLICT/);
+ const review=await c.recoverVersionConflict(edited);
+ assert.deepEqual(review.conflictDetails.map(x=>[x.hole,x.localScore,x.cloudScore]),[[0,5,3]]);
+ const selected={'card1/gross[0]':3};
+ const resolved=await c.resolveScorecardConflicts(edited,selected,review.conflictDetails);
+ assert.deepEqual(resolved.cards[0].gross,[3,4]);
+ await c.enqueue(resolved);
+ assert.deepEqual(cloud.gross,[3,4]);
+});
+test('score conflict resolution refuses to overwrite a newer third-device edit',async()=>{
+ const base={id:'card1',playerId:'p1',compId:'comp1',gross:[4],updatedAt:'t0'};
+ let cloud={...base,gross:[3],updatedAt:'t1'};
+ const local={...base,gross:[5],updatedAt:'t2'};
+ const store={hasBaseline(){return true},async load(){return structuredClone(cloud)},async save(){throw Error('GGC_VERSION_CONFLICT')}};
+ const c=createRecordSaveCoordinator(store);c.initialize({cards:[base]});
+ const edited={cards:[local]};await assert.rejects(c.enqueue(edited),/GGC_VERSION_CONFLICT/);
+ const review=await c.recoverVersionConflict(edited);
+ cloud={...cloud,gross:[6],updatedAt:'t3'};
+ await assert.rejects(c.resolveScorecardConflicts(edited,{'card1/gross[0]':5},review.conflictDetails),/GGC_CLOUD_SCORE_CHANGED_AGAIN/);
+ assert.equal(c.getBaseline().cards[0].gross[0],4);
+});

@@ -292,14 +292,15 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
 },[auth?.access_token,profileReady]);
 useEffect(()=>{if(!CLOUD||!auth?.access_token||!auth?.user?.id)return;let cancelled=false;cloudHydratedRef.current=false;setProfileReady(false);setProfileLoadError('');Promise.all([RECORD_STORE_ENABLED?Promise.resolve(null):loadCloud(auth.access_token),loadProfile(auth.access_token,auth.user.id)]).then(async ([cloudState,profile])=>{if(cancelled)return;let next=cloudState?migrate(cloudState):migrate(state);if(RECORD_STORE_ENABLED){/* Record-mode screens must use the same persisted group IDs as invite RPCs. The legacy ggc_state snapshot is retained for recovery only; never display its conflicting group IDs as live records. */next=recordSaveCoordinator.isInitialized()?await recordSaveCoordinator.catchUpFromCloud():await recordSaveCoordinator.initializeFromRecords(migrate(seed));if(!next)throw Error('GGC_PROFILE_RECORD_REFRESH_BLOCKED');if(cancelled)return;}if(!profile){const legacy=next.players.find(p=>p.authUserId===auth.user.id);if(legacy){profile={id:auth.user.id,display_name:legacy.name,handicap_index:+legacy.hi||0,passkey_enabled:!!legacy.passkeyEnabled};try{await saveProfile(auth.access_token,profile)}catch{}}}if(profile){const linked=reconcileGolferIdentity(next,{authId:auth.user.id,email:auth.user.email,profile});next=linked.state;setMe(linked.playerId);localStorage.setItem('ggc-me',linked.playerId);if(linked.ambiguous)console.warn('Ambiguous golfer email — manual identity review required')}else{setMe('');localStorage.removeItem('ggc-me')}setState(next);cloudHydratedRef.current=true;setProfileReady(true);setCloud(cloudState?'Cloud loaded':'Cloud ready')}).catch(e=>{if(!cancelled){setProfileReady(false);setProfileLoadError('Could not load your existing golfer profile. Your records are safe.');setCloud('Cloud load failed — saving blocked');console.error('Cloud load failed',e)}});return()=>{cancelled=true}},[auth?.user?.id]);
 const claimAttemptRef=useRef(false);
-useEffect(()=>{if(!CLOUD||!auth?.access_token||!profileReady||!cloudHydratedRef.current||!claimToken||!currentAccountHasProfile()||claimAttemptRef.current)return;
- claimAttemptRef.current=true;
+const[claimError,setClaimError]=useState('');
+const[claimPending,setClaimPending]=useState(false);
+useEffect(()=>{if(!CLOUD||!auth?.access_token||!claimToken||claimAttemptRef.current)return;
+ claimAttemptRef.current=true;setClaimPending(true);
  (async()=>{const{data,error}=await supabase.rpc('ggc_claim_existing_invite',{p_token:claimToken});
- if(error||!data?.ok){alert('Invitation could not be linked to this signed-in account. Please check that James is signed in with the same verified email address as the invitation.');return}
+ if(error||!data?.ok){setClaimError(error?.message||'Invitation could not be claimed. Please ask the group admin for a new link.');return}
  location.replace(location.origin+location.pathname);
- })().catch(()=>alert('Invitation linking failed. Please retry the original email link.'));
- function currentAccountHasProfile(){return (state.players||[]).some(p=>p.authUserId===auth.user.id||p.id===auth.user.id)}
-},[auth?.access_token,auth?.user?.id,profileReady,claimToken,state.players]);
+ })().catch(e=>setClaimError(e?.message||'Invitation linking failed.')).finally(()=>setClaimPending(false));
+},[auth?.access_token,claimToken]);
 const currentMe=state.players.find(p=>p.id===me&&(!auth?.user?.id||!p.authUserId||p.authUserId===auth.user.id));const society=state.societies.find(s=>s.id===socId)||state.societies[0];
 const myGroups=(state.societies||[]).filter(s=>currentMe&&((s.members||[]).includes(currentMe.id)||s.ownerId===currentMe.id||(s.admins||[]).includes(currentMe.id)));
 const visibleGroups=myGroups.filter(s=>!hiddenGroups.includes(s.id));
@@ -314,6 +315,8 @@ async function addPlayer(p){const id=auth?.user?.id||uid();const verifiedEmail=S
 function enter(c){if(!currentMe){setModal('player');return}if(c.format==='matchplay'&&!(c.entries||[]).includes(currentMe.id)&&(c.entries||[]).length>=2){alert('Singles Match Play is limited to exactly two golfers.');return}setState(x=>{const others=(c.entries||[]).filter(id=>id!==currentMe.id);const contacts={...(x.contacts||{}),[currentMe.id]:[...new Set([...(x.contacts?.[currentMe.id]||[]),...others])]};for(const id of others)contacts[id]=[...new Set([...(contacts[id]||[]),currentMe.id])];const hiddenContacts={...(x.hiddenContacts||{}),[currentMe.id]:(x.hiddenContacts?.[currentMe.id]||[]).filter(id=>!others.includes(id))};for(const id of others)hiddenContacts[id]=(hiddenContacts[id]||[]).filter(pid=>pid!==currentMe.id);return {...x,contacts,hiddenContacts,comps:x.comps.map(q=>q.id===c.id?{...q,entries:[...new Set([...(q.entries||[]),currentMe.id])],invites:(q.invites||[]).filter(id=>id!==currentMe.id)}:q)}});setActiveComp(c.id);localStorage.setItem('ggc-active-comp',c.id);setTab('score')}
 
 if(CLOUD&&passwordRecovery&&auth)return <PasswordRecovery onDone={()=>{setPasswordRecovery(false);history.replaceState(null,'',location.pathname)}}/>;
+if(CLOUD&&auth&&claimToken&&(claimPending||(!claimError&&claimAttemptRef.current)))return <WelcomeShell><div className="authcard"><p>Securely connecting your golfer profile…</p></div></WelcomeShell>;
+if(CLOUD&&auth&&claimToken&&claimError)return <WelcomeShell><div className="authcard"><h2>Invitation could not be linked</h2><p role="alert">{claimError}</p><button className="secondary" onClick={()=>location.replace(location.pathname)}>CONTINUE WITHOUT INVITATION</button></div></WelcomeShell>;
 if(CLOUD&&!authReady)return <WelcomeShell><p>Checking your GGC sign-in…</p></WelcomeShell>;
 if(CLOUD&&!auth)return <AuthGate claimToken={claimToken} onAuth={a=>{writeAuth(a);setAuth(a)}}/>;
 if(CLOUD&&auth&&!profileReady)return <WelcomeShell><div className="authcard"><p>{profileLoadError||'Loading your GGC profile…'}</p>{profileLoadError&&<button className="primary" onClick={()=>location.reload()}>RETRY PROFILE LOAD</button>}</div></WelcomeShell>;

@@ -315,3 +315,16 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 .resultsEmbargoSettings input[type="datetime-local"]{-webkit-appearance:auto;appearance:auto;color-scheme:dark}
 .resultsEmbargoSettings small{display:block;line-height:1.45;margin-top:10px}
 @media(max-width:520px){.resultsEmbargoSettings{padding:18px!important}.resultsEmbargoSettings input[type="datetime-local"]{font-size:16px!important;min-width:0!important}}
+
+/* FIX09: compact Results Embargo controls, matching the dark competition editor. */
+.modal .resultsEmbargoSettings{background:#111c14!important;color:#f0f5ef!important;border:1px solid #344337!important;border-radius:14px!important;padding:14px!important;margin:14px 0!important;text-align:left!important;overflow:visible!important;box-shadow:none!important}
+.modal .resultsEmbargoSettings h3{color:#f1f5ef!important;font-size:15px!important;line-height:1.2!important;margin:0 0 12px!important}
+.modal .resultsEmbargoSettings label{color:#e5ebe5!important;font-size:13px!important;font-weight:700!important;margin:10px 0!important;line-height:1.3!important}
+.modal .resultsEmbargoSettings .embargoToggle{display:flex!important;align-items:center!important;gap:10px!important;margin:8px 0 12px!important}
+.modal .resultsEmbargoSettings .embargoToggle input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px!important;flex:0 0 20px!important;padding:0!important;margin:0!important;accent-color:#36a961}
+.modal .resultsEmbargoSettings select,.modal .resultsEmbargoSettings input[type="datetime-local"]{display:block!important;position:relative!important;width:100%!important;max-width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;max-height:44px!important;box-sizing:border-box!important;padding:8px 12px!important;margin:5px 0 8px!important;border:1px solid #405044!important;border-radius:10px!important;background:#0c1710!important;color:#fff!important;font-size:16px!important;font-weight:400!important;line-height:24px!important;box-shadow:none!important;overflow:hidden!important}
+.modal .resultsEmbargoSettings input[type="datetime-local"]{-webkit-appearance:none!important;appearance:none!important;color-scheme:dark!important}
+.modal .resultsEmbargoSettings input[type="datetime-local"]::-webkit-datetime-edit{display:inline-flex!important;align-items:center!important;padding:0!important;min-width:0!important;color:#fff!important}
+.modal .resultsEmbargoSettings input[type="datetime-local"]::-webkit-calendar-picker-indicator{opacity:1!important;display:block!important;flex-shrink:0!important;filter:invert(1)}
+.modal .resultsEmbargoSettings small{color:#aebbb0!important;font-size:11px!important;line-height:1.35!important;margin:10px 0 0!important;font-weight:400!important}
+@media(max-width:520px){.modal .resultsEmbargoSettings{padding:12px!important}.modal .resultsEmbargoSettings select,.modal .resultsEmbargoSettings input[type="datetime-local"]{height:44px!important;max-height:44px!important}}

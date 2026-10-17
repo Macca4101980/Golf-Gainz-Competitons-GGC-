@@ -1,0 +1,25 @@
+name: GGC record safety tests
+on:
+  push:
+    branches:
+      - ggc-consolidated-record-safety-20261013
+  pull_request:
+    branches:
+      - ggc-001-live-record-migration
+  workflow_dispatch:
+jobs:
+  record-safety:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies (repository has no lockfile)
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Automated test suite
+        run: npm test
+      - name: Production build verification
+        run: npm run build

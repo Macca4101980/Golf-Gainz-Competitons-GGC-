@@ -1,0 +1,22 @@
+name: GGC group conflict regression
+on:
+  pull_request:
+    paths:
+      - 'src/recordSaveCoordinator.js'
+      - 'src/recordChanges.js'
+      - 'src/editProtection.js'
+      - 'src/scorecardConflict.js'
+      - 'test/groupConflictRecovery.test.js'
+      - '.github/workflows/group-conflict-regression.yml'
+  workflow_dispatch:
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build

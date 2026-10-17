@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {pairScore,playingHandicap,scoreCard} from '../src/scoring.js';
+import {winterLeagueTable,leagueHandicapSettings,handicapAdjustment} from '../src/winterLeague.js';
+import {readFileSync} from 'node:fs';
+const holes=Array.from({length:18},(_,i)=>({n:i+1,par:4,si:i+1}));
+const course={id:'northampton',name:'Northampton',tees:[{name:'Green',slope:125,rating:68.7,holes}]};
+const players=[{id:'a',name:'A',hi:10},{id:'b',name:'B',hi:20},{id:'c',name:'C',hi:5},{id:'d',name:'D',hi:15}];
+const comp={id:'week1',leagueId:'league',format:'4bbb-stableford',course:'northampton',tee:'Green',handicapAllowance:90,starts:'2026-10-17T09:00:00',status:'scheduled'};
+const mkCard=(id,gross)=>({id:'card-'+id,compId:comp.id,playerId:id,courseId:course.id,tee:'Green',gross});
+const base=cards=>({players,courses:[course],cards,comps:[comp]});
+const league={id:'league',teams:[{id:'team1',name:'Team 1',memberIds:['a','b']},{id:'team2',name:'Team 2',memberIds:['c','d']}],handicapSettings:{allowance:90,mode:'team',target:36,cutPerPoint:0.5,teamAdjustment:'split',direction:'down'},startingHandicaps:{a:10,b:20,c:5,d:15}};
+test('Green tee 90 percent handicap uses slope rating and course rating',()=>{assert.equal(playingHandicap(10,course.tees[0],72,90),7);assert.equal(playingHandicap(20,course.tees[0],72,90),17)});
+test('4BBB single partner card counts all eighteen holes',()=>{const s=base([mkCard('a',Array(18).fill(4))]);const r=pairScore({ids:['a','b']},comp,s);assert.equal(r.complete,18);assert.equal(r.points,43);const wl=winterLeagueTable(league,s);assert.equal(wl.weekly[0].rows.find(x=>x.teamId==='team1').points,43)});
+test('4BBB takes better hole points, not best aggregate card',()=>{const a=Array(18).fill(4),b=Array(18).fill(4);a[0]=3;b[1]=3;const s=base([mkCard('a',a),mkCard('b',b)]);const ra=scoreCard(s.cards[0],comp,s),rb=scoreCard(s.cards[1],comp,s),expected=holes.reduce((sum,_,i)=>sum+Math.max(ra.holes[i].points,rb.holes[i].points),0);assert.equal(pairScore({ids:['a','b']},comp,s).points,expected);assert.equal(winterLeagueTable(league,s).weekly[0].rows.find(x=>x.teamId==='team1').points,expected)});
+test('league score follows fixed teammates even when playing companions differ',()=>{const s=base([mkCard('a',Array(18).fill(4)),mkCard('c',Array(18).fill(3))]);s.comps[0]={...comp,roundGroups:[{id:'group1',playerIds:['a','c']}],pairs:[{id:'wrong',ids:['a','c']}]};const rows=winterLeagueTable(league,s).weekly[0].rows;assert.equal(rows.find(x=>x.teamId==='team1').playersPlayed,1);assert.equal(rows.find(x=>x.teamId==='team2').playersPlayed,1)});
+test('team cuts use points above 36, split between teammates, never increase for bad rounds',()=>{const settings=leagueHandicapSettings(league);assert.equal(handicapAdjustment(46,settings),-5);assert.equal(handicapAdjustment(37,settings),-0.5);assert.equal(handicapAdjustment(30,settings),0)});
+test('normal 4BBB pairing restrictions remain gated by leagueId',()=>{const src=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');assert.match(src,/pairFormat&&!c\.leagueId&&ids\.length%2!==0/);assert.match(src,/if\(pairFormat&&!c\.leagueId&&ids\.length>=2\)/);assert.match(src,/pairFormat&&!c\.leagueId&&groupIds\.length>=2/)});
+
+test('Winter League live board uses league teams rather than mutable competition pairs',()=>{const src=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');assert.match(src,/const liveLeague=\(state\.leagues\|\|\[\]\)\.find/);assert.match(src,/LIVE WINTER LEAGUE TEAM LEADERBOARD/);assert.match(src,/const week=winterLeagueTable\(liveLeague,state\)\.weekly/);assert.match(src,/pairs:league\.teams\.map/)});

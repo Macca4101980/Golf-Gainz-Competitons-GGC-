@@ -403,5 +403,6 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 
 
 ## 4.0.0 Beta.1 — live score save recovery
-- 🟠 LIVE-SYNC-SAVE-001 — Realtime catch-up must persist this device's changed records before applying queued remote records; same-hole concurrent edits must continue through version-conflict review.
-- 🟠 LIVE-SYNC-SAVE-002 — Failed local save must retain pending score values and keep incoming changes queued for retry.
+- 🔵 LIVE-SYNC-SAVE-001 — Before applying queued realtime updates, GGC now saves this device's locally changed records through the versioned record coordinator; regression test and full GitHub Actions test/build passed.
+- 🔵 LIVE-SYNC-SAVE-002 — A failed local save keeps pending score values protected and leaves incoming updates queued for retry; offline regression test and full GitHub Actions test/build passed.
+- 🟠 LIVE-SYNC-SAVE-LIVE-001 — Rhys's iPhone round still needs a live two-device check after production deployment, including confirming both cards reach the other device.

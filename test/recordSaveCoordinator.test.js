@@ -181,3 +181,34 @@ test('failed record save identifies rejected kind and ID without advancing basel
  await assert.rejects(c.enqueue({players:[{id:'owner',hi:8},{id:'unclaimed-test',hi:18}],societies:[]}),/GGC_RECORD_SAVE_FAILED \[players\/unclaimed-test\].*row-level security/);
  assert.deepEqual(c.getBaseline().players.map(p=>p.id),['owner']);
 });
+
+test('group round version conflict rebases competition metadata and keeps new local cards',async()=>{
+ const baseComp={id:'comp1',name:'Week 1',entries:['owner'],roundGroups:[],updatedAt:'t0'};
+ const remoteGroup={id:'group-other',playerIds:['other-a','other-b'],teamGross:['',''],startedAt:'cloud'};
+ const localGroup={id:'group-rhys',playerIds:['rhys','aaron'],teamGross:['',''],startedAt:'local'};
+ const remoteComp={...baseComp,name:'Week 1 updated remotely',entries:['owner','other-a'],roundGroups:[remoteGroup],updatedAt:'cloud-time'};
+ const localComp={...baseComp,entries:['owner','rhys','aaron'],roundGroups:[localGroup],updatedAt:'local-time'};
+ const localCard={id:'card-rhys',compId:'comp1',playerId:'rhys',gross:[4,5],submitted:false};
+ const cloud=new Map([['comps:comp1',structuredClone(remoteComp)]]);
+ let rejectFirstCompWrite=true;
+ const store={
+  hasBaseline(kind,id){return cloud.has(kind+':'+id)},
+  async load(kind,id){const value=cloud.get(kind+':'+id);return value?structuredClone(value):null},
+  async save(kind,id,data){if(kind==='comps'&&rejectFirstCompWrite){rejectFirstCompWrite=false;throw Error('GGC_VERSION_CONFLICT')};cloud.set(kind+':'+id,structuredClone(data));return 2}
+ };
+ const coordinator=createRecordSaveCoordinator(store);
+ const initial={comps:[baseComp],cards:[]};
+ const desired={comps:[localComp],cards:[localCard]};
+ coordinator.initialize(initial);
+ await assert.rejects(coordinator.enqueue(desired),/GGC_VERSION_CONFLICT/);
+ const recovered=await coordinator.recoverVersionConflict(desired);
+ assert.deepEqual(recovered.conflicts,[]);
+ const comp=recovered.snapshot.comps[0];
+ assert.equal(comp.name,'Week 1 updated remotely');
+ assert.deepEqual(new Set(comp.entries),new Set(['owner','other-a','rhys','aaron']));
+ assert.deepEqual(new Set(comp.roundGroups.map(g=>g.id)),new Set(['group-other','group-rhys']));
+ assert.deepEqual(recovered.snapshot.cards,[localCard]);
+ await coordinator.enqueue(recovered.snapshot);
+ assert.deepEqual(cloud.get('cards:card-rhys'),localCard);
+ assert.deepEqual(new Set(cloud.get('comps:comp1').roundGroups.map(g=>g.id)),new Set(['group-other','group-rhys']));
+});

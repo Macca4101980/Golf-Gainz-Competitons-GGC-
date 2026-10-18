@@ -400,3 +400,9 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 CP3-LIVE-006 — New-account live test: invited temporary golfer signs in with matching email and inherits existing Group/League identity without duplication.
 - 🟠 CP3-LIVE-007 — Two-device round resume/restart lifecycle requires live verification.
 - 🟠 CP3-WL-LIVE-001 — League teammates playing different days/groups still require live Better Ball verification.
+
+
+## 4.0.0 Beta.1 — live score save recovery
+- 🔵 LIVE-SYNC-SAVE-001 — Before applying queued realtime updates, GGC now saves this device's locally changed records through the versioned record coordinator; regression test and full GitHub Actions test/build passed.
+- 🔵 LIVE-SYNC-SAVE-002 — A failed local save keeps pending score values protected and leaves incoming updates queued for retry; offline regression test and full GitHub Actions test/build passed.
+- 🟠 LIVE-SYNC-SAVE-LIVE-001 — Rhys's iPhone round still needs a live two-device check after production deployment, including confirming both cards reach the other device.

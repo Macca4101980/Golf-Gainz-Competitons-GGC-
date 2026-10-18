@@ -31,5 +31,6 @@ test('conflict does not advance record version',async()=>{
  const store=createRecordStore(db);
  await store.load('players','p');
  await assert.rejects(store.save('players','p',{id:'p',hi:9}),/GGC_VERSION_CONFLICT/);
- assert.equal(store.getVersion('players','p'),4);
+ assert.equal(store.getVersion('players','p'),null); // stale version must be invalidated after conflict
+ assert.equal(store.hasBaseline('players','p'),false);
 });

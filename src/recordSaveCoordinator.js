@@ -5,6 +5,54 @@
 import {planRecordChanges} from './recordChanges.js';
 import {changedFields,reconcileRecord} from './editProtection.js';
 import {mergeScorecardConflict} from './scorecardConflict.js';
+
+function mergeAppendOnlyIds(baseline=[],local=[],remote=[],field='entries'){
+ const base=new Set((baseline||[]).map(String)),mine=new Set((local||[]).map(String)),theirs=new Set((remote||[]).map(String));
+ if([...base].some(id=>!mine.has(id)||!theirs.has(id)))return {merged:[...(remote||[])],conflicts:[field+' removal requires review']};
+ return {merged:[...new Set([...(remote||[]),...(local||[])])],conflicts:[]};
+}
+function mergeHoleArray(baseline=[],local=[],remote=[],field='gross'){
+ const merged=structuredClone(remote||[]),conflicts=[];
+ for(let hole=0;hole<Math.max(baseline?.length||0,local?.length||0,remote?.length||0);hole++){
+  if(JSON.stringify(local?.[hole])===JSON.stringify(baseline?.[hole]))continue;
+  if(JSON.stringify(remote?.[hole])!==JSON.stringify(baseline?.[hole])&&JSON.stringify(remote?.[hole])!==JSON.stringify(local?.[hole])){conflicts.push(field+'['+hole+']');continue}
+  merged[hole]=structuredClone(local?.[hole]);
+ }
+ return {merged,conflicts};
+}
+function mergeRoundGroups(baseline=[],local=[],remote=[]){
+ const conflicts=[],base=new Map((baseline||[]).map(x=>[String(x.id),x])),mine=new Map((local||[]).map(x=>[String(x.id),x])),theirs=new Map((remote||[]).map(x=>[String(x.id),x]));
+ for(const [id,group] of base){if(!mine.has(id)||!theirs.has(id))return {merged:structuredClone(remote||[]),conflicts:['roundGroups deletion requires review']};}
+ const addedLocal=[...mine.entries()].filter(([id])=>!base.has(id)),addedRemote=[...theirs.entries()].filter(([id])=>!base.has(id));
+ for(const [,a] of addedLocal)for(const [,b] of addedRemote){
+  const ap=[...(a.playerIds||[])].map(String).sort().join('|'),bp=[...(b.playerIds||[])].map(String).sort().join('|');
+  if(ap&&ap===bp&&String(a.id)!==String(b.id))return {merged:structuredClone(remote||[]),conflicts:['roundGroups for the same golfers require review']};
+ }
+ const out=[];
+ for(const id of new Set([...theirs.keys(),...mine.keys()])){
+  const b=base.get(id),m=mine.get(id),r=theirs.get(id);
+  if(b&&m&&r){
+   const gross=mergeHoleArray(b.teamGross||[],m.teamGross||[],r.teamGross||[],'teamGross');
+   if(gross.conflicts.length)conflicts.push(...gross.conflicts.map(x=>'roundGroups/'+id+'/'+x));
+   const localMeta={...m,teamGross:structuredClone(r.teamGross||[])};
+   const dirty=changedFields(b,localMeta).filter(f=>!['startedAt','startedBy'].includes(f));
+   const result=reconcileRecord({baseline:b,local:localMeta,remote:r,dirtyFields:dirty});
+   if(result.conflicts.length)conflicts.push(...result.conflicts.map(x=>'roundGroups/'+id+'/'+x));
+   result.merged.teamGross=gross.merged;
+   if(JSON.stringify(m.startedAt)!==JSON.stringify(b.startedAt))result.merged.startedAt=m.startedAt;
+   if(JSON.stringify(m.startedBy)!==JSON.stringify(b.startedBy))result.merged.startedBy=m.startedBy;
+   out.push(result.merged);
+  }else if(m&&r){
+   const result=reconcileRecord({baseline:{},local:m,remote:r,dirtyFields:changedFields({},m).filter(f=>!['startedAt','startedBy'].includes(f))});
+   if(result.conflicts.length)conflicts.push(...result.conflicts.map(x=>'roundGroups/'+id+'/'+x));
+   if(m.startedAt!==undefined)result.merged.startedAt=m.startedAt;
+   if(m.startedBy!==undefined)result.merged.startedBy=m.startedBy;
+   out.push(result.merged);
+  }else out.push(structuredClone(m||r));
+ }
+ return {merged:out,conflicts};
+}
+
 export function createRecordSaveCoordinator(store){
  let baseline=null;
  let pending=Promise.resolve();
@@ -143,33 +191,55 @@ export function createRecordSaveCoordinator(store){
   const original=structuredClone(baseline);
   const changes=planRecordChanges(original,currentSnapshot);
   if(!changes.length)return null;
-  // Only safe field-level changes are automatically rebased. Membership removals,
-  // concurrent membership edits and deletions must be reviewed explicitly.
-  if(changes.some(change=>!['cards','societies'].includes(change.kind)||change.deleted))
-   return {conflicts:['unsupported record change requires review']};
-  const rebased=structuredClone(currentSnapshot);
-  const remoteBaseline=structuredClone(original);
-  const conflicts=[];
-  const conflictDetails=[];
+  // Deletes need explicit review; additions and field edits can be safely rebased
+  // when the remote row is absent or the edited fields do not conflict.
+  if(changes.some(change=>change.deleted))
+   return {conflicts:changes.filter(change=>change.deleted).map(change=>change.kind+'/'+change.id+'/deletion requires review')};
+  const rebased=structuredClone(currentSnapshot),remoteBaseline=structuredClone(original);
+  const conflicts=[],conflictDetails=[];
   for(const change of changes){
    const kind=change.kind;
    const before=(original[kind]||[]).find(record=>String(record.id)===change.id);
    const mine=(currentSnapshot[kind]||[]).find(record=>String(record.id)===change.id);
-   if(!before||!mine)return {conflicts:['new or missing '+kind+' record requires review']};
+   if(!mine)return {conflicts:[kind+'/'+change.id+'/local record missing requires review']};
    const remote=await store.load(kind,change.id);
+   if(!before){
+    if(remote===null)continue; // Keep the local insert pending; enqueue will verify the ID is still absent.
+    if(JSON.stringify(remote)===JSON.stringify(mine)){
+     rebased[kind]=rebased[kind].map(record=>String(record.id)===change.id?remote:record);
+     if(!remoteBaseline[kind].some(record=>String(record.id)===change.id))remoteBaseline[kind].push(remote);
+     continue;
+    }
+    conflicts.push('new '+kind+' record already exists remotely: '+change.id);
+    continue;
+   }
    if(!remote)return {conflicts:[kind+' record deleted remotely: '+change.id]};
    let result;
    if(kind==='cards'){
     result=mergeScorecardConflict({baseline:before,local:mine,remote});
    }else{
-    const dirty=changedFields(before,mine);
-    result=reconcileRecord({baseline:before,local:mine,remote,dirtyFields:dirty});
-    // Membership changes must use authoritative membership actions, never a generic retry.
-    if(dirty.includes('members') && !result.conflicts.includes('members'))
-     result.conflicts.push('members require authoritative membership action');
-    // Owner/admin permission changes are always reviewed rather than auto-retried.
-    if(dirty.some(field=>['ownerId','admins'].includes(field)))
-     result.conflicts.push('membership permissions require review');
+    let localForMerge=structuredClone(mine);
+    if(kind==='comps'){
+     const entries=mergeAppendOnlyIds(before.entries||[],mine.entries||[],remote.entries||[],'entries');
+     const groups=mergeRoundGroups(before.roundGroups||[],mine.roundGroups||[],remote.roundGroups||[]);
+     if(entries.conflicts.length||groups.conflicts.length){
+      conflicts.push(...entries.conflicts.map(x=>'comps/'+change.id+'/'+x),...groups.conflicts.map(x=>'comps/'+change.id+'/'+x));
+      continue;
+     }
+     if(JSON.stringify(mine.entries||[])!==JSON.stringify(before.entries||[])||JSON.stringify(remote.entries||[])!==JSON.stringify(before.entries||[]))localForMerge.entries=entries.merged;
+     if(JSON.stringify(mine.roundGroups||[])!==JSON.stringify(before.roundGroups||[])||JSON.stringify(remote.roundGroups||[])!==JSON.stringify(before.roundGroups||[]))localForMerge.roundGroups=groups.merged;
+    }
+    const dirty=changedFields(before,localForMerge).filter(field=>field!=='updatedAt'&&!(kind==='comps'&&['entries','roundGroups'].includes(field)));
+    result=reconcileRecord({baseline:before,local:localForMerge,remote,dirtyFields:dirty});
+    if(kind==='comps'){
+     if(Object.prototype.hasOwnProperty.call(localForMerge,'entries'))result.merged.entries=structuredClone(localForMerge.entries);
+     if(Object.prototype.hasOwnProperty.call(localForMerge,'roundGroups'))result.merged.roundGroups=structuredClone(localForMerge.roundGroups);
+    }
+    if(kind==='societies'){
+     if(dirty.includes('members')&&!result.conflicts.includes('members'))result.conflicts.push('members require authoritative membership action');
+     if(dirty.some(field=>['ownerId','admins'].includes(field)))result.conflicts.push('membership permissions require review');
+    }
+    if(Object.prototype.hasOwnProperty.call(mine,'updatedAt')&&JSON.stringify(mine.updatedAt)!==JSON.stringify(before.updatedAt))result.merged.updatedAt=structuredClone(mine.updatedAt);
    }
    if(result.conflicts.length){
     conflicts.push(...result.conflicts.map(field=>(kind==='cards'?'':kind+'/')+change.id+'/'+field));

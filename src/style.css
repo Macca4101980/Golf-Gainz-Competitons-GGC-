@@ -45,6 +45,7 @@ header{
 .groupList{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:10px}.groupList span,.memberRow span{display:grid;gap:3px}.groupList small,.memberRow small{color:var(--muted)}
 .groupHero h2{margin:4px 0}.groupHero>span{color:var(--muted)}.groupActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .memberRow{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.memberRow em{font-size:11px;font-style:normal;font-weight:900}.groupBack{margin-bottom:8px}
+.leagueTwosWeek{align-items:flex-start;border-top:1px solid var(--line);padding:12px 0;margin:0}.leagueTwosWeek:first-of-type{border-top:0}.leagueTwosWeek>span{min-width:0;flex:1}.leagueTwosWeek>em{white-space:nowrap;padding-left:10px;color:var(--green)}.leagueTwosWeek .leagueTwosWinner{color:#d7e1d8}.leagueTwosSummary{grid-template-columns:minmax(0,1fr) auto}.leagueTwosSummary em{color:var(--green)}
 nav{grid-template-columns:repeat(5,1fr)}
 
 /* Build 3.11.1 — iPhone bottom navigation fix */

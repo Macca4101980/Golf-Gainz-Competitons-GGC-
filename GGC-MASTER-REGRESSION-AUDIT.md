@@ -400,3 +400,8 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 CP3-LIVE-006 — New-account live test: invited temporary golfer signs in with matching email and inherits existing Group/League identity without duplication.
 - 🟠 CP3-LIVE-007 — Two-device round resume/restart lifecycle requires live verification.
 - 🟠 CP3-WL-LIVE-001 — League teammates playing different days/groups still require live Better Ball verification.
+
+
+## 4.0.0 Beta.1 — live score save recovery
+- 🟠 LIVE-SYNC-SAVE-001 — Realtime catch-up must persist this device's changed records before applying queued remote records; same-hole concurrent edits must continue through version-conflict review.
+- 🟠 LIVE-SYNC-SAVE-002 — Failed local save must retain pending score values and keep incoming changes queued for retry.

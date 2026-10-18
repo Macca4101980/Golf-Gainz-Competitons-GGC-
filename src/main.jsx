@@ -223,9 +223,13 @@ useEffect(()=>{if(!RECORD_STORE_ENABLED||!auth?.access_token||!profileReady)retu
   const el=document.activeElement;
   if(el&&el!==document.body&&(el.matches?.('input,textarea,select,[contenteditable="true"]')||el.closest?.('[role="dialog"]')))return;
   const base=recordSaveCoordinator.getBaseline();if(!base)return;
-  if(kinds.some(kind=>JSON.stringify(latestStateRef.current[kind]||[])!==JSON.stringify(base[kind]||[]))){setCloud('Incoming sync paused: local changes pending');return;}
   busy=true;
-  try{for(const [key,change] of [...pending]){
+  try{
+   const local=latestStateRef.current;
+   const canSaveLocal=()=>active&&!document.querySelector('[data-ggc-dirty="true"]')&&(!document.activeElement||document.activeElement===document.body||!(document.activeElement.matches?.('input,textarea,select,[contenteditable="true"]')||document.activeElement.closest?.('[role="dialog"]')));
+   const saved=await persistLocalChangesBeforeSync({coordinator:recordSaveCoordinator,snapshot:local,kinds,canCommit:canSaveLocal,onStatus:setCloud});
+   if(!saved||latestStateRef.current!==local) return;
+   for(const [key,change] of [...pending]){
    if(!active)break;
    const before=latestStateRef.current;
    const next=await recordSaveCoordinator.acceptRemoteRecord(change.kind,change.id,{canCommit:()=>active&&latestStateRef.current===before&&!document.querySelector('[data-ggc-dirty="true"]')&&(!document.activeElement||document.activeElement===document.body||!(document.activeElement.matches?.('input,textarea,select,[contenteditable="true"]')||document.activeElement.closest?.('[role="dialog"]')))});

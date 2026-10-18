@@ -2,6 +2,7 @@
 export function createRecordStore(supabase){
  if(!supabase)throw new Error('Supabase client required');
  const versions=new Map();
+ const baselines=new Set();
  const queues=new Map();
  const revisions=new Map();
  const key=(kind,id)=>kind+':'+id;
@@ -20,25 +21,27 @@ export function createRecordStore(supabase){
   if(data&&(!Number.isSafeInteger(Number(data.version))||Number(data.version)<1)){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
   if(data)versions.set(k,Number(data.version));
   else versions.delete(k);
+  baselines.add(k);
   return data?.deleted?null:data?.data??null;
  }
  function save(kind,id,data,{deleted=false}={}){
   const k=key(kind,id),payload=structuredClone(data);
   revisions.set(k,(revisions.get(k)||0)+1);
   const work=async()=>{
+   if(!baselines.has(k))throw Error('GGC_RECORD_BASELINE_REQUIRED: load the cloud record before saving');
    const expected=versions.has(k)?versions.get(k):null;
    let result;
    try{
     result=await supabase.rpc('ggc_save_record',{p_kind:kind,p_id:id,p_data:payload,p_expected_version:expected,p_deleted:deleted});
-   }catch(error){versions.delete(k);throw error;}
+   }catch(error){versions.delete(k);baselines.delete(k);throw error;}
    const {data:version,error}=result;
    if(error){
-    versions.delete(k);
+    versions.delete(k);baselines.delete(k);
     if(/GGC_VERSION_CONFLICT|version conflict/i.test(error.message||''))throw new Error('GGC_VERSION_CONFLICT: record changed elsewhere; reload and reconcile');
     throw error;
    }
    const nextVersion=Number(version);
-   if(!Number.isSafeInteger(nextVersion)||nextVersion<1){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
+   if(!Number.isSafeInteger(nextVersion)||nextVersion<1){versions.delete(k);baselines.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
    versions.set(k,nextVersion);
    return nextVersion;
   };
@@ -70,8 +73,8 @@ export function createRecordStore(supabase){
   if(commitVersions)commitLoadedVersions(staged);
   return commitVersions?output:{records:output,versions:staged};
  }
- function commitLoadedVersions(staged){if(queues.size)throw Error('GGC_SEED_DURING_SAVE');for(const [k,v] of staged)versions.set(k,v)}
- function invalidate(kind,id){versions.delete(key(kind,id))}
+ function commitLoadedVersions(staged){if(queues.size)throw Error('GGC_SEED_DURING_SAVE');for(const [k,v] of staged){versions.set(k,v);baselines.add(k)}}
+ function invalidate(kind,id){versions.delete(key(kind,id));baselines.delete(key(kind,id))}
  function seedVersions(rows){
   const incoming=new Map();
   for(const row of rows){
@@ -81,8 +84,8 @@ export function createRecordStore(supabase){
    incoming.set(k,row.version);
   }
   if(queues.size)throw Error('GGC_SEED_DURING_SAVE');
-  versions.clear();
-  for(const [k,v] of incoming)versions.set(k,v);
+  versions.clear();baselines.clear();
+  for(const [k,v] of incoming){versions.set(k,v);baselines.add(k)}
  }
- return {load,loadAll,commitLoadedVersions,invalidate,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
+ return {load,loadAll,commitLoadedVersions,invalidate,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>baselines.has(key(kind,id))};
 }

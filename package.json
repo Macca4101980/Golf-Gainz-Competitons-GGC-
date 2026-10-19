@@ -1,7 +1,7 @@
 {
   "name": "golf-gainz-comps",
   "private": true,
-  "version": "4.0.0-beta.1",
+  "version": "4.0.0-beta.4",
   "type": "module",
   "scripts": {
     "dev": "vite",

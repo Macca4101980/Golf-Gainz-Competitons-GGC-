@@ -36,6 +36,17 @@ test('inserts a new card through the version-checked store before enabling write
  assert.deepEqual(h.coordinator.value,{cards:[card]});
 });
 
+
+test('uses a newer versioned card when the legacy cloud snapshot missed its save',async()=>{
+ const legacy={id:'card-1',gross:[4,4],updatedAt:'2026-10-19T11:00:00Z'};
+ const remote={id:'card-1',gross:[4,5],updatedAt:'2026-10-19T11:05:00Z'};
+ const h=harness([remote]);
+ const result=await prepareScorecardRecordBaseline({...h,cards:[legacy]});
+ assert.deepEqual(result.cards,[remote]);
+ assert.deepEqual(h.coordinator.value,{cards:[remote]});
+ assert.equal(h.writes.length,0);
+});
+
 test('rejects duplicate card IDs before reading or writing records',async()=>{
  const h=harness([]);
  await assert.rejects(prepareScorecardRecordBaseline({...h,cards:[{id:'same'},{id:'same'}]}),/GGC_DUPLICATE_CARD_ID/);

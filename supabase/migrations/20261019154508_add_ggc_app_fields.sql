@@ -8,8 +8,8 @@ alter table public.ggc_records add constraint ggc_records_kind_check
 -- Seed the versioned store from the current live snapshot before enabling the
 -- field-write client. Existing versioned rows always win; this migration only
 -- fills rows that do not exist yet.
-insert into public.ggc_records(kind,record_id,data,deleted)
-select source.kind, item->>'id', item, false
+insert into public.ggc_records(kind,record_id,data,deleted,owner_id)
+select source.kind, item->>'id', item, false, snapshot.owner_id
 from public.ggc_state snapshot
 cross join lateral (values
  ('players'),('societies'),('comps'),('cards'),('leagues'),('courses'),('audit'),('societyInvites')
@@ -23,8 +23,8 @@ on conflict (kind,record_id) do nothing;
 
 -- Carry legacy deletion markers forward as tombstones so a stale device cannot
 -- resurrect a deleted row after the snapshot store is retired.
-insert into public.ggc_records(kind,record_id,data,deleted)
-select source.kind, deleted_id, jsonb_build_object('id',deleted_id), true
+insert into public.ggc_records(kind,record_id,data,deleted,owner_id)
+select source.kind, deleted_id, jsonb_build_object('id',deleted_id), true, snapshot.owner_id
 from public.ggc_state snapshot
 cross join lateral (values
  ('comps','deletedCompIds'),('societies','deletedSocietyIds'),

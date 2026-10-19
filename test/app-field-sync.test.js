@@ -88,3 +88,60 @@ test('same-field edits are surfaced as conflicts without replacing either value'
  assert.equal(coordinator.getDesired().players[0].name,'Local name');
  assert.equal((await store.load('players','p1')).name,'Remote name');
 });
+
+function readClient(initial){
+ const api={reads:0,writes:0,fail:false,
+  from(){let kind;return {select(){return this},eq(_key,value){kind=value;return this},order(){return this},async range(){api.reads++;if(api.fail)return {data:null,error:Error('offline')};return {data:(initial[kind]||[]).map(data=>({record_id:data.id,data,version:3,deleted:false})),error:null}}}},
+  async rpc(){api.writes++;throw Error('Startup must not write any records')}
+ };return api;
+}
+
+const {createAppRecordSession}=await import('../src/appRecordSync.js');
+
+test('record startup reads real groups without importing hidden default IDs or stale settings',async()=>{
+ const client=readClient({societies:[{id:'real-group',name:'Winter League'}],appFields:[{id:'user:u1:setting:theme',scope:'user',userId:'u1',field:'setting',subjectId:'theme',value:'dark'}]});
+ const session=createAppRecordSession(client);
+ const local={societies:[{id:'default-society'}],courses:[{id:'harlestone'}],settings:{adminPin:'stale'},contacts:{other:['private']},oom:{other:{bestCount:5}},deletedSocietyIds:['real-group']};
+ const before=structuredClone(local);
+ const result=await session.load(local,{userId:'u1'});
+ assert.deepEqual(result.snapshot.societies,[{id:'real-group',name:'Winter League'}]);
+ assert.deepEqual(result.snapshot.courses,[]);
+ assert.deepEqual(result.snapshot.settings,{theme:'dark'});
+ assert.deepEqual(result.snapshot.contacts,{});
+ assert.deepEqual(result.snapshot.oom,{});
+ assert.deepEqual(result.snapshot.deletedSocietyIds,[]);
+ assert.deepEqual(local,before);
+ assert.equal(client.writes,0);
+ assert.equal(session.store.getVersion('societies','real-group'),3);
+});
+
+test('concurrent startup and token refresh share one load and preserve pending local changes',async()=>{
+ const client=readClient({players:[{id:'p1',name:'Original'}]});
+ const session=createAppRecordSession(client);
+ const [a,b]=await Promise.all([session.load({}, {userId:'u1'}),session.load({}, {userId:'u1'})]);
+ assert.equal(client.reads,9);
+ a.snapshot.players[0].name='Local edit';
+ assert.equal(b.snapshot.players[0].name,'Original');
+ const desired=structuredClone(session.coordinator.getBaseline());desired.players[0].name='Pending edit';
+ await assert.rejects(session.coordinator.enqueue(desired),/Startup must not write/);
+ await session.load({}, {userId:'u1'});
+ assert.equal(client.reads,9);
+ assert.equal(session.coordinator.getDesired().players[0].name,'Pending edit');
+ const other=createAppRecordSession(readClient({players:[{id:'p2',name:'Other'}]}));
+ await other.load({}, {userId:'u2'});
+ assert.equal(other.store.getVersion('players','p1'),null);
+ assert.equal(other.coordinator.getBaseline().players[0].id,'p2');
+});
+
+test('failed startup leaves coordinator uninitialized and permits a read-only retry',async()=>{
+ const client=readClient({societies:[{id:'s1'}]});client.fail=true;
+ const session=createAppRecordSession(client);
+ await assert.rejects(session.load({societies:[{id:'local'}]}),/offline/);
+ assert.equal(session.coordinator.isInitialized(),false);
+ assert.equal(client.writes,0);
+ client.fail=false;
+ const result=await session.load({societies:[{id:'local'}]});
+ assert.equal(result.snapshot.societies[0].id,'s1');
+ assert.equal(session.coordinator.isInitialized(),true);
+ assert.equal(client.writes,0);
+});

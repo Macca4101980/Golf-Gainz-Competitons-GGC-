@@ -1,4 +1,29 @@
 import {APP_RECORD_KINDS,toRecordSnapshot,mergeRecordSnapshotIntoAppState} from './recordModel.js';
+import {createRecordStore} from './recordStore.js';
+import {createRecordSaveCoordinator} from './recordSaveCoordinator.js';
+
+/** One session per signed-in account. Refreshing a token must not reinitialize
+ * versions or replace pending edits. Server migrations own the initial import;
+ * browser seed data and old local snapshots must never bootstrap shared rows.
+ */
+export function createAppRecordSession(client){
+ const store=createRecordStore(client);
+ const coordinator=createRecordSaveCoordinator(store);
+ let loading;
+ return {store,coordinator,hydrated:false,
+  async load(snapshot,context={}){
+   if(!loading)loading=(async()=>{
+    const records=await store.loadAll(APP_RECORD_KINDS);
+    const base={...snapshot,settings:{},contacts:{},hiddenContacts:{},identityLinks:{},oom:{},
+     deletedCompIds:[],deletedSocietyIds:[],deletedCourseIds:[],deletedLeagueIds:[]};
+    const next=mergeRecordSnapshotIntoAppState(base,records,context);
+    coordinator.initialize(records);
+    return {snapshot:next,records};
+   })().catch(error=>{loading=null;throw error});
+   return structuredClone(await loading);
+  }
+ };
+}
 
 const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])])):value;
 const same=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));

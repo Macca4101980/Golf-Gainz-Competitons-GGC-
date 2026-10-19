@@ -1,4 +1,4 @@
--- Beta 7: permit a golfer in the same live round to patch another participant's
+-- Beta 6: permit a golfer in the same live round to patch another participant's
 -- scorecard, while preserving the row's existing ownership and group checks.
 
 -- The helper reads group and round membership across RLS-protected records.

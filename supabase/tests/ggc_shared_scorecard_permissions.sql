@@ -1,4 +1,4 @@
--- Transactional integration check for Beta 7 shared scorecard permissions.
+-- Transactional integration check for Beta 6 shared scorecard permissions.
 -- Run against the isolated test project; the fixture rows are rolled back.
 begin;
 

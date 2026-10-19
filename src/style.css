@@ -288,3 +288,27 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 
 /* 2s Club payout breakdown: readable two-column rows on phones. */
 .twosLedgerWeek{border-top:1px solid rgba(0,0,0,.12);padding:10px 0}.twosLedgerSummary,.twosPayoutRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}.twosLedgerSummary>span,.twosPayoutRow>span{display:flex;flex-direction:column;min-width:0}.twosLedgerSummary small,.twosPayoutRow small{display:block;margin-top:3px;color:#68756f;font-size:.82rem;line-height:1.3;white-space:normal;overflow-wrap:anywhere}.twosLedgerSummary em,.twosPayoutRow em{font-style:normal;font-weight:900;color:var(--green);text-align:right;white-space:nowrap}.twosPayoutRow{margin:7px 0 0 10px;padding:7px 0 7px 12px;border-left:2px solid var(--green)}.twosPayoutRow em{font-size:.82rem}
+
+/* Beta 4 compact league money reconciliation */
+.moneyMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.moneyMetrics>div{min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:#f0f3ef;border:1px solid #dce2dc;border-radius:12px}
+.moneyMetrics span,.moneyShortfall span,.seasonMoneyLine span{font-size:12px;color:#65716a}
+.moneyMetrics b{font-size:20px;line-height:1.1;color:#102016;overflow-wrap:anywhere}
+.moneyMetrics small{font-size:10px;color:#77817a}
+.moneyShortfall{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;padding:12px;border-radius:12px;background:#e8f7e3}
+.moneyShortfall b{color:#2f9e22;font-size:18px;white-space:nowrap}
+.moneySectionTitle{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid #dce2dc;font-size:13px;font-weight:900;color:#142018}
+.moneySectionTitle small{font-size:10px;font-weight:500;color:#77817a}
+.weekMoney{padding:9px 0;border-top:1px solid #dce2dc}
+.weekMoneyTitle{display:block;margin-bottom:4px;font-size:13px}
+.weekMoneyLine,.seasonMoneyLine{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:2px 0}
+.weekMoneyLine>span{font-size:11px;color:#65716a;white-space:nowrap}
+.weekMoneyLine>b,.seasonMoneyLine>b{font-size:10px;text-align:right;line-height:1.4;color:#17221a}
+.weekMoneyLine i{font-style:normal;font-weight:500;color:#77817a}
+.seasonMoneyLine{padding:8px 0;border-top:1px solid #dce2dc}
+.seasonMoneyLine span{display:flex;flex-direction:column;gap:2px}
+.seasonMoneyLine small{font-size:10px}
+.seasonMoneyLine.total{margin-top:3px;border-top:2px solid #263028}
+.seasonMoneyLine.total span,.seasonMoneyLine.total b{font-weight:900;color:#142018}
+.moneyCarry{margin:8px 0 0;font-size:11px}
+@media(max-width:390px){.moneyMetrics>div{padding:9px}.moneyMetrics b{font-size:18px}.weekMoneyLine,.seasonMoneyLine{gap:5px}.weekMoneyLine>b,.seasonMoneyLine>b{font-size:9px}}

@@ -1,8 +1,8 @@
 /** Compute minimal per-entity writes without overwriting unrelated records.
- * Only top-level arrays whose members have stable IDs are eligible.
- * All other fields remain on legacy storage until explicitly migrated.
+ * Every independently persisted app entity has a stable ID. Root app fields
+ * are represented as appFields records by recordModel.js.
  */
-export const RECORD_COLLECTIONS=Object.freeze(['players','societies','comps','cards','leagues','courses']);
+export const RECORD_COLLECTIONS=Object.freeze(['players','societies','comps','cards','leagues','courses','audit','societyInvites','appFields']);
 export function planRecordChanges(previous,next){
  const changes=[];
  for(const kind of RECORD_COLLECTIONS){
@@ -28,8 +28,19 @@ export function planRecordChanges(previous,next){
    if(!current.has(id)&&deletedIds.has(id))changes.push({kind,id,data,deleted:true});
   }
   for(const [id,data] of current){
-   if(!old.has(id)||JSON.stringify(old.get(id))!==JSON.stringify(data))
-    changes.push({kind,id,data,deleted:false});
+   const prior=old.get(id);
+   if(!prior){changes.push({kind,id,data,deleted:false});continue;}
+   let writeData=data;
+   if(kind==='societies'){
+    // Membership, owner and admin roles are maintained by the authoritative
+    // membership RPCs. Keep those server values out of a normal profile edit.
+    writeData={...data};
+    for(const field of ['members','admins','ownerId']){
+     if(Object.prototype.hasOwnProperty.call(prior,field))writeData[field]=prior[field];
+     else delete writeData[field];
+    }
+   }
+   if(JSON.stringify(prior)!==JSON.stringify(writeData))changes.push({kind,id,data:writeData,deleted:false});
   }
  }
  return changes;

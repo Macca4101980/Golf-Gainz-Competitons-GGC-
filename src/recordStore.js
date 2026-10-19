@@ -48,6 +48,33 @@ export function createRecordStore(supabase){
   void settled.then(()=>{if(queues.get(k)===settled)queues.delete(k);});
   return result;
  }
+ function saveFields(kind,id,data,fields,{deleted=false}={}){
+  const k=key(kind,id),payload=Object.fromEntries(fields.filter(field=>field!=='id').map(field=>[field,structuredClone(data[field])]));
+  const names=Object.keys(payload);
+  revisions.set(k,(revisions.get(k)||0)+1);
+  const work=async()=>{
+   const expected=versions.has(k)?versions.get(k):null;
+   if(!Number.isSafeInteger(expected)||expected<1)throw Error('GGC_RECORD_BASELINE_REQUIRED');
+   let result;
+   try{result=await supabase.rpc('ggc_patch_record',{p_kind:kind,p_id:id,p_patch:payload,p_fields:names,p_expected_version:expected,p_deleted:deleted});}
+   catch(error){versions.delete(k);throw error;}
+   const {data:version,error}=result;
+   if(error){
+    versions.delete(k);
+    if(/GGC_VERSION_CONFLICT|version conflict/i.test(error.message||''))throw new Error('GGC_VERSION_CONFLICT: record changed elsewhere; reload and reconcile');
+    throw error;
+   }
+   const nextVersion=Number(version);
+   if(!Number.isSafeInteger(nextVersion)||nextVersion<1){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
+   versions.set(k,nextVersion);
+   return nextVersion;
+  };
+  const result=(queues.get(k)||Promise.resolve()).then(work);
+  const settled=result.catch(()=>{});
+  queues.set(k,settled);
+  void settled.then(()=>{if(queues.get(k)===settled)queues.delete(k);});
+  return result;
+ }
  async function loadAll(kinds,{commitVersions=true}={}){
   if(queues.size)throw Error('GGC_RECORD_READ_DURING_SAVE');
   const output=Object.fromEntries(kinds.map(kind=>[kind,[]]));
@@ -84,5 +111,5 @@ export function createRecordStore(supabase){
   versions.clear();
   for(const [k,v] of incoming)versions.set(k,v);
  }
- return {load,loadAll,commitLoadedVersions,invalidate,save,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
+ return {load,loadAll,commitLoadedVersions,invalidate,save,saveFields,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
 }

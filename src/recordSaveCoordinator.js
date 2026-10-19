@@ -2,7 +2,7 @@
  * A failed write must never advance the baseline or discard pending work.
  * The queue serialises saves from a single device.
  */
-import {planRecordChanges} from './recordChanges.js';
+import {planRecordChanges,RECORD_COLLECTIONS} from './recordChanges.js';
 import {changedFields,reconcileRecord} from './editProtection.js';
 import {mergeScorecardConflict} from './scorecardConflict.js';
 
@@ -72,7 +72,7 @@ export function createRecordSaveCoordinator(store){
   initialization=(async()=>{
   // Validate every cloud record/version before enabling writes. Never assume a local snapshot is authoritative.
   const cloud=structuredClone(snapshot);
-  for(const kind of ['players','societies','comps','cards','leagues','courses']){
+  for(const kind of RECORD_COLLECTIONS){
    if(!Array.isArray(cloud[kind]))continue;
    for(const record of cloud[kind]){
     if(record?.id==null)throw Error('GGC_RECORD_ID_REQUIRED: '+kind);
@@ -89,7 +89,7 @@ export function createRecordSaveCoordinator(store){
  async function initializeFromRecords(snapshot){
   if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
   if(!store.loadAll)throw Error('GGC_RECORD_LIST_UNAVAILABLE');
-  const kinds=['players','societies','comps','cards','leagues','courses'];
+  const kinds=RECORD_COLLECTIONS;
   const records=await store.loadAll(kinds);
   if(baseline!==null)throw Error('GGC_BASELINE_ALREADY_INITIALIZED');
   const next=structuredClone(snapshot);
@@ -98,28 +98,43 @@ export function createRecordSaveCoordinator(store){
   return structuredClone(next);
  }
  async function acceptRemoteRecord(kind,id,{canCommit=()=>true}={}){
-  if(!baseline) return null;
-  if(lastFailure||failedDesired) return null;
-  if(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)) return null;
-  const current=baseline[kind];
-  if(!Array.isArray(current))return null;
+  if(!baseline||lastFailure||failedDesired)return null;
+  const original=structuredClone(baseline),desired=structuredClone(latestDesired||baseline);
+  if(!Array.isArray(original[kind])||!Array.isArray(desired[kind]))return null;
+  const before=original[kind].find(r=>String(r?.id)===String(id));
+  const local=desired[kind].find(r=>String(r?.id)===String(id));
+  if(before!==undefined&&local===undefined)return {conflicts:[kind+'/'+id+'/local deletion requires review']};
   const remote=await store.load(kind,String(id));
-  // Recheck after the network round trip: never replace an edit made meanwhile.
-  if(lastFailure||failedDesired||!canCommit()||(latestDesired&&JSON.stringify(latestDesired)!==JSON.stringify(baseline)))return null;
-  const next=structuredClone(baseline);
-  const index=next[kind].findIndex(r=>String(r?.id)===String(id));
-  if(index>=0)next[kind].splice(index,1);
-  if(remote!==null)next[kind].push(remote);
-  baseline=structuredClone(next);
-  latestDesired=structuredClone(next);
-  return next;
+  if(JSON.stringify(baseline)!==JSON.stringify(original)||!canCommit())return null;
+  const dirty=before!==undefined&&local!==undefined?changedFields(before,local):[];
+  let merged=remote;
+  if(dirty.length){
+   if(!remote)return {conflicts:[kind+'/'+id+'/record deleted remotely']};
+   const result=kind==='cards'
+    ?mergeScorecardConflict({baseline:before,local,remote})
+    :reconcileRecord({baseline:before,local,remote,dirtyFields:dirty.filter(field=>field!=='updatedAt')});
+   if(result.conflicts.length)return {conflicts:result.conflicts.map(field=>kind+'/'+id+'/'+field)};
+   merged=result.merged;
+   if(local.updatedAt!==undefined&&local.updatedAt!==before.updatedAt)merged.updatedAt=local.updatedAt;
+  }
+  const nextBaseline=structuredClone(original),nextDesired=structuredClone(desired);
+  const replace=(collection,value)=>{
+   const i=collection.findIndex(r=>String(r?.id)===String(id));
+   if(i>=0)collection.splice(i,1);
+   if(value!==null)collection.push(structuredClone(value));
+  };
+  replace(nextBaseline[kind],remote);
+  replace(nextDesired[kind],merged);
+  baseline=nextBaseline;
+  latestDesired=nextDesired;
+  return structuredClone(nextDesired);
  }
  async function catchUpFromCloud(){
   if(!baseline||lastFailure||failedDesired||!store.loadAll)return null;
   await pending;
   const original=JSON.stringify(baseline);
   if(lastFailure||failedDesired||(latestDesired&&JSON.stringify(latestDesired)!==original))return null;
-  const kinds=['players','societies','comps','cards','leagues','courses'];
+  const kinds=RECORD_COLLECTIONS;
   const staged=await store.loadAll(kinds,{commitVersions:false});
   const records=staged.records;
   if(lastFailure||failedDesired||JSON.stringify(baseline)!==original||(latestDesired&&JSON.stringify(latestDesired)!==original))return null;
@@ -135,14 +150,14 @@ export function createRecordSaveCoordinator(store){
   await pending;
   if(lastFailure||failedDesired)return null;
   const start=structuredClone(baseline);
-  const staged=await store.loadAll(['players','societies','comps','cards','leagues','courses'],{commitVersions:false});
+  const staged=await store.loadAll(RECORD_COLLECTIONS,{commitVersions:false});
   if(JSON.stringify(baseline)!==JSON.stringify(start)||lastFailure||failedDesired||!canCommit())return null;
   const next=structuredClone(currentSnapshot);
   const nextBaseline=structuredClone(start);
   const acceptedVersions=new Map();
   let accepted=0,protectedRecords=0;
   const protectedDetails=[];
-  for(const kind of ['players','societies','comps','cards','leagues','courses']){
+  for(const kind of RECORD_COLLECTIONS){
    const base=new Map((start[kind]||[]).map(record=>[String(record.id),record]));
    const local=new Map((currentSnapshot[kind]||[]).map(record=>[String(record.id),record]));
    const remote=new Map((staged.records[kind]||[]).map(record=>[String(record.id),record]));
@@ -316,11 +331,17 @@ export function createRecordSaveCoordinator(store){
      const existing=await store.load(change.kind,change.id);
      if(existing!==null)throw Error('GGC_RECORD_ALREADY_EXISTS: '+change.kind+'/'+change.id);
     }
-    try{await store.save(change.kind,change.id,change.data,{deleted:change.deleted});}catch(error){throw new Error('GGC_RECORD_SAVE_FAILED ['+change.kind+'/'+change.id+']: '+(error?.message||String(error)),{cause:error});}
+    try{
+     if(store.hasBaseline(change.kind,change.id)&&store.saveFields){
+      const before=(baseline[change.kind]||[]).find(record=>String(record?.id)===change.id)||{};
+      await store.saveFields(change.kind,change.id,change.data,change.deleted?[]:changedFields(before,change.data),{deleted:change.deleted});
+     }else await store.save(change.kind,change.id,change.data,{deleted:change.deleted});
+    }catch(error){throw new Error('GGC_RECORD_SAVE_FAILED ['+change.kind+'/'+change.id+']: '+(error?.message||String(error)),{cause:error});}
     // Acknowledge only this confirmed record; preserve other pending edits.
     const collection=baseline[change.kind];
     const index=collection.findIndex(record=>String(record?.id)===change.id);
-    if(index>=0)collection[index]=structuredClone(change.data);
+    if(change.deleted){if(index>=0)collection.splice(index,1);}
+    else if(index>=0)collection[index]=structuredClone(change.data);
     else collection.push(structuredClone(change.data));
    }
    return changes.length;
@@ -329,5 +350,5 @@ export function createRecordSaveCoordinator(store){
   pending=result.then(value=>{if(desired===latestDesired){lastFailure=null;failedDesired=null;}return value},error=>{lastFailure=error;failedDesired=desired;});
   return result;
  }
- return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,recoverVersionConflict,resolveScorecardConflicts,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
+  return {initialize,initializeFromCloud,initializeFromRecords,acceptRemoteRecord,catchUpFromCloud,reconcileRecordsFromCloud,recoverVersionConflict,resolveScorecardConflicts,enqueue,isInitialized:()=>baseline!==null,getBaseline:()=>baseline&&structuredClone(baseline),getDesired:()=>latestDesired&&structuredClone(latestDesired),getLastFailure:()=>lastFailure,getFailedDesired:()=>failedDesired&&structuredClone(failedDesired)};
 }

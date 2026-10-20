@@ -6,6 +6,8 @@ from (values
  ('societies','related-test-group','{"id":"related-test-group","ownerId":"5630395f-6cea-4109-9bac-e8f4bae34dfd","members":["b3a16302-19ac-4efc-b780-1ba4e6bc39ba"]}'::jsonb),
  ('comps','related-test-comp','{"id":"related-test-comp","societyId":"related-test-group","course":"related-test-course"}'::jsonb),
  ('courses','related-test-course','{"id":"related-test-course","name":"Shared course"}'::jsonb),
+ ('courses','related-test-card-course','{"id":"related-test-card-course","name":"Card-specific course"}'::jsonb),
+ ('cards','related-test-card','{"id":"related-test-card","compId":"related-test-comp","societyId":"related-test-group","courseId":"related-test-card-course","playerId":"b3a16302-19ac-4efc-b780-1ba4e6bc39ba"}'::jsonb),
  ('courses','related-test-private-course','{"id":"related-test-private-course","name":"Unreferenced course"}'::jsonb),
  ('leagues','related-test-league','{"id":"related-test-league","societyId":"related-test-group","name":"Shared league"}'::jsonb),
  ('audit','related-test-audit','{"id":"related-test-audit","societyId":"related-test-group"}'::jsonb),
@@ -17,7 +19,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','b3a16302-19ac-4efc-b780-1ba4e6bc39ba',true);
 do $test$
 begin
- if (select count(*) from public.ggc_records where record_id in ('related-test-league','related-test-course','related-test-audit','related-test-oom'))<>4 then raise exception 'Member cannot read related group records'; end if;
+ if (select count(*) from public.ggc_records where record_id in ('related-test-league','related-test-course','related-test-audit','related-test-oom','related-test-card-course'))<>5 then raise exception 'Member cannot read related group records'; end if;
  if exists(select 1 from public.ggc_records where record_id in ('related-test-private-course','related-test-private-setting','related-test-invite')) then raise exception 'Member can read private unrelated records'; end if;
  begin
   perform public.ggc_patch_record('leagues','related-test-league','{"name":"Forbidden"}'::jsonb,array['name'],1,false);
@@ -40,7 +42,7 @@ $test$;
 select set_config('request.jwt.claim.sub','5630395f-6cea-4109-9bac-e8f4bae34dfd',true);
 do $test$
 begin
- if (select count(*) from public.ggc_records where record_id like 'related-test-%')<>9 then raise exception 'Owner lost record access'; end if;
+ if (select count(*) from public.ggc_records where record_id like 'related-test-%')<>11 then raise exception 'Owner lost record access'; end if;
  if public.ggc_patch_record('leagues','related-test-league','{"name":"Owner change"}'::jsonb,array['name'],1,false)<>2 then raise exception 'Owner cannot edit league'; end if;
 end
 $test$;

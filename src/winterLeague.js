@@ -9,7 +9,7 @@ export function leagueHandicapSettings(league){
   cutPerPoint:+(league?.handicapSettings?.cutPerPoint??legacy.cutPerPoint??.5),
   allowance:+(league?.handicapSettings?.allowance??legacy.allowance??90)}
 }
-function compCourse(c,state){const course=(state.courses||[]).find(x=>x.id===c.course);const tee=course?.tees?.find(t=>t.name===c.tee);const par=(tee?.holes||[]).reduce((a,h)=>a+(+h.par||0),0)||72;return{course,tee,par}}
+function compCourse(c,state,card){const course=(state.courses||[]).find(x=>x.id===(card?.courseId||c.course));const tee=course?.tees?.find(t=>t.name===(card?.tee||c.tee));const par=(tee?.holes||[]).reduce((a,h)=>a+(+h.par||0),0)||72;return{course,tee,par}}
 export function handicapAdjustment(score,settings=WL_DEFAULTS){
  if(!Number.isFinite(score)||settings.mode==='fixed'||settings.mode==='manual')return 0;
  const target=+(settings.target??36),buffer=+(settings.netParTarget??0),above=score-target-buffer,cut=+(settings.cutPerPoint??0),back=+(settings.giveBackPerPoint??0);
@@ -20,7 +20,7 @@ export function handicapAdjustment(score,settings=WL_DEFAULTS){
 export function wlCutForScore(score,settings=WL_DEFAULTS){return Math.max(0,-handicapAdjustment(score,{...settings,mode:'team',direction:'down'}))}
 function manualFor(league,playerId,throughDate){return(league?.manualHandicapAdjustments||[]).filter(x=>x.playerId===playerId&&(!throughDate||!x.effectiveFrom||new Date(x.effectiveFrom)<=new Date(throughDate))).reduce((a,x)=>a+(+x.shots||0),0)}
 function leagueBaseHi(league,player,c,settings){if(!settings.lockStartingHandicaps)return player?.hi;const snap=league?.startingHandicaps||{};return Number.isFinite(+snap[player?.id])?+snap[player.id]:player?.hi}
-function adjustedCard(card,player,c,state,adjustment,settings,league){const{tee,par}=compCourse(c,state);const base=playingHandicap(card?.handicapIndexUsed??leagueBaseHi(league,player,c,settings),tee,par,settings.allowance);const effective=whsRound(base+adjustment);return{...card,playingHandicap:effective,courseHandicap:card?.courseHandicap}}
+function adjustedCard(card,player,c,state,adjustment,settings,league){const{tee,par}=compCourse(c,state,card);const base=playingHandicap(card?.handicapIndexUsed??leagueBaseHi(league,player,c,settings),tee,par,settings.allowance);const effective=whsRound(base+adjustment);return{...card,playingHandicap:effective,courseHandicap:card?.courseHandicap}}
 function playerResult(id,c,state,adjustment,settings,league){const player=(state.players||[]).find(p=>p.id===id);const card=(state.cards||[]).find(x=>x.compId===c.id&&x.playerId===id);if(!card)return null;return{...scoreCard(adjustedCard(card,player,c,state,adjustment,settings,league),{...c,format:'stableford',handicapAllowance:settings.allowance},state),playerId:id}}
 function betterBall(ids,c,state,adjustments,settings,league){const results=ids.map(id=>playerResult(id,c,state,adjustments[id]||0,settings,league)).filter(Boolean);if(!results.length)return null;const n=Math.max(...results.map(r=>r.holes.length));const holes=[];let points=0;for(let i=0;i<n;i++){const vals=results.map(r=>r.holes[i]).filter(h=>h?.gross>0).map(h=>h.points);const v=vals.length?Math.max(...vals):null;holes.push(v);if(v!=null)points+=v}return{points,holes,playersPlayed:results.length,complete:holes.filter(v=>v!=null).length,playerResults:results}}
 function countbackKey(holes){const sum=n=>(holes||[]).slice(-n).reduce((a,v)=>a+(v||0),0);return[sum(9),sum(6),sum(3),sum(1)]}

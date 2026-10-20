@@ -13,6 +13,16 @@ function fixture({hi=0,settings={}}={}){
 }
 const card=(playerId,week,gross,extra={})=>({id:playerId+'-'+week,playerId,compId:week,gross:[...gross],...extra});
 
+test('league uses card course and tee for points and playing handicap',()=>{
+ const {league,state}=fixture({hi:10});
+ state.courses.unshift({id:'other',tees:[{name:'Yellow',slope:155,rating:80,holes}]});
+ state.comps[0]={...state.comps[0],course:'other',tee:'Yellow'};
+ state.cards=[card('a','w1',Array(18).fill(4),{courseId:'course',tee:'Green'})];
+ const row=winterLeagueTable(league,state).weekly[0].rows[0];
+ assert.equal(row.points,45);assert.equal(row.playerResults[0].playingHandicap,9);assert.equal(row.complete,18);
+ state.courses.reverse();assert.equal(winterLeagueTable(league,state).weekly[0].rows[0].points,45);
+});
+
 test('cancelled weeks preserve scheduled numbers in results and handicap history',()=>{
  const {league,state}=fixture();state.comps[3].status='cancelled';
  state.cards=state.comps.map(c=>card('a',c.id,Array(18).fill(4)));

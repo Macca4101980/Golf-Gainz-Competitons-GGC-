@@ -400,3 +400,12 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 CP3-LIVE-006 — New-account live test: invited temporary golfer signs in with matching email and inherits existing Group/League identity without duplication.
 - 🟠 CP3-LIVE-007 — Two-device round resume/restart lifecycle requires live verification.
 - 🟠 CP3-WL-LIVE-001 — League teammates playing different days/groups still require live Better Ball verification.
+
+
+## 2026-10-20 — Production Beta 7 identity fixes carried into field-sync development
+- 🔵 SIGNIN-IDENTITY-001 — Auth hydration preserves the existing linked golfer ID, including Group and League team references.
+- 🔵 SIGNIN-IDENTITY-002 — Duplicate auth-ID records no longer win by array order; explicit identity mappings take priority, then the existing stable golfer ID.
+- 🔵 BUILD-IDENTITY-007 — Visible build labels and package version align with production V4 Beta 7.
+- 🟠 SIGNIN-LIVE-007 — Device login and visible Group membership still require browser verification; automated tests do not prove every phone is working.
+- Scope: targeted port of production commits bc9a9ed, e26880d and 97f0ca8; existing field-sync code and database configuration retained.
+- Validation: 119 automated tests passed; Vite production build passed. Database settings were not changed.

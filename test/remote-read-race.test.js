@@ -25,3 +25,21 @@ test('a remote read cannot replace a score entered while that read was in flight
  assert.deepEqual(coordinator.getDesired(),edited,'new score must stay pending/acknowledged');
  assert.deepEqual(coordinator.getBaseline(),edited);
 });
+
+test('remote hydration waits until pending local score writes are acknowledged',async()=>{
+ const initial={cards:[{id:'card',gross:['4','']}]};
+ let finishSave,reads=0;
+ const saving=new Promise(resolve=>{finishSave=resolve});
+ const coordinator=createRecordSaveCoordinator({
+  hasBaseline:()=>true,
+  load:async()=>{reads++;return {id:'card',gross:['4','5']};},
+  saveFields:()=>saving,
+ });
+ coordinator.initialize(initial);
+ const write=coordinator.enqueue({cards:[{id:'card',gross:['4','5']}]});
+ assert.equal(await coordinator.acceptRemoteRecord('cards','card'),null);
+ assert.equal(reads,0);
+ finishSave(2);await write;
+ assert.deepEqual((await coordinator.acceptRemoteRecord('cards','card')).cards[0].gross,['4','5']);
+ assert.equal(reads,1);
+});

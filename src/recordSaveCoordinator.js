@@ -108,7 +108,8 @@ export function createRecordSaveCoordinator(store){
   const before=original[kind].find(r=>String(r?.id)===String(id));
   const local=desired[kind].find(r=>String(r?.id)===String(id));
   if(before!==undefined&&local===undefined)return {conflicts:[kind+'/'+id+'/local deletion requires review']};
-  const remote=await store.load(kind,String(id));
+  const staged=store.loadStaged?await store.loadStaged(kind,String(id)):null;
+  const remote=staged?staged.record:await store.load(kind,String(id));
   // An edit can be enqueued while load is awaiting the network, before its save
   // advances baseline. Never return the older desired snapshot over that edit.
   if(latestDesired!==desiredAtRead||lastFailure||failedDesired||JSON.stringify(baseline)!==JSON.stringify(original)||!canCommit())return null;
@@ -131,6 +132,7 @@ export function createRecordSaveCoordinator(store){
   };
   replace(nextBaseline[kind],remote);
   replace(nextDesired[kind],merged);
+  if(staged)store.commitStagedReads([staged]);
   baseline=nextBaseline;
   latestDesired=nextDesired;
   return structuredClone(nextDesired);
@@ -217,13 +219,15 @@ export function createRecordSaveCoordinator(store){
   if(changes.some(change=>change.deleted))
    return {conflicts:changes.filter(change=>change.deleted).map(change=>change.kind+'/'+change.id+'/deletion requires review')};
   const rebased=structuredClone(currentSnapshot),remoteBaseline=structuredClone(original);
-  const conflicts=[],conflictDetails=[];
+  const conflicts=[],conflictDetails=[],stagedReads=[];
   for(const change of changes){
    const kind=change.kind;
    const before=(original[kind]||[]).find(record=>String(record.id)===change.id);
    const mine=(currentSnapshot[kind]||[]).find(record=>String(record.id)===change.id);
    if(!mine)return {conflicts:[kind+'/'+change.id+'/local record missing requires review']};
-   const remote=await store.load(kind,change.id);
+   const staged=store.loadStaged?await store.loadStaged(kind,change.id):null;
+   const remote=staged?staged.record:await store.load(kind,change.id);
+   if(staged)stagedReads.push(staged);
    if(!before){
     if(remote===null)continue; // Keep the local insert pending; enqueue will verify the ID is still absent.
     if(JSON.stringify(remote)===JSON.stringify(mine)){
@@ -276,6 +280,7 @@ export function createRecordSaveCoordinator(store){
   if(conflicts.length)return {conflicts,conflictDetails};
   if(JSON.stringify(baseline)!==JSON.stringify(original))return null;
   if(JSON.stringify(currentSnapshot)!==JSON.stringify(latestDesired))return null;
+  if(stagedReads.length)store.commitStagedReads(stagedReads);
   baseline=remoteBaseline;
   latestDesired=structuredClone(rebased);
   failedDesired=null;
@@ -337,6 +342,7 @@ export function createRecordSaveCoordinator(store){
     if(desired!==latestDesired)return 0;
     // New records must first establish that the ID is absent remotely.
     if(!store.hasBaseline(change.kind,change.id)){
+     if((baseline[change.kind]||[]).some(record=>String(record.id)===change.id))throw Error('GGC_VERSION_CONFLICT: acknowledged record needs reconciliation');
      const existing=await store.load(change.kind,change.id);
      if(existing!==null)throw Error('GGC_RECORD_ALREADY_EXISTS: '+change.kind+'/'+change.id);
     }

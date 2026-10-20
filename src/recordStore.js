@@ -5,12 +5,13 @@ export function createRecordStore(supabase){
  const queues=new Map();
  const revisions=new Map();
  const key=(kind,id)=>kind+':'+id;
- async function load(kind,id){
+ async function loadStaged(kind,id){
   const k=key(kind,id);
   // Wait for this record's pending writes before refreshing its baseline.
   await (queues.get(k)||Promise.resolve());
   // A save can start while this network read is in flight. Never accept its stale baseline.
   const revision=revisions.get(k)||0;
+  const cachedVersion=versions.get(k)??null;
   let response;
   try{response=await supabase.from('ggc_records').select('data,version,deleted').eq('kind',kind).eq('record_id',id).maybeSingle();}
   catch(error){versions.delete(k);throw error;}
@@ -18,9 +19,20 @@ export function createRecordStore(supabase){
   if((revisions.get(k)||0)!==revision)throw new Error('GGC_STALE_RECORD_LOAD: save started during refresh');
   if(error){versions.delete(k);throw error;}
   if(data&&(!Number.isSafeInteger(Number(data.version))||Number(data.version)<1)){versions.delete(k);throw Error('GGC_INVALID_RECORD_VERSION');}
-  if(data)versions.set(k,Number(data.version));
-  else versions.delete(k);
-  return data?.deleted?null:data?.data??null;
+  return {kind,id,revision,cachedVersion,version:data?Number(data.version):null,record:data?.deleted?null:data?.data??null};
+ }
+ function commitStagedReads(reads){
+  // Validate the entire batch before accepting any version. A rejected form
+  // refresh must never grant a stale snapshot permission to overwrite newer data.
+  for(const read of reads){const k=key(read.kind,read.id);
+   if((revisions.get(k)||0)!==read.revision||(versions.get(k)??null)!==read.cachedVersion)throw Error('GGC_STALE_RECORD_LOAD: baseline changed during refresh');
+  }
+  for(const read of reads){const k=key(read.kind,read.id);if(read.version===null)versions.delete(k);else versions.set(k,read.version);}
+ }
+ async function load(kind,id){
+  const read=await loadStaged(kind,id);
+  commitStagedReads([read]);
+  return read.record;
  }
  function save(kind,id,data,{deleted=false}={}){
   const k=key(kind,id),payload=structuredClone(data);
@@ -111,5 +123,5 @@ export function createRecordStore(supabase){
   versions.clear();
   for(const [k,v] of incoming)versions.set(k,v);
  }
- return {load,loadAll,commitLoadedVersions,invalidate,save,saveFields,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
+ return {load,loadStaged,commitStagedReads,loadAll,commitLoadedVersions,invalidate,save,saveFields,seedVersions,getVersion:(kind,id)=>versions.get(key(kind,id))??null,hasBaseline:(kind,id)=>versions.has(key(kind,id))};
 }

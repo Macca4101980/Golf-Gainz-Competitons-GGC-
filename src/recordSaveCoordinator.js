@@ -3,7 +3,7 @@
  * The queue serialises saves from a single device.
  */
 import {planRecordChanges,RECORD_COLLECTIONS} from './recordChanges.js';
-import {changedFields,reconcileRecord,recordsEqual} from './editProtection.js';
+import {changedFields,reconcileRecord} from './editProtection.js';
 import {mergeScorecardConflict} from './scorecardConflict.js';
 
 function mergeAppendOnlyIds(baseline=[],local=[],remote=[],field='entries'){
@@ -101,7 +101,7 @@ export function createRecordSaveCoordinator(store){
   if(!baseline||lastFailure||failedDesired)return null;
   // Do not hydrate an entire app snapshot while any local write is pending.
   // Finish/acknowledge the local queue first; version conflicts use explicit rebase.
-  if(latestDesired&&!recordsEqual(latestDesired,baseline))return null;
+  if(latestDesired&&planRecordChanges(baseline,latestDesired).length)return null;
   const desiredAtRead=latestDesired;
   const original=structuredClone(baseline),desired=structuredClone(latestDesired||baseline);
   if(!Array.isArray(original[kind])||!Array.isArray(desired[kind]))return null;

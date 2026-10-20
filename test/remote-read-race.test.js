@@ -43,3 +43,12 @@ test('remote hydration waits until pending local score writes are acknowledged',
  assert.deepEqual((await coordinator.acceptRemoteRecord('cards','card')).cards[0].gross,['4','5']);
  assert.equal(reads,1);
 });
+
+test('record collection order does not block remote updates when no writes are pending',async()=>{
+ const a={id:'a',gross:['4']},b={id:'b',gross:['5']};
+ const coordinator=createRecordSaveCoordinator({load:async()=>({...a,gross:['6']})});
+ coordinator.initialize({cards:[a,b]});
+ assert.equal(await coordinator.enqueue({cards:[b,a]}),0);
+ const remote=await coordinator.acceptRemoteRecord('cards','a');
+ assert.deepEqual(remote.cards.find(card=>card.id==='a').gross,['6']);
+});

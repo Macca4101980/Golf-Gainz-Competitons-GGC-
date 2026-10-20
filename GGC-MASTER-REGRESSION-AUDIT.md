@@ -419,3 +419,21 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 FIELD-NOOP-001 — JSON object key order, including nested objects, no longer creates false edits or repeated preference writes; arrays and changed scores still produce edits.
 - 🔵 FIELD-NOOP-002 — Repeatedly enqueueing an unchanged preference after a JSONB round trip performs zero writes.
 - Validation: 121 automated tests passed; Vite build passed. Browser retest and scorecard persistence checks remain outstanding.
+
+## 2026-10-20 — Beta 8 hands-on scorecard persistence verification
+- Deployment: `dpl_EqHkM5QzcgbfgkrTvA3ZZnFmvZiu`, source `2e4904e48dece52e06def818297fd8cb6335976b`; test Supabase `omgnfrybqiqgxnpwgfol` only.
+- 🔵 FIELD-FORM-008 — Signed in as Macca 2; created `Beta 8 persistence test 20 Oct` in Test group, Northampton Golf Club (Harlestone), Yellow tees. Name/course/tee remained stable during entry and creation.
+- 🔵 FIELD-RELOAD-008 — Started a two-golfer group card. Macca 2 holes 1–3: 4,3,5; Mike Tyson holes 1–3: 6,5,7. Both cards reached separate database records at version 4. Reloaded browser, used CONTINUE ROUND, and confirmed all six scores in the reopened UI.
+- 🔵 FIELD-ISOLATION-008 — Changed only Macca 2 hole 2 from 3 to 4. Its card became version 5 with 4,4,5; partner stayed at version 4 with 6,5,7. A subsequent read-only database query confirmed these versions and values remained saved.
+- Evidence IDs: competition `2947d507-160c-420d-83c1-2e25d261ec4a`; round group `6f8e504b-8034-4557-89fe-70d97c8d3b95`; Macca card `d0aa7193-649c-4f17-b434-9acb2f233171`; partner card `fc389011-36fb-426e-8f57-243f97cb2456`.
+- 🟠 FIELD-CONCURRENT-008 — Separate authenticated users/devices, simultaneous stale edits and permission boundaries remain unverified. Browser connector became unavailable before opening a second tab; no concurrency pass is claimed.
+- 🟠 FIELD-REGRESSION-008 — Full Winter League, team pictures, historical scorecards and complete-round submission regression remain outstanding. The dedicated test round remains incomplete for follow-up testing.
+- Production was not changed during these tests. Prior automated validation remains 121 tests and Vite build passed; no source changes were made during this verification.
+
+## 2026-10-20 — Two-tab testing and in-flight remote read race
+- 🔵 FIELD-TABS-008 — Two tabs using the same authenticated test account preserved different golfers' hole-4 edits (Macca 5, Mike 6). Both browser views and separate database rows agreed.
+- 🔵 FIELD-HOLES-008 — While tab B held Macca hole 5 = 4, tab A saved Macca hole 6 = 6. Both edits merged into the same card, version 8, and appeared in both views.
+- 🔴 FIELD-RAPID-008 — Completing the remaining holes in sequence lost Macca hole 14 and Mike hole 11; both were blank in UI and database. This is a release blocker until browser retest passes.
+- Reproduced a coordinator race deterministically: a remote read starts, a newer score is enqueued while the read awaits the network, then the older read replaces the new desired snapshot before the write acknowledges it.
+- 🔵 FIELD-READ-RACE-008 — Remote reads now defer if the desired snapshot changed while awaiting the network. New regression test fails before the fix and passes after it. All 122 automated tests and Vite build pass.
+- 🟠 FIELD-RAPID-RETEST-008 — Corrected preview still requires full browser entry/submission/reload verification. Separate authenticated accounts and permissions remain unverified; same-account tabs do not prove those cases.

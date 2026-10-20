@@ -99,13 +99,16 @@ export function createRecordSaveCoordinator(store){
  }
  async function acceptRemoteRecord(kind,id,{canCommit=()=>true}={}){
   if(!baseline||lastFailure||failedDesired)return null;
+  const desiredAtRead=latestDesired;
   const original=structuredClone(baseline),desired=structuredClone(latestDesired||baseline);
   if(!Array.isArray(original[kind])||!Array.isArray(desired[kind]))return null;
   const before=original[kind].find(r=>String(r?.id)===String(id));
   const local=desired[kind].find(r=>String(r?.id)===String(id));
   if(before!==undefined&&local===undefined)return {conflicts:[kind+'/'+id+'/local deletion requires review']};
   const remote=await store.load(kind,String(id));
-  if(JSON.stringify(baseline)!==JSON.stringify(original)||!canCommit())return null;
+  // An edit can be enqueued while load is awaiting the network, before its save
+  // advances baseline. Never return the older desired snapshot over that edit.
+  if(latestDesired!==desiredAtRead||lastFailure||failedDesired||JSON.stringify(baseline)!==JSON.stringify(original)||!canCommit())return null;
   const dirty=before!==undefined&&local!==undefined?changedFields(before,local):[];
   let merged=remote;
   if(dirty.length){

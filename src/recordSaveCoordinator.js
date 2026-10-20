@@ -206,7 +206,7 @@ export function createRecordSaveCoordinator(store){
  /** Rebase a rejected card save against the server without ever dropping a hole edit.
   * Return conflicts for human review instead of automatically choosing a winner.
   */
- async function recoverVersionConflict(currentSnapshot){
+ async function recoverVersionConflict(currentSnapshot,{canCommit=()=>true}={}){
   if(!baseline||!lastFailure||!/GGC_VERSION_CONFLICT/.test(lastFailure.message||''))return null;
   await pending;
   const original=structuredClone(baseline);
@@ -270,6 +270,9 @@ export function createRecordSaveCoordinator(store){
    rebased[kind]=rebased[kind].map(record=>String(record.id)===change.id?result.merged:record);
    remoteBaseline[kind]=remoteBaseline[kind].map(record=>String(record.id)===change.id?remote:record);
   }
+  // The form can change before its debounce enqueues the next desired snapshot.
+  // Recheck that live form as well as the queue before advancing either baseline.
+  if(!canCommit())return null;
   if(conflicts.length)return {conflicts,conflictDetails};
   if(JSON.stringify(baseline)!==JSON.stringify(original))return null;
   if(JSON.stringify(currentSnapshot)!==JSON.stringify(latestDesired))return null;

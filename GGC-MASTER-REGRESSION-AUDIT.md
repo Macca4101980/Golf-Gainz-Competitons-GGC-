@@ -452,3 +452,8 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 FIELD-PERMISSIONS-008 — Separate authenticated users, authorization boundaries and full Winter League regression remain outstanding.
 - Evidence screenshot: `test-evidence/beta8-scorecard-check.png` from the second tab, showing corrected scorecard values. It does not prove successful submission.
 - Release decision: do not promote this field-sync preview to production. Keep rapid-entry data loss open despite 125 passing automated tests and passing build. No production code/database changes made during this testing session.
+
+## 2026-10-20 — Recovery versus unsent input investigation
+- A deterministic regression test reproduced conflict recovery accepting an older form snapshot while a newer local hole edit awaited the save debounce.
+- Recovery now accepts a live-form commit guard and checks it before advancing its baseline; both app-field and card-only retry paths provide that guard. Debounced saves read the current state reference at execution time.
+- 126 tests and build passed before preview diagnostics. Temporary preview-only console traces capture score input events and score-state changes to distinguish missing input events from later replacement. No production deployment authorized or performed.

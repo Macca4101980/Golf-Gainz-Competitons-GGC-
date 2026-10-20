@@ -13,6 +13,19 @@ function fixture({hi=0,settings={}}={}){
 }
 const card=(playerId,week,gross,extra={})=>({id:playerId+'-'+week,playerId,compId:week,gross:[...gross],...extra});
 
+test('provisional results restrict holes and withhold official totals and cuts until release',()=>{
+ const {league,state}=fixture({hi:10});state.cards=[card('a','w1',Array(18).fill(4))];
+ state.comps[0].resultsEmbargo={enabled:true,visibleThroughHole:15,releaseAt:'2999-01-01T00:00:00Z',withholdOom:true};
+ const pending=winterLeagueTable(league,state),row=pending.weekly[0].rows[0],team=pending.table.find(t=>t.id==='ab');
+ assert.equal(row.provisional,true);assert.equal(row.points,39);assert.equal(row.complete,15);assert.equal(row.cut,0);
+ assert.equal(team.total,0);assert.equal(team.played,0);assert.equal(team.finalCut,0);
+ state.comps[0].resultsEmbargo.releaseAt='2000-01-01T00:00:00Z';
+ const released=winterLeagueTable(league,state),final=released.table.find(t=>t.id==='ab');
+ assert.equal(released.weekly[0].rows[0].provisional,false);assert.equal(released.weekly[0].rows[0].points,45);
+ assert.equal(final.total,45);assert.equal(final.played,1);assert.equal(final.finalCut,2.25);
+ assert.deepEqual(state.cards[0].gross,Array(18).fill(4));
+});
+
 test('league uses card course and tee for points and playing handicap',()=>{
  const {league,state}=fixture({hi:10});
  state.courses.unshift({id:'other',tees:[{name:'Yellow',slope:155,rating:80,holes}]});

@@ -2,6 +2,7 @@
  * Every independently persisted app entity has a stable ID. Root app fields
  * are represented as appFields records by recordModel.js.
  */
+import {recordsEqual} from './editProtection.js';
 export const RECORD_COLLECTIONS=Object.freeze(['players','societies','comps','cards','leagues','courses','audit','societyInvites','appFields']);
 export function planRecordChanges(previous,next){
  const changes=[];
@@ -40,7 +41,7 @@ export function planRecordChanges(previous,next){
      else delete writeData[field];
     }
    }
-   if(JSON.stringify(prior)!==JSON.stringify(writeData))changes.push({kind,id,data:writeData,deleted:false});
+   if(!recordsEqual(prior,writeData))changes.push({kind,id,data:writeData,deleted:false});
   }
  }
  return changes;

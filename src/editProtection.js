@@ -2,18 +2,23 @@
  * Local dirty fields win over incoming cloud refreshes until acknowledged.
  * Unrelated remote fields are merged; concurrent edits to the same field conflict.
  */
+// Postgres JSONB returns object keys in a different order from browser objects.
+// Key order is not an edit; array order and actual values still matter.
+const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+export const recordsEqual=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+
 export function changedFields(before={},after={}){
  const keys=new Set([...Object.keys(before||{}),...Object.keys(after||{})]);
- return [...keys].filter(k=>JSON.stringify(before?.[k])!==JSON.stringify(after?.[k]));
+ return [...keys].filter(k=>!recordsEqual(before?.[k],after?.[k]));
 }
 export function reconcileRecord({baseline={},local={},remote={},dirtyFields=[]}){
  const dirty=new Set(dirtyFields);
  const merged=structuredClone(remote);
  const conflicts=[];
  for(const field of dirty){
-  const remoteChanged=JSON.stringify(remote?.[field])!==JSON.stringify(baseline?.[field]);
-  const localChanged=JSON.stringify(local?.[field])!==JSON.stringify(baseline?.[field]);
-  if(remoteChanged&&localChanged&&JSON.stringify(remote?.[field])!==JSON.stringify(local?.[field]))conflicts.push(field);
+  const remoteChanged=!recordsEqual(remote?.[field],baseline?.[field]);
+  const localChanged=!recordsEqual(local?.[field],baseline?.[field]);
+  if(remoteChanged&&localChanged&&!recordsEqual(remote?.[field],local?.[field]))conflicts.push(field);
   if(localChanged){
    if(Object.prototype.hasOwnProperty.call(local,field))merged[field]=structuredClone(local[field]);
    else delete merged[field];

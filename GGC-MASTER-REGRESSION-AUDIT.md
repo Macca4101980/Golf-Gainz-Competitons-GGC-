@@ -414,3 +414,8 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🔵 BUILD-IDENTITY-008 — Field-level-saving development build now displays V4 Beta 8; production remains Beta 7.
 - 🟢 SIGNIN-IDENTITY-008 — Production membership fixes retained; 119 automated tests and Vite build passed.
 - 🟠 FIELD-SYNC-LIVE-008 — Hands-on saving, reopening, editing and two-player independence testing remains outstanding.
+
+## 2026-10-20 — Beta 8 browser verification: JSONB repeat-save correction
+- 🔵 FIELD-NOOP-001 — JSON object key order, including nested objects, no longer creates false edits or repeated preference writes; arrays and changed scores still produce edits.
+- 🔵 FIELD-NOOP-002 — Repeatedly enqueueing an unchanged preference after a JSONB round trip performs zero writes.
+- Validation: 121 automated tests passed; Vite build passed. Browser retest and scorecard persistence checks remain outstanding.

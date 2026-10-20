@@ -24,3 +24,23 @@ test('a first-time account still creates a player with its account ID',()=>{
  assert.equal(players[0].authUserId,'new-account');
  assert.equal(players[0].passkeyEnabled,true);
 });
+
+test('prefers a stable linked player when an auth-id duplicate appears first',()=>{
+ const profile={id:'auth-123',display_name:'Tink',handicap_index:12.4,passkey_enabled:false};
+ const players=[
+  {id:'auth-123',authUserId:'auth-123',name:'Tink'},
+  {id:'wl-tink',authUserId:'auth-123',name:'Tink'},
+ ];
+ const {player}=hydrateSignedInPlayer(players,profile);
+ assert.equal(player.id,'wl-tink');
+});
+
+test('uses the explicit identity link when several linked records exist',()=>{
+ const profile={id:'auth-123',display_name:'Player',handicap_index:7,passkey_enabled:false};
+ const players=[
+  {id:'older-player',authUserId:'auth-123',name:'Player'},
+  {id:'current-player',authUserId:'auth-123',name:'Player'},
+ ];
+ const {player}=hydrateSignedInPlayer(players,profile,{'auth-123':'current-player'});
+ assert.equal(player.id,'current-player');
+});

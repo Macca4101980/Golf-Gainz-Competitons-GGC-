@@ -1,9 +1,16 @@
 /** Apply the authenticated profile without changing an existing GGC player ID.
  * Groups, teams, scorecards and League handicaps all refer to that stable ID.
  */
-export function hydrateSignedInPlayer(players,profile){
+export function hydrateSignedInPlayer(players,profile,identityLinks={}){
  const source=Array.isArray(players)?players:[];
- const index=source.findIndex(player=>player.authUserId===profile.id||player.id===profile.id);
+ const candidates=source
+  .map((player,index)=>({player,index}))
+  .filter(({player})=>player.authUserId===profile.id||player.id===profile.id);
+ const linkedId=identityLinks?.[profile.id];
+ const selected=candidates.find(({player})=>linkedId&&player.id===linkedId)
+  ||candidates.find(({player})=>player.id!==profile.id)
+  ||candidates[0];
+ const index=selected?.index??-1;
  const id=index>=0?source[index].id:profile.id;
  const player={
   id,

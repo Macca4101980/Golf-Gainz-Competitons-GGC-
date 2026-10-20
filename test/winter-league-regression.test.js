@@ -13,6 +13,17 @@ function fixture({hi=0,settings={}}={}){
 }
 const card=(playerId,week,gross,extra={})=>({id:playerId+'-'+week,playerId,compId:week,gross:[...gross],...extra});
 
+test('cancelled weeks preserve scheduled numbers in results and handicap history',()=>{
+ const {league,state}=fixture();state.comps[3].status='cancelled';
+ state.cards=state.comps.map(c=>card('a',c.id,Array(18).fill(4)));
+ const result=winterLeagueTable(league,state);
+ assert.deepEqual(result.weekly.map(w=>w.weekNumber),[1,2,3,5,6,7,8,9,10]);
+ assert.deepEqual(result.table.find(t=>t.id==='ab').weeks.map(w=>w.weekNumber),[1,2,3,5,6,7,8,9,10]);
+ assert.equal(result.weekly.find(w=>w.weekNumber===5).comp.id,'w5');
+ assert.equal(result.weekly.at(-1).weekNumber,10);
+ assert.equal(result.table.find(t=>t.id==='ab').played,9);
+});
+
 test('single golfer produces a valid team week and leaves partner card absent',()=>{
  const {league,state}=fixture({hi:10});state.cards=[card('a','w1',Array(18).fill(4))];
  const before=JSON.stringify(state),result=winterLeagueTable(league,state),week=result.weekly[0].rows[0];

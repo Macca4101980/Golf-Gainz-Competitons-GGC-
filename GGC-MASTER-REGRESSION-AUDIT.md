@@ -409,3 +409,8 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - 🟠 SIGNIN-LIVE-007 — Device login and visible Group membership still require browser verification; automated tests do not prove every phone is working.
 - Scope: targeted port of production commits bc9a9ed, e26880d and 97f0ca8; existing field-sync code and database configuration retained.
 - Validation: 119 automated tests passed; Vite production build passed. Database settings were not changed.
+
+## 2026-10-20 — V4 Beta 8 test preview
+- 🔵 BUILD-IDENTITY-008 — Field-level-saving development build now displays V4 Beta 8; production remains Beta 7.
+- 🟢 SIGNIN-IDENTITY-008 — Production membership fixes retained; 119 automated tests and Vite build passed.
+- 🟠 FIELD-SYNC-LIVE-008 — Hands-on saving, reopening, editing and two-player independence testing remains outstanding.

@@ -10,13 +10,16 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  const durationFrom=(starts,ends)=>{const a=new Date(starts),b=new Date(ends);if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime())||b<=a)return 7;const day=value=>Date.UTC(value.getFullYear(),value.getMonth(),value.getDate());return Math.max(1,Math.round((day(b)-day(a))/86400000))};
  const endFromDuration=(starts,days)=>{const a=new Date(starts);if(Number.isNaN(a.getTime()))return'';a.setDate(a.getDate()+Math.max(1,Number(days)||1));return toLocalDateTime(a)};
  const makeDraft=value=>({name:value.name||'',starts:toLocalDateTime(value.starts),durationDays:durationFrom(value.starts,value.ends),ends:toLocalDateTime(value.ends),provisionalAt:toLocalDateTime(value.resultsEmbargo?.provisionalAt),releaseAt:toLocalDateTime(value.resultsEmbargo?.releaseAt)});
+ const displayDateTime=value=>{if(!value)return'Not scheduled';const d=new Date(value);if(Number.isNaN(d.getTime()))return'Not scheduled';const date=d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});const time=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});return `${date} · ${time}`};
  const[draft,setDraft]=useState(()=>makeDraft(comp));
- const[saved,setSaved]=useState(false);
+ const[editing,setEditing]=useState(false);
  const lifecycle=leagueCompetitionLifecycle(comp);
- useEffect(()=>{setDraft(makeDraft(comp));setSaved(false)},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.provisionalAt,comp.resultsEmbargo?.releaseAt]);
- const change=(key,value)=>{setDraft(current=>({...current,[key]:value}));setSaved(false)};
- const changeStart=value=>{setDraft(current=>({...current,starts:value,ends:endFromDuration(value,current.durationDays)}));setSaved(false)};
- const changeDuration=value=>{const days=Math.max(1,Math.min(31,Number(value)||1));setDraft(current=>({...current,durationDays:days,ends:endFromDuration(current.starts,days)}));setSaved(false)};
+ useEffect(()=>{setDraft(makeDraft(comp))},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.provisionalAt,comp.resultsEmbargo?.releaseAt]);
+ useEffect(()=>{if(!editing)return;const close=e=>{if(e.key==='Escape'){setDraft(makeDraft(comp));setEditing(false)}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[editing,comp]);
+ const change=(key,value)=>setDraft(current=>({...current,[key]:value}));
+ const changeStart=value=>setDraft(current=>({...current,starts:value,ends:endFromDuration(value,current.durationDays)}));
+ const changeDuration=value=>{const days=Math.max(1,Math.min(31,Number(value)||1));setDraft(current=>({...current,durationDays:days,ends:endFromDuration(current.starts,days)}))};
+ const closeEditor=()=>{setDraft(makeDraft(comp));setEditing(false)};
  const save=()=>{
   const starts=toIso(draft.starts),ends=toIso(endFromDuration(draft.starts,draft.durationDays)),provisionalAt=toIso(draft.provisionalAt),releaseAt=toIso(draft.releaseAt);
   if(!draft.name.trim())return alert('Enter a competition name.');
@@ -29,28 +32,56 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
    ?{...(comp.resultsEmbargo||{}),enabled:true,provisionalAt:provisionalAt||null,releaseAt,visibleThroughHole:Math.max(1,Math.min(17,Number(comp.resultsEmbargo?.visibleThroughHole)||15))}
    :{...(comp.resultsEmbargo||{}),enabled:false,provisionalAt:null,releaseAt:null};
   onSave(comp,{name:draft.name.trim(),starts,ends,resultsEmbargo});
-  setDraft(current=>({...current,ends:toLocalDateTime(ends)}));
-  setSaved(true);
+  setEditing(false);
  };
- return <div className="card leagueScheduleCard">
-  <div className="leagueScheduleHeading">
-   <b>Week {weekNumber}</b>
-   <small className={lifecycle}>{lifecycle.toUpperCase()}</small>
+ return <>
+  <div className="card leagueScheduleCard">
+   <div className="leagueScheduleHeading">
+    <b>Week {weekNumber}</b>
+    <small className={lifecycle}>{lifecycle.toUpperCase()}</small>
+   </div>
+   <div className="leagueScheduleSummary">
+    <div className="leagueScheduleSummaryName"><small>COMPETITION</small><strong>{comp.name}</strong></div>
+    <div className="leagueScheduleSummaryGrid">
+     <div><small>SCORING OPENS</small><b>{displayDateTime(comp.starts)}</b></div>
+     <div><small>ENTRY WINDOW</small><b>{durationFrom(comp.starts,comp.ends)} days</b></div>
+     <div><small>ENTRY CLOSES</small><b>{displayDateTime(comp.ends)}</b></div>
+     <div><small>FULL SCORES LIVE</small><b>{displayDateTime(comp.resultsEmbargo?.releaseAt)}</b></div>
+    </div>
+    <div className="leagueScheduleSummaryProvisional">
+     <small>PROVISIONAL CARDS</small>
+     <b>{displayDateTime(comp.resultsEmbargo?.provisionalAt)}</b>
+    </div>
+   </div>
+   <div className="leagueScheduleSummaryAction">
+    <button className={editable?'primary':'secondary'} onClick={()=>setEditing(true)}>{editable?'EDIT SCHEDULE':'VIEW SCHEDULE'}</button>
+   </div>
   </div>
-  <div className="leagueScheduleGrid">
-   <label className="leagueScheduleName">Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>
-   <label className="leagueScheduleLaunch">Launch / scoring opens<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/></label>
-   <label className="leagueScheduleDuration">Entry window<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>days</small></label>
-   <label className="leagueScheduleClose">Entry closes<input type="datetime-local" value={draft.ends} disabled/></label>
-   <label className="leagueScheduleProvisional" data-empty={!draft.provisionalAt?'true':undefined}>Provisional cards<input className={!draft.provisionalAt?'isUnset':''} type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/></label>
-   <label className="leagueScheduleRelease">Full scores live<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/></label>
-  </div>
-  <div className="inviteRow leagueScheduleActions">
-   {editable&&<button className="primary" onClick={save}>{saved?'✓ SAVED':'SAVE SCHEDULE'}</button>}
-   {onEdit&&<button className="secondary" onClick={()=>onEdit(comp)}>ADVANCED</button>}
-   {editable&&<button className={comp.status==='cancelled'?'secondary':'danger'} onClick={()=>onCancel(comp)}>{comp.status==='cancelled'?'REINSTATE':'CANCEL'}</button>}
-  </div>
- </div>
+  {editing&&<div className="leagueScheduleSheetBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)closeEditor()}}>
+   <section className="leagueScheduleSheet" role="dialog" aria-modal="true" aria-labelledby={`league-schedule-title-${comp.id}`}>
+    <div className="leagueScheduleSheetHeading">
+     <div><small>WEEK {weekNumber}</small><h3 id={`league-schedule-title-${comp.id}`}>{editable?'EDIT SCHEDULE':'SCHEDULE DETAILS'}</h3></div>
+     <button type="button" className="leagueScheduleSheetClose" aria-label="Close schedule editor" onClick={closeEditor}>×</button>
+    </div>
+    <div className="leagueScheduleSheetBody">
+     <div className="leagueScheduleGrid">
+      <label className="leagueScheduleName">Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>
+      <label className="leagueScheduleLaunch">Launch / scoring opens<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/></label>
+      <label className="leagueScheduleDuration">Entry window<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>days</small></label>
+      <label className="leagueScheduleClose">Entry closes<input type="datetime-local" value={draft.ends} disabled/></label>
+      <label className="leagueScheduleProvisional" data-empty={!draft.provisionalAt?'true':undefined}>Provisional cards<input className={!draft.provisionalAt?'isUnset':''} type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/></label>
+      <label className="leagueScheduleRelease">Full scores live<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/></label>
+     </div>
+    </div>
+    <div className="leagueScheduleActions">
+     {editable&&<button className="primary" onClick={save}>SAVE CHANGES</button>}
+     {onEdit&&<button className="secondary" onClick={()=>{setEditing(false);onEdit(comp)}}>ADVANCED</button>}
+     {editable&&<button className={comp.status==='cancelled'?'secondary':'danger'} onClick={()=>{setEditing(false);onCancel(comp)}}>{comp.status==='cancelled'?'REINSTATE':'CANCEL'}</button>}
+     {!editable&&<button className="secondary" onClick={closeEditor}>CLOSE</button>}
+    </div>
+   </section>
+  </div>}
+ </>;
 }
 
 export default function Leagues({state,setState,me,societyId,onPersist,onCreateCompetition,onEditCompetition,storageAuth}){

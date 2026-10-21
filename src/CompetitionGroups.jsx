@@ -32,18 +32,21 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
   setSaved(true);
  };
  return <div className="card leagueScheduleCard">
-  <div className="leagueScheduleHeading"><span><b>Week {weekNumber}</b><small>{comp.status==='cancelled'?'CANCELLED':String(comp.status||'draft').toUpperCase()}</small></span></div>
-  <div className="grid leagueScheduleGrid">
-   <label>Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>
-   <label>Launch / opens for scoring<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/><small>Golfers can enter scorecards from this time.</small></label>
-   <label>Entry window (days)<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>How many calendar days scorecards stay open.</small></label>
-   <label>Entry closes<input type="datetime-local" value={draft.ends} disabled/><small>Calculated from the launch date and entry window.</small></label>
-   <label>Provisional results shown<input type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/><small>Leave blank to show provisional cards as soon as they are entered.</small></label>
-   <label>Full scores released<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/><small>Leave blank to show full scores immediately.</small></label>
+  <div className="leagueScheduleHeading">
+   <b>Week {weekNumber}</b>
+   <small className={comp.status==='cancelled'?'cancelled':''}>{comp.status==='cancelled'?'CANCELLED':String(comp.status||'draft').toUpperCase()}</small>
   </div>
-  <div className="inviteRow">
+  <div className="leagueScheduleGrid">
+   <label className="leagueScheduleName">Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>
+   <label className="leagueScheduleLaunch">Launch / scoring opens<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/></label>
+   <label className="leagueScheduleDuration">Entry window<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>days</small></label>
+   <label className="leagueScheduleClose">Entry closes<input type="datetime-local" value={draft.ends} disabled/></label>
+   <label className="leagueScheduleProvisional">Provisional cards<input type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/></label>
+   <label className="leagueScheduleRelease">Full scores live<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/></label>
+  </div>
+  <div className="inviteRow leagueScheduleActions">
    {editable&&<button className="primary" onClick={save}>{saved?'✓ SAVED':'SAVE SCHEDULE'}</button>}
-   {onEdit&&<button className="secondary" onClick={()=>onEdit(comp)}>ADVANCED SETTINGS</button>}
+   {onEdit&&<button className="secondary" onClick={()=>onEdit(comp)}>ADVANCED</button>}
    {editable&&<button className={comp.status==='cancelled'?'secondary':'danger'} onClick={()=>onCancel(comp)}>{comp.status==='cancelled'?'REINSTATE':'CANCEL'}</button>}
   </div>
  </div>

@@ -377,3 +377,21 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
  .leagueScheduleActions button{min-height:42px;padding:8px 4px;font-size:.66rem;letter-spacing:0}
 }
 
+/* Mobile schedule-sheet refinement: keep every action visible and reduce oversized fields. */
+body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
+@media(max-width:520px){
+ body:has(.leagueScheduleSheetBackdrop) .app>nav{opacity:0;visibility:hidden;pointer-events:none}
+ .leagueScheduleSheetBackdrop{z-index:1000}
+ .leagueScheduleSheet{max-height:calc(100dvh - env(safe-area-inset-top))}
+ .leagueScheduleSheetHeading{padding:11px 13px}
+ .leagueScheduleSheetHeading h3{font-size:1rem}
+ .leagueScheduleSheetClose{width:36px;height:36px;font-size:1.35rem}
+ .leagueScheduleGrid label{gap:4px;padding:7px 10px}
+ .leagueScheduleGrid input{height:36px;padding:5px 8px;font-size:.72rem}
+ .leagueScheduleDuration input{padding-right:34px}
+ .leagueScheduleDuration>small{right:14px;top:35px}
+ .leagueScheduleProvisional[data-empty="true"]::before{top:7px;right:10px}
+ .leagueScheduleProvisional[data-empty="true"]::after{content:"Tap to schedule";position:absolute;left:20px;top:42px;color:#68756f;font-size:.7rem;font-weight:800;letter-spacing:0;pointer-events:none}
+ .leagueScheduleActions{position:relative;z-index:2;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+ .leagueScheduleActions button{min-height:39px;padding:7px 4px}
+}

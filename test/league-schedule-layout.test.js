@@ -30,3 +30,10 @@ test('summary retains the date-driven lifecycle badge',()=>{
  assert.match(styles,/\.leagueScheduleHeading small\.live/);
  assert.match(styles,/\.leagueScheduleHeading small\.closed/);
 });
+
+test('mobile editor exposes every action above the app navigation',()=>{
+ assert.match(styles,/body:has\(\.leagueScheduleSheetBackdrop\) \.app>nav/);
+ assert.match(styles,/visibility:hidden/);
+ assert.match(styles,/Tap to schedule/);
+ assert.match(styles,/\.leagueScheduleActions button\{min-height:39px/);
+});

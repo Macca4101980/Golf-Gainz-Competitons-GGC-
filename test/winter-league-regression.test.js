@@ -19,10 +19,14 @@ test('provisional results restrict holes and withhold official totals and cuts u
  const pending=winterLeagueTable(league,state),row=pending.weekly[0].rows[0],team=pending.table.find(t=>t.id==='ab');
  assert.equal(row.provisional,true);assert.equal(row.points,39);assert.equal(row.complete,15);assert.equal(row.cut,0);
  assert.equal(team.total,0);assert.equal(team.played,0);assert.equal(team.finalCut,0);
+ assert.deepEqual(team.weeks[1].playerHandicaps.a,{handicapIndex:10,basePlayingHandicap:9,playingHandicap:9,adjustment:0,tee:'Green'});
  state.comps[0].resultsEmbargo.releaseAt='2000-01-01T00:00:00Z';
  const released=winterLeagueTable(league,state),final=released.table.find(t=>t.id==='ab');
  assert.equal(released.weekly[0].rows[0].provisional,false);assert.equal(released.weekly[0].rows[0].points,45);
  assert.equal(final.total,45);assert.equal(final.played,1);assert.equal(final.finalCut,2.25);
+ assert.equal(final.weeks[1].playerHandicaps.a.handicapIndex,10);
+ assert.equal(final.weeks[1].playerHandicaps.a.playingHandicap,7);
+ assert.equal(final.weeks[1].playerHandicaps.a.adjustment,-2.25);
  assert.deepEqual(state.cards[0].gross,Array(18).fill(4));
 });
 
@@ -67,6 +71,7 @@ test('90% allowance and team cut carry to future weeks, poor scores give no reco
  state.cards=[card('a','w1',Array(18).fill(4)),card('a','w2',Array(18).fill(6)),card('a','w3',Array(18).fill(4))];
  const table=winterLeagueTable(league,state),team=table.table.find(t=>t.id==='ab');
  assert.equal(team.weeks[0].points,45);
+ assert.deepEqual(team.weeks.slice(0,3).map(w=>[w.playerHandicaps.a.handicapIndex,w.playerHandicaps.a.playingHandicap]),[[10,9],[10,7],[10,7]]);
  assert.deepEqual(team.weeks[0].afterAdjustments,{a:-2.25,b:-2.25});
  assert.deepEqual(team.weeks[1].afterAdjustments,{a:-2.25,b:-2.25});
  assert.equal(team.weeks[2].points,43);

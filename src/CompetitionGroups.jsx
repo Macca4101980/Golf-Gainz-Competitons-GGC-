@@ -75,12 +75,12 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
      <div className="leagueTimelineEditor">
       <label className="leagueTimelineName"><span>Competition name</span><input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/><b aria-hidden="true">›</b></label>
       <div className="leagueTimeline">
-       <label className="leagueTimelineRow leagueTimelineLaunch">
+       <div className="leagueTimelineRow leagueTimelineLaunch">
         <LeagueScheduleGlyph kind="launch"/>
         <span className="leagueTimelineCopy"><strong>Launch / scoring opens</strong><small>Competition goes live</small><span className="leagueTimelineDuration"><span aria-hidden="true">▣</span><input aria-label="Entry window in days" type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/> days entry window</span></span>
         <span className="leagueTimelineValue">{displayDateTime(draft.starts)}</span><b className="leagueTimelineChevron" aria-hidden="true">›</b>
         <input className="leagueTimelinePicker" aria-label="Launch and scoring opens" type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/>
-       </label>
+       </div>
        <div className="leagueTimelineRow leagueTimelineClose">
         <LeagueScheduleGlyph kind="close"/>
         <span className="leagueTimelineCopy"><strong>Entry closes</strong><small>Last day to enter</small></span>

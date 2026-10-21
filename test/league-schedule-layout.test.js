@@ -54,3 +54,13 @@ test('timeline keeps duration and release controls editable',()=>{
  assert.match(scheduleSource,/aria-label="Provisional cards release"/);
  assert.match(scheduleSource,/aria-label="Full scores release"/);
 });
+
+
+test('League teams use compact single-open accordion controls',()=>{
+ assert.match(scheduleSource,/openTeamId/);
+ assert.match(scheduleSource,/leagueTeamAccordion/);
+ assert.match(scheduleSource,/aria-expanded=\{open\}/);
+ assert.match(scheduleSource,/leagueTeamActions/);
+ assert.match(styles,/\.leagueTeamAccordionList/);
+ assert.match(styles,/\.leagueTeamActions\{display:grid;grid-template-columns:repeat\(2/);
+});

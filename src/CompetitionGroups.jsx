@@ -7,33 +7,42 @@ const toLocalDateTime=value=>{if(!value)return'';const d=new Date(value);if(Numb
 const toIso=value=>{if(!value)return null;const d=new Date(value);return Number.isNaN(d.getTime())?null:d.toISOString()};
 
 function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCancel}){
- const makeDraft=value=>({name:value.name||'',starts:toLocalDateTime(value.starts),ends:toLocalDateTime(value.ends),releaseAt:toLocalDateTime(value.resultsEmbargo?.releaseAt)});
+ const durationFrom=(starts,ends)=>{const a=new Date(starts).getTime(),b=new Date(ends).getTime();return Number.isFinite(a)&&Number.isFinite(b)&&b>a?Math.max(1,Math.ceil((b-a+60000)/86400000)):7};
+ const endFromDuration=(starts,days)=>{const a=new Date(starts);if(Number.isNaN(a.getTime()))return'';return toLocalDateTime(new Date(a.getTime()+Math.max(1,Number(days)||1)*86400000-60000))};
+ const makeDraft=value=>({name:value.name||'',starts:toLocalDateTime(value.starts),durationDays:durationFrom(value.starts,value.ends),ends:toLocalDateTime(value.ends),provisionalAt:toLocalDateTime(value.resultsEmbargo?.provisionalAt),releaseAt:toLocalDateTime(value.resultsEmbargo?.releaseAt)});
  const[draft,setDraft]=useState(()=>makeDraft(comp));
  const[saved,setSaved]=useState(false);
- useEffect(()=>{setDraft(makeDraft(comp));setSaved(false)},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.releaseAt]);
+ useEffect(()=>{setDraft(makeDraft(comp));setSaved(false)},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.provisionalAt,comp.resultsEmbargo?.releaseAt]);
  const change=(key,value)=>{setDraft(current=>({...current,[key]:value}));setSaved(false)};
+ const changeStart=value=>{setDraft(current=>({...current,starts:value,ends:endFromDuration(value,current.durationDays)}));setSaved(false)};
+ const changeDuration=value=>{const days=Math.max(1,Math.min(31,Number(value)||1));setDraft(current=>({...current,durationDays:days,ends:endFromDuration(current.starts,days)}));setSaved(false)};
  const save=()=>{
-  const starts=toIso(draft.starts),ends=toIso(draft.ends),releaseAt=toIso(draft.releaseAt);
+  const starts=toIso(draft.starts),ends=toIso(endFromDuration(draft.starts,draft.durationDays)),provisionalAt=toIso(draft.provisionalAt),releaseAt=toIso(draft.releaseAt);
   if(!draft.name.trim())return alert('Enter a competition name.');
-  if(!starts||!ends)return alert('Choose when the competition opens and when the week closes.');
-  if(new Date(ends)<=new Date(starts))return alert('The week closing time must be after the competition opens.');
+  if(!starts||!ends)return alert('Choose when the competition opens and how many days scorecards can be entered.');
+  if(provisionalAt&&!releaseAt)return alert('Choose the full-results release time when scheduling provisional results.');
+  if(provisionalAt&&new Date(provisionalAt)<new Date(starts))return alert('Provisional results cannot appear before the competition opens.');
   if(releaseAt&&new Date(releaseAt)<new Date(starts))return alert('Full scores cannot be released before the competition opens.');
+  if(provisionalAt&&releaseAt&&new Date(provisionalAt)>=new Date(releaseAt))return alert('Provisional results must appear before the full scores are released.');
   const resultsEmbargo=releaseAt
-   ?{...(comp.resultsEmbargo||{}),enabled:true,releaseAt,visibleThroughHole:Math.max(1,Math.min(17,Number(comp.resultsEmbargo?.visibleThroughHole)||15))}
-   :{...(comp.resultsEmbargo||{}),enabled:false,releaseAt:null};
+   ?{...(comp.resultsEmbargo||{}),enabled:true,provisionalAt:provisionalAt||null,releaseAt,visibleThroughHole:Math.max(1,Math.min(17,Number(comp.resultsEmbargo?.visibleThroughHole)||15))}
+   :{...(comp.resultsEmbargo||{}),enabled:false,provisionalAt:null,releaseAt:null};
   onSave(comp,{name:draft.name.trim(),starts,ends,resultsEmbargo});
+  setDraft(current=>({...current,ends:toLocalDateTime(ends)}));
   setSaved(true);
  };
  return <div className="card leagueScheduleCard">
   <div className="leagueScheduleHeading"><span><b>Week {weekNumber}</b><small>{comp.status==='cancelled'?'CANCELLED':String(comp.status||'draft').toUpperCase()}</small></span></div>
   <div className="grid leagueScheduleGrid">
    <label>Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>
-   <label>Opens for scoring<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>change('starts',e.target.value)}/><small>Golfers can enter scorecards from this time.</small></label>
-   <label>Week closes<input type="datetime-local" value={draft.ends} disabled={!editable} onChange={e=>change('ends',e.target.value)}/></label>
+   <label>Launch / opens for scoring<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/><small>Golfers can enter scorecards from this time.</small></label>
+   <label>Entry window (days)<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>How many calendar days scorecards stay open.</small></label>
+   <label>Entry closes<input type="datetime-local" value={draft.ends} disabled/><small>Calculated from the launch date and entry window.</small></label>
+   <label>Provisional results shown<input type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/><small>Leave blank to show provisional cards as soon as they are entered.</small></label>
    <label>Full scores released<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/><small>Leave blank to show full scores immediately.</small></label>
   </div>
   <div className="inviteRow">
-   {editable&&<button className="primary" onClick={save}>{saved?'✓ SAVED':'SAVE DATES'}</button>}
+   {editable&&<button className="primary" onClick={save}>{saved?'✓ SAVED':'SAVE SCHEDULE'}</button>}
    {onEdit&&<button className="secondary" onClick={()=>onEdit(comp)}>ADVANCED SETTINGS</button>}
    {editable&&<button className={comp.status==='cancelled'?'secondary':'danger'} onClick={()=>onCancel(comp)}>{comp.status==='cancelled'?'REINSTATE':'CANCEL'}</button>}
   </div>

@@ -2,6 +2,17 @@ import{playingHandicap,scoreCard,whsRound}from'./scoring.js';
 
 export const WL_DEFAULTS={mode:'team',allowance:90,bestCount:8,target:36,netParTarget:0,cutPerPoint:.5,giveBackPerPoint:0,direction:'down',teamAdjustment:'split',adjustFromNext:true,lockStartingHandicaps:true};
 
+export function leagueCompetitionLifecycle(comp,now=new Date()){
+ if(comp?.status==='cancelled')return'cancelled';
+ if(comp?.status==='draft')return'draft';
+ const at=now instanceof Date?now.getTime():new Date(now).getTime();
+ const starts=comp?.starts?new Date(comp.starts).getTime():NaN;
+ const ends=comp?.ends?new Date(comp.ends).getTime():NaN;
+ if(Number.isFinite(ends)&&Number.isFinite(at)&&at>=ends)return'closed';
+ if(Number.isFinite(starts)&&Number.isFinite(at))return at>=starts?'live':'scheduled';
+ return comp?.status==='completed'?'closed':'scheduled';
+}
+
 export function leagueHandicapSettings(league){
  const legacy=league?.wlSettings||{};
  return{...WL_DEFAULTS,...legacy,...(league?.handicapSettings||{}),

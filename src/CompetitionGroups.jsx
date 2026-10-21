@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState}from'react';
-import{winterLeagueTable,leagueHandicapSettings}from'./winterLeague.js';
+import{winterLeagueTable,leagueHandicapSettings,leagueCompetitionLifecycle}from'./winterLeague.js';
 
 const uid=()=>crypto.randomUUID?.()||Date.now()+''+Math.random();
 const fmt=v=>{const n=Number(v)||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toFixed(1)};
@@ -12,6 +12,7 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  const makeDraft=value=>({name:value.name||'',starts:toLocalDateTime(value.starts),durationDays:durationFrom(value.starts,value.ends),ends:toLocalDateTime(value.ends),provisionalAt:toLocalDateTime(value.resultsEmbargo?.provisionalAt),releaseAt:toLocalDateTime(value.resultsEmbargo?.releaseAt)});
  const[draft,setDraft]=useState(()=>makeDraft(comp));
  const[saved,setSaved]=useState(false);
+ const lifecycle=leagueCompetitionLifecycle(comp);
  useEffect(()=>{setDraft(makeDraft(comp));setSaved(false)},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.provisionalAt,comp.resultsEmbargo?.releaseAt]);
  const change=(key,value)=>{setDraft(current=>({...current,[key]:value}));setSaved(false)};
  const changeStart=value=>{setDraft(current=>({...current,starts:value,ends:endFromDuration(value,current.durationDays)}));setSaved(false)};
@@ -34,7 +35,7 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  return <div className="card leagueScheduleCard">
   <div className="leagueScheduleHeading">
    <b>Week {weekNumber}</b>
-   <small className={comp.status==='cancelled'?'cancelled':''}>{comp.status==='cancelled'?'CANCELLED':String(comp.status||'draft').toUpperCase()}</small>
+   <small className={lifecycle}>{lifecycle.toUpperCase()}</small>
   </div>
   <div className="leagueScheduleGrid">
    <label className="leagueScheduleName">Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>

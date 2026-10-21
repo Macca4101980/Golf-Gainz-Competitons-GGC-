@@ -10,8 +10,9 @@ test('Group Owner or Admin receives the scorecard administration list',()=>{
  assert.match(main,/const admin=!!me&&\(society\?\.ownerId===me\.id\|\|\(society\?\.admins\|\|\[\]\)\.includes\(me\.id\)\)/);
  for(const label of['SCORECARD ADMIN','OPEN','DELETE','CREATE NEW SCORECARD','SCORECARD LIST'])assert.ok(main.includes(label));
  assert.match(css,/\.adminRoundRow/);
- assert.match(main,/\(live\|\|admin\)&&<button className="primary" onClick=\{enter\}>/);
+ assert.match(main,/\(live\|\|\(admin&&status==='completed'\)\)&&<button className="primary" onClick=\{enter\}>/);
  assert.match(main,/effectiveCompStatus\(c\)!=='live'&&!admin/);
+ assert.match(main,/done\.map\(c=><CompCard[^\n]+enter=\{\(\)=>enter\(c\)\}/);
 });
 
 test('admin-created card defaults to the acting golfer but all four slots remain selectable',()=>{

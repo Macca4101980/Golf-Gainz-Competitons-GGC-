@@ -22,6 +22,8 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  const[draft,setDraft]=useState(()=>makeDraft(comp));
  const[editing,setEditing]=useState(false);
  const lifecycle=leagueCompetitionLifecycle(comp);
+ const lifecyclePill=lifecycle==='closed'?'completed':lifecycle;
+ const lifecycleLabel=lifecycle==='closed'?'COMPLETE':lifecycle.toUpperCase();
  useEffect(()=>{setDraft(makeDraft(comp))},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.provisionalAt,comp.resultsEmbargo?.releaseAt]);
  useEffect(()=>{if(!editing)return;const close=e=>{if(e.key==='Escape'){setDraft(makeDraft(comp));setEditing(false)}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[editing,comp]);
  const change=(key,value)=>setDraft(current=>({...current,[key]:value}));
@@ -46,7 +48,7 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
   <div className="card leagueScheduleCard">
    <div className="leagueScheduleHeading">
     <b>Week {weekNumber}</b>
-    <small className={lifecycle}>{lifecycle.toUpperCase()}</small>
+    <small className={`pill ${lifecyclePill}`}>{lifecycleLabel}</small>
    </div>
    <div className="leagueScheduleSummary">
     <div className="leagueScheduleSummaryName"><small>COMPETITION</small><strong>{comp.name}</strong></div>

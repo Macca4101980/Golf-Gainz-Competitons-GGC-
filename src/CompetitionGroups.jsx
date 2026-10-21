@@ -7,8 +7,8 @@ const toLocalDateTime=value=>{if(!value)return'';const d=new Date(value);if(Numb
 const toIso=value=>{if(!value)return null;const d=new Date(value);return Number.isNaN(d.getTime())?null:d.toISOString()};
 
 function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCancel}){
- const durationFrom=(starts,ends)=>{const a=new Date(starts).getTime(),b=new Date(ends).getTime();return Number.isFinite(a)&&Number.isFinite(b)&&b>a?Math.max(1,Math.ceil((b-a+60000)/86400000)):7};
- const endFromDuration=(starts,days)=>{const a=new Date(starts);if(Number.isNaN(a.getTime()))return'';return toLocalDateTime(new Date(a.getTime()+Math.max(1,Number(days)||1)*86400000-60000))};
+ const durationFrom=(starts,ends)=>{const a=new Date(starts),b=new Date(ends);if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime())||b<=a)return 7;const day=value=>Date.UTC(value.getFullYear(),value.getMonth(),value.getDate());return Math.max(1,Math.round((day(b)-day(a))/86400000))};
+ const endFromDuration=(starts,days)=>{const a=new Date(starts);if(Number.isNaN(a.getTime()))return'';a.setDate(a.getDate()+Math.max(1,Number(days)||1));return toLocalDateTime(a)};
  const makeDraft=value=>({name:value.name||'',starts:toLocalDateTime(value.starts),durationDays:durationFrom(value.starts,value.ends),ends:toLocalDateTime(value.ends),provisionalAt:toLocalDateTime(value.resultsEmbargo?.provisionalAt),releaseAt:toLocalDateTime(value.resultsEmbargo?.releaseAt)});
  const[draft,setDraft]=useState(()=>makeDraft(comp));
  const[saved,setSaved]=useState(false);

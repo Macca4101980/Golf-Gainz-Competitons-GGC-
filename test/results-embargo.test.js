@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { winterLeagueTable } from '../src/winterLeague.js';
 
-function fixture(releaseAt) {
+function fixture(releaseAt, provisionalAt = null) {
   const holes = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, par: 4, si: i + 1 }));
   const course = { id: 'northampton', name: 'Northampton', tees: [{ name: 'Green', slope: 125, rating: 68.7, holes }] };
   const players = [{ id: 'a', name: 'A', hi: 10 }, { id: 'b', name: 'B', hi: 20 }];
   const comp = {
     id: 'week1', leagueId: 'league', format: '4bbb-stableford', course: 'northampton', tee: 'Green',
     handicapAllowance: 90, starts: '2026-10-17T09:00:00Z', status: 'scheduled',
-    resultsEmbargo: { enabled: true, visibleThroughHole: 15, releaseAt },
+    resultsEmbargo: { enabled: true, visibleThroughHole: 15, provisionalAt, releaseAt },
   };
   const cards = players.map(p => ({ id: `card-${p.id}`, compId: comp.id, playerId: p.id, courseId: course.id, tee: 'Green', gross: Array(18).fill(4) }));
   const state = { players, courses: [course], cards, comps: [comp] };
@@ -31,6 +31,17 @@ test('Winter League embargo shows only holes 1–15 and withholds official scori
   assert.deepEqual(week.rows[0].holes.slice(15), [null, null, null]);
   assert.equal(result.table[0].played, 0);
   assert.deepEqual(week.rows[0].afterAdjustments, week.rows[0].beforeAdjustments);
+});
+
+test('Winter League hides team scores until the scheduled provisional release', () => {
+  const { league, state } = fixture(
+    new Date(Date.now() + 120_000).toISOString(),
+    new Date(Date.now() + 60_000).toISOString(),
+  );
+  const result = winterLeagueTable(league, state);
+  assert.equal(result.weekly[0].resultsHidden, true);
+  assert.equal(result.weekly[0].rows.length, 0);
+  assert.equal(result.table[0].played, 0);
 });
 
 test('Winter League embargo releases the full scorecard and official week after release time', () => {

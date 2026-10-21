@@ -305,33 +305,35 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 
 /* Compact league schedule editor — grouped like a weekly fixture sheet. */
 .leagueScheduleCard{display:grid;gap:0;padding:0!important;overflow:hidden;border:1px solid #d9e2dc!important;background:#fff!important}
-.leagueScheduleHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;background:#13261a;color:#fff}
+.leagueScheduleHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:12px 16px;background:#13261a;color:#fff;box-sizing:border-box}
 .leagueScheduleHeading>b{font-size:1rem;letter-spacing:.01em}
-.leagueScheduleHeading small{padding:5px 8px;border-radius:999px;background:rgba(104,235,66,.12);color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.09em}
+.leagueScheduleHeading small{padding:5px 9px;border-radius:999px;background:rgba(104,235,66,.12);color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.09em}
 .leagueScheduleHeading small.cancelled{background:rgba(255,112,112,.13);color:#ff9a9a}
 .leagueScheduleGrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1px;background:#dfe6e1;border-bottom:1px solid #dfe6e1}
-.leagueScheduleGrid label{position:relative;display:grid;align-content:start;gap:7px;min-width:0;margin:0;padding:11px 13px;background:#fff;color:#4f5b54;font-size:.68rem;font-weight:900;letter-spacing:.025em}
-.leagueScheduleGrid input{width:100%;min-width:0;margin:0;padding:10px 11px;border-radius:9px;font-size:.86rem;letter-spacing:0}
+.leagueScheduleGrid label{position:relative;display:grid;align-content:start;gap:7px;min-width:0;margin:0;padding:12px 13px;background:#fff;color:#4f5b54;font-size:.68rem;font-weight:900;letter-spacing:.025em;box-sizing:border-box}
+.leagueScheduleGrid input{display:block;width:100%;height:44px;min-width:0;margin:0;padding:9px 11px;border-radius:9px;box-sizing:border-box;font-size:.86rem;letter-spacing:0}
 .leagueScheduleGrid input:disabled{opacity:1;background:#f1f4f2;color:#66716b;-webkit-text-fill-color:#66716b}
-.leagueScheduleGrid label>small{position:absolute;right:21px;bottom:22px;color:#68756f;font-size:.72rem;font-weight:800;letter-spacing:0;pointer-events:none}
+.leagueScheduleGrid label>small{position:absolute;right:22px;bottom:25px;color:#68756f;font-size:.72rem;font-weight:800;letter-spacing:0;pointer-events:none}
 .leagueScheduleName{grid-column:span 5}
 .leagueScheduleLaunch{grid-column:span 4}
 .leagueScheduleDuration{grid-column:span 3}
 .leagueScheduleDuration input{padding-right:48px}
 .leagueScheduleClose,.leagueScheduleProvisional,.leagueScheduleRelease{grid-column:span 4}
 .leagueScheduleActions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px!important;align-items:stretch!important;padding:12px 13px;background:#f7f9f7}
-.leagueScheduleActions button{width:100%;min-width:0;margin:0;padding-left:10px;padding-right:10px}
+.leagueScheduleActions button{width:100%;min-width:0;min-height:46px;margin:0;padding:9px 8px;box-sizing:border-box;white-space:nowrap}
 @media(max-width:800px){
- .leagueScheduleGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
- .leagueScheduleName{grid-column:1/-1}
- .leagueScheduleLaunch,.leagueScheduleDuration,.leagueScheduleClose,.leagueScheduleProvisional{grid-column:auto}
- .leagueScheduleRelease{grid-column:1/-1}
+ .leagueScheduleGrid{grid-template-columns:repeat(12,minmax(0,1fr))}
+ .leagueScheduleName{grid-column:span 12}
+ .leagueScheduleLaunch{grid-column:span 7}
+ .leagueScheduleDuration{grid-column:span 5}
+ .leagueScheduleClose,.leagueScheduleProvisional{grid-column:span 6}
+ .leagueScheduleRelease{grid-column:span 12}
 }
 @media(max-width:520px){
- .leagueScheduleHeading{padding:12px 13px}
- .leagueScheduleGrid label{padding:10px 9px;font-size:.62rem}
- .leagueScheduleGrid input{padding:9px 8px;font-size:.76rem}
- .leagueScheduleGrid label>small{right:16px;bottom:19px;font-size:.66rem}
- .leagueScheduleActions{gap:6px!important;padding:10px 9px}
- .leagueScheduleActions button{min-height:40px;padding:8px 5px;font-size:.69rem}
+ .leagueScheduleHeading{min-height:52px;padding:10px 12px}
+ .leagueScheduleGrid label{padding:11px 10px;font-size:.62rem}
+ .leagueScheduleGrid input{height:42px;padding:8px 9px;font-size:.76rem}
+ .leagueScheduleGrid label>small{right:18px;bottom:23px;font-size:.66rem}
+ .leagueScheduleActions{gap:7px!important;padding:10px}
+ .leagueScheduleActions button{min-height:42px;padding:8px 4px;font-size:.64rem;letter-spacing:0}
 }

@@ -34,6 +34,12 @@ test('summary retains the date-driven lifecycle badge',()=>{
 test('mobile editor exposes every action above the app navigation',()=>{
  assert.match(styles,/body:has\(\.leagueScheduleSheetBackdrop\) \.app>nav/);
  assert.match(styles,/visibility:hidden/);
- assert.match(styles,/Tap to schedule/);
+ assert.match(styles,/SET DATE/);
  assert.match(styles,/\.leagueScheduleActions button\{min-height:39px/);
+});
+
+test('mobile editor uses compact label and value rows',()=>{
+ assert.match(styles,/grid-template-columns:minmax\(118px,.8fr\) minmax\(0,1.2fr\)/);
+ assert.match(styles,/\.leagueScheduleGrid label:not\(\.leagueScheduleName\) input\{grid-column:2/);
+ assert.match(styles,/\.leagueScheduleName\{[\s\S]*grid-template-columns:1fr/);
 });

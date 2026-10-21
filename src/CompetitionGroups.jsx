@@ -6,6 +6,14 @@ const fmt=v=>{const n=Number(v)||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toF
 const toLocalDateTime=value=>{if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
 const toIso=value=>{if(!value)return null;const d=new Date(value);return Number.isNaN(d.getTime())?null:d.toISOString()};
 
+function LeagueScheduleGlyph({kind}){
+ const common={viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true};
+ if(kind==='launch')return <span className="leagueTimelineIcon launch"><svg {...common}><path d="M14.5 5.5c2.5-2.5 5.5-2.5 5.5-2.5s0 3-2.5 5.5l-4 4-4-4 5-3Z"/><path d="m9.5 8.5-4 .5-2.5 2.5 5 1.5M13.5 12.5l-.5 4-2.5 2.5-1.5-5"/><circle cx="15.5" cy="7.5" r="1"/><path d="M5 16c-1.5.5-2.5 1.5-3 3 1.5-.5 2.5-.5 3 0 0-1.5.5-2.5 2-3"/></svg></span>;
+ if(kind==='close')return <span className="leagueTimelineIcon close"><svg {...common}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>;
+ if(kind==='provisional')return <span className="leagueTimelineIcon provisional"><svg {...common}><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>;
+ return <span className="leagueTimelineIcon release"><svg {...common}><path d="M8 21h8M12 17v4M7 4h10v3a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4"/></svg></span>;
+}
+
 function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCancel}){
  const durationFrom=(starts,ends)=>{const a=new Date(starts),b=new Date(ends);if(Number.isNaN(a.getTime())||Number.isNaN(b.getTime())||b<=a)return 7;const day=value=>Date.UTC(value.getFullYear(),value.getMonth(),value.getDate());return Math.max(1,Math.round((day(b)-day(a))/86400000))};
  const endFromDuration=(starts,days)=>{const a=new Date(starts);if(Number.isNaN(a.getTime()))return'';a.setDate(a.getDate()+Math.max(1,Number(days)||1));return toLocalDateTime(a)};
@@ -14,6 +22,8 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  const[draft,setDraft]=useState(()=>makeDraft(comp));
  const[editing,setEditing]=useState(false);
  const lifecycle=leagueCompetitionLifecycle(comp);
+ const lifecyclePill=lifecycle==='closed'?'completed':lifecycle;
+ const lifecycleLabel=lifecycle==='closed'?'COMPLETE':lifecycle.toUpperCase();
  useEffect(()=>{setDraft(makeDraft(comp))},[comp.id,comp.name,comp.starts,comp.ends,comp.resultsEmbargo?.provisionalAt,comp.resultsEmbargo?.releaseAt]);
  useEffect(()=>{if(!editing)return;const close=e=>{if(e.key==='Escape'){setDraft(makeDraft(comp));setEditing(false)}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[editing,comp]);
  const change=(key,value)=>setDraft(current=>({...current,[key]:value}));
@@ -38,7 +48,7 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
   <div className="card leagueScheduleCard">
    <div className="leagueScheduleHeading">
     <b>Week {weekNumber}</b>
-    <small className={lifecycle}>{lifecycle.toUpperCase()}</small>
+    <small className={`pill ${lifecyclePill}`}>{lifecycleLabel}</small>
    </div>
    <div className="leagueScheduleSummary">
     <div className="leagueScheduleSummaryName"><small>COMPETITION</small><strong>{comp.name}</strong></div>
@@ -64,13 +74,33 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
      <button type="button" className="leagueScheduleSheetClose" aria-label="Close schedule editor" onClick={closeEditor}>×</button>
     </div>
     <div className="leagueScheduleSheetBody">
-     <div className="leagueScheduleGrid">
-      <label className="leagueScheduleName">Competition name<input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/></label>
-      <label className="leagueScheduleLaunch">Launch / scoring opens<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/></label>
-      <label className="leagueScheduleDuration">Entry window<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>days</small></label>
-      <label className="leagueScheduleClose">Entry closes<input type="datetime-local" value={draft.ends} disabled/></label>
-      <label className="leagueScheduleProvisional" data-empty={!draft.provisionalAt?'true':undefined}>Provisional cards<input className={!draft.provisionalAt?'isUnset':''} type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/></label>
-      <label className="leagueScheduleRelease">Full scores live<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/></label>
+     <div className="leagueTimelineEditor">
+      <label className="leagueTimelineName"><span>Competition name</span><input value={draft.name} disabled={!editable} onChange={e=>change('name',e.target.value)}/><b aria-hidden="true">›</b></label>
+      <div className="leagueTimeline">
+       <div className="leagueTimelineRow leagueTimelineLaunch">
+        <LeagueScheduleGlyph kind="launch"/>
+        <span className="leagueTimelineCopy"><strong>Launch / scoring opens</strong><small>Competition goes live</small><span className="leagueTimelineDuration"><span aria-hidden="true">▣</span><input aria-label="Entry window in days" type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/> days entry window</span></span>
+        <span className="leagueTimelineValue">{displayDateTime(draft.starts)}</span><b className="leagueTimelineChevron" aria-hidden="true">›</b>
+        <input className="leagueTimelinePicker" aria-label="Launch and scoring opens" type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/>
+       </div>
+       <div className="leagueTimelineRow leagueTimelineClose">
+        <LeagueScheduleGlyph kind="close"/>
+        <span className="leagueTimelineCopy"><strong>Entry closes</strong><small>Last day to enter</small></span>
+        <span className="leagueTimelineValue">{displayDateTime(draft.ends)}</span>
+       </div>
+       <label className="leagueTimelineRow leagueTimelineProvisional">
+        <LeagueScheduleGlyph kind="provisional"/>
+        <span className="leagueTimelineCopy"><strong>Provisional cards</strong><small>Interim scores available</small></span>
+        <span className="leagueTimelineValue mutedValue">{displayDateTime(draft.provisionalAt)}</span><b className="leagueTimelineChevron" aria-hidden="true">›</b>
+        <input className="leagueTimelinePicker" aria-label="Provisional cards release" type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/>
+       </label>
+       <label className="leagueTimelineRow leagueTimelineRelease">
+        <LeagueScheduleGlyph kind="release"/>
+        <span className="leagueTimelineCopy"><strong>Full scores live</strong><small>Final scores published</small></span>
+        <span className="leagueTimelineValue">{displayDateTime(draft.releaseAt)}</span><b className="leagueTimelineChevron" aria-hidden="true">›</b>
+        <input className="leagueTimelinePicker" aria-label="Full scores release" type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/>
+       </label>
+      </div>
      </div>
     </div>
     <div className="leagueScheduleActions">

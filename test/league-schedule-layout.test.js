@@ -26,9 +26,10 @@ test('schedule editor opens as an accessible on-demand sheet',()=>{
 
 test('summary retains the date-driven lifecycle badge',()=>{
  assert.match(scheduleSource,/leagueCompetitionLifecycle\(comp\)/);
- assert.match(scheduleSource,/lifecycle\.toUpperCase\(\)/);
- assert.match(styles,/\.leagueScheduleHeading small\.live/);
- assert.match(styles,/\.leagueScheduleHeading small\.closed/);
+ assert.match(scheduleSource,/lifecycle==='closed'\?'COMPLETE'/);
+ assert.match(scheduleSource,/pill \$\{lifecyclePill\}/);
+ assert.match(styles,/\.leagueScheduleHeading \.pill\.live/);
+ assert.match(styles,/\.leagueScheduleHeading \.pill\.completed/);
 });
 
 test('mobile editor exposes every action above the app navigation',()=>{
@@ -38,8 +39,18 @@ test('mobile editor exposes every action above the app navigation',()=>{
  assert.match(styles,/\.leagueScheduleActions button\{min-height:39px/);
 });
 
-test('mobile editor uses compact label and value rows',()=>{
- assert.match(styles,/grid-template-columns:minmax\(118px,.8fr\) minmax\(0,1.2fr\)/);
- assert.match(styles,/\.leagueScheduleGrid label:not\(\.leagueScheduleName\) input\{grid-column:2/);
- assert.match(styles,/\.leagueScheduleName\{[\s\S]*grid-template-columns:1fr/);
+test('schedule editor uses the selected timeline layout',()=>{
+ assert.match(scheduleSource,/leagueTimelineEditor/);
+ assert.match(scheduleSource,/LeagueScheduleGlyph kind="launch"/);
+ assert.match(scheduleSource,/7 days entry window|days entry window/);
+ assert.match(scheduleSource,/leagueTimelinePicker/);
+ assert.match(styles,/\.leagueTimeline::before/);
+ assert.match(styles,/\.leagueTimelineIcon\.launch/);
+});
+
+test('timeline keeps duration and release controls editable',()=>{
+ assert.match(scheduleSource,/aria-label="Entry window in days"/);
+ assert.match(scheduleSource,/aria-label="Launch and scoring opens"/);
+ assert.match(scheduleSource,/aria-label="Provisional cards release"/);
+ assert.match(scheduleSource,/aria-label="Full scores release"/);
 });

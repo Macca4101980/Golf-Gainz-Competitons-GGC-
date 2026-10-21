@@ -26,9 +26,10 @@ test('schedule editor opens as an accessible on-demand sheet',()=>{
 
 test('summary retains the date-driven lifecycle badge',()=>{
  assert.match(scheduleSource,/leagueCompetitionLifecycle\(comp\)/);
- assert.match(scheduleSource,/lifecycle\.toUpperCase\(\)/);
- assert.match(styles,/\.leagueScheduleHeading small\.live/);
- assert.match(styles,/\.leagueScheduleHeading small\.closed/);
+ assert.match(scheduleSource,/lifecycle==='closed'\?'COMPLETE'/);
+ assert.match(scheduleSource,/pill \$\{lifecyclePill\}/);
+ assert.match(styles,/\.leagueScheduleHeading \.pill\.live/);
+ assert.match(styles,/\.leagueScheduleHeading \.pill\.completed/);
 });
 
 test('mobile editor exposes every action above the app navigation',()=>{

@@ -41,7 +41,7 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
    <label className="leagueScheduleLaunch">Launch / scoring opens<input type="datetime-local" value={draft.starts} disabled={!editable} onChange={e=>changeStart(e.target.value)}/></label>
    <label className="leagueScheduleDuration">Entry window<input type="number" min="1" max="31" step="1" value={draft.durationDays} disabled={!editable} onChange={e=>changeDuration(e.target.value)}/><small>days</small></label>
    <label className="leagueScheduleClose">Entry closes<input type="datetime-local" value={draft.ends} disabled/></label>
-   <label className="leagueScheduleProvisional">Provisional cards<input type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/></label>
+   <label className="leagueScheduleProvisional" data-empty={!draft.provisionalAt?'true':undefined}>Provisional cards<input className={!draft.provisionalAt?'isUnset':''} type="datetime-local" value={draft.provisionalAt} disabled={!editable} onChange={e=>change('provisionalAt',e.target.value)}/></label>
    <label className="leagueScheduleRelease">Full scores live<input type="datetime-local" value={draft.releaseAt} disabled={!editable} onChange={e=>change('releaseAt',e.target.value)}/></label>
   </div>
   <div className="inviteRow leagueScheduleActions">

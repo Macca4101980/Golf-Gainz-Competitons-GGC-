@@ -37,7 +37,7 @@ export function toRecordSnapshot(state,options={}){
  snapshot.appFields=rootFieldRecords(state||{},options);
  // Tombstone IDs are control metadata used only while translating a local
  // deletion into the versioned row's deleted flag.
- for(const key of ['deletedCompIds','deletedSocietyIds','deletedCourseIds','deletedLeagueIds']){
+ for(const key of ['deletedCompIds','deletedCardIds','deletedSocietyIds','deletedCourseIds','deletedLeagueIds']){
   snapshot[key]=Array.isArray(state?.[key])?clone(state[key]):[];
  }
  return snapshot;
@@ -68,7 +68,7 @@ export function applyRecordSnapshot(base,records,{userId}={}){
  next.oom=oom;
  // Local deletion markers survive an interrupted write, but remote record
  // tombstones are authoritative after a confirmed write.
- for(const key of ['deletedCompIds','deletedSocietyIds','deletedCourseIds','deletedLeagueIds']){
+ for(const key of ['deletedCompIds','deletedCardIds','deletedSocietyIds','deletedCourseIds','deletedLeagueIds']){
   next[key]=Array.isArray(base?.[key])?clone(base[key]):[];
  }
  return next;

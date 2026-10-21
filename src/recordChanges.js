@@ -23,10 +23,13 @@ export function planRecordChanges(previous,next){
   const old=indexed(before);
   const current=indexed(after);
   // Only explicit deletion markers authorise tombstones; never infer deletion from missing cloud rows.
-  const deletionFields={societies:'deletedSocietyIds',comps:'deletedCompIds',leagues:'deletedLeagueIds',courses:'deletedCourseIds'};
+  const deletionFields={societies:'deletedSocietyIds',comps:'deletedCompIds',cards:'deletedCardIds',leagues:'deletedLeagueIds',courses:'deletedCourseIds'};
   const deletedIds=new Set(Array.isArray(next?.[deletionFields[kind]])?next[deletionFields[kind]].map(String):[]);
+  // Deleting a competition explicitly authorises tombstones for every card it
+  // owns, even if an older client did not also populate deletedCardIds.
+  const deletedCompIds=new Set(Array.isArray(next?.deletedCompIds)?next.deletedCompIds.map(String):[]);
   for(const [id,data] of old){
-   if(!current.has(id)&&deletedIds.has(id))changes.push({kind,id,data,deleted:true});
+   if(!current.has(id)&&(deletedIds.has(id)||(kind==='cards'&&deletedCompIds.has(String(data?.compId)))))changes.push({kind,id,data,deleted:true});
   }
   for(const [id,data] of current){
    const prior=old.get(id);

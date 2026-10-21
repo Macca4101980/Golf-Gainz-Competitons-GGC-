@@ -15,7 +15,7 @@ export function createAppRecordSession(client){
    if(!loading)loading=(async()=>{
     const records=await store.loadAll(APP_RECORD_KINDS);
     const base={...snapshot,settings:{},contacts:{},hiddenContacts:{},identityLinks:{},oom:{},
-     deletedCompIds:[],deletedSocietyIds:[],deletedCourseIds:[],deletedLeagueIds:[]};
+     deletedCompIds:[],deletedCardIds:[],deletedSocietyIds:[],deletedCourseIds:[],deletedLeagueIds:[]};
     const next=mergeRecordSnapshotIntoAppState(base,records,context);
     coordinator.initialize(records);
     return {snapshot:next,records};

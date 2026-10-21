@@ -25,6 +25,7 @@ test('admin deletion is confirmed, audited and removes only the selected competi
  assert.match(main,/action:'ADMIN DELETE SCORECARD'/);
  assert.match(main,/card\.compId===c\.id&&ids\.has\(card\.playerId\)/);
  assert.match(main,/roundGroups:\(q\.roundGroups\|\|\[\]\)\.filter\(g=>g\.id!==row\.id\)/);
+ assert.match(main,/deletedCardIds:\[\.\.\.new Set\(\[\.\.\.\(state\.deletedCardIds\|\|\[\]\),\.\.\.removedCards\.map\(card=>card\.id\)\]\)\]/);
 });
 
 test('opening Scorecard Admin does not silently enter the Admin into the competition',()=>{

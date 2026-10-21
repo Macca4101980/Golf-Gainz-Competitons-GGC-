@@ -303,47 +303,77 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 @media(max-width:520px){.ggcCompactLogin{padding:24px 20px}.ggcCompactLogin .authbrand p{margin-bottom:38px}}
 
 
-/* Compact league schedule editor — grouped like a weekly fixture sheet. */
+/* Compact league schedule summary with an on-demand edit sheet (Option C). */
 .leagueScheduleCard{display:grid;gap:0;padding:0!important;overflow:hidden;border:1px solid #d9e2dc!important;background:#fff!important}
 .leagueScheduleHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:12px 16px;background:#13261a;color:#fff;box-sizing:border-box}
 .leagueScheduleHeading>b{font-size:1rem;letter-spacing:.01em}
-.leagueScheduleHeading small{padding:5px 9px;border-radius:999px;background:rgba(104,235,66,.12);color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.09em}
+.leagueScheduleHeading small{padding:6px 10px;border-radius:999px;background:rgba(104,235,66,.12);color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.09em}
 .leagueScheduleHeading small.cancelled{background:rgba(255,112,112,.13);color:#ff9a9a}
-.leagueScheduleHeading small.live{background:rgba(104,235,66,.18);color:#75ee51}
+.leagueScheduleHeading small.live{background:rgba(104,235,66,.2);color:#75ee51}
 .leagueScheduleHeading small.closed{background:rgba(170,181,174,.16);color:#c3ccc6}
-.leagueScheduleGrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1px;background:#dfe6e1;border-bottom:1px solid #dfe6e1}
-.leagueScheduleGrid label{position:relative;display:grid;align-content:start;gap:7px;min-width:0;margin:0;padding:12px 13px;background:#fff;color:#4f5b54;font-size:.68rem;font-weight:900;letter-spacing:.025em;box-sizing:border-box}
-.leagueScheduleGrid input{display:block;width:100%;height:44px;min-width:0;margin:0;padding:9px 11px;border-radius:9px;box-sizing:border-box;font-size:.86rem;letter-spacing:0}
+.leagueScheduleHeading small.draft{background:rgba(255,211,87,.15);color:#ffe08a}
+.leagueScheduleSummary{display:grid;gap:0;color:#142019;background:#fff}
+.leagueScheduleSummaryName{display:grid;gap:5px;padding:15px 16px;border-bottom:1px solid #e1e7e3}
+.leagueScheduleSummary small{color:#69766f;font-size:.63rem;font-weight:950;letter-spacing:.08em}
+.leagueScheduleSummaryName strong{font-size:1rem;line-height:1.28;overflow-wrap:anywhere}
+.leagueScheduleSummaryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-bottom:1px solid #e1e7e3}
+.leagueScheduleSummaryGrid>div{display:grid;align-content:start;gap:5px;min-width:0;padding:13px 16px;border-bottom:1px solid #e1e7e3}
+.leagueScheduleSummaryGrid>div:nth-child(odd){border-right:1px solid #e1e7e3}
+.leagueScheduleSummaryGrid>div:nth-last-child(-n+2){border-bottom:0}
+.leagueScheduleSummaryGrid b,.leagueScheduleSummaryProvisional b{font-size:.82rem;line-height:1.3;color:#1d2922;overflow-wrap:anywhere}
+.leagueScheduleSummaryProvisional{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;background:#f5f8f6}
+.leagueScheduleSummaryProvisional b{text-align:right}
+.leagueScheduleSummaryAction{padding:12px 16px;background:#f7f9f7}
+.leagueScheduleSummaryAction button{min-height:46px;margin:0}
+.leagueScheduleSheetBackdrop{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:rgba(2,8,4,.76);backdrop-filter:blur(4px)}
+.leagueScheduleSheet{display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(680px,100%);max-height:calc(100dvh - 36px);overflow:hidden;border:1px solid #496053;border-radius:22px;background:#f7f9f7;box-shadow:0 24px 80px rgba(0,0,0,.52)}
+.leagueScheduleSheetHeading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;background:#13261a;color:#fff}
+.leagueScheduleSheetHeading small{display:block;margin-bottom:3px;color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.12em}
+.leagueScheduleSheetHeading h3{margin:0;font-size:1.08rem}
+.leagueScheduleSheetClose{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid #47604f;border-radius:50%;background:#0c1b11;color:#fff;font-size:1.6rem;line-height:1}
+.leagueScheduleSheetBody{min-height:0;overflow-y:auto}
+.leagueScheduleGrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1px;background:#dfe6e1}
+.leagueScheduleGrid label{position:relative;display:grid;align-content:start;gap:7px;min-width:0;margin:0;padding:13px 14px;background:#fff;color:#4f5b54;font-size:.68rem;font-weight:900;letter-spacing:.025em;box-sizing:border-box}
+.leagueScheduleGrid input{display:block;width:100%;height:46px;min-width:0;margin:0;padding:9px 11px;border-radius:9px;box-sizing:border-box;font-size:.86rem;letter-spacing:0}
 .leagueScheduleGrid input:disabled{opacity:1;background:#f1f4f2;color:#66716b;-webkit-text-fill-color:#66716b}
-.leagueScheduleGrid label>small{position:absolute;right:22px;bottom:25px;color:#68756f;font-size:.72rem;font-weight:800;letter-spacing:0;pointer-events:none}
-.leagueScheduleName{grid-column:span 5}
-.leagueScheduleLaunch{grid-column:span 4}
-.leagueScheduleDuration{grid-column:span 3}
+.leagueScheduleGrid label>small{position:absolute;right:22px;bottom:27px;color:#68756f;font-size:.72rem;font-weight:800;letter-spacing:0;pointer-events:none}
+.leagueScheduleName{grid-column:span 12}
+.leagueScheduleLaunch{grid-column:span 7}
+.leagueScheduleDuration{grid-column:span 5}
 .leagueScheduleDuration input{padding-right:48px}
-.leagueScheduleClose,.leagueScheduleProvisional,.leagueScheduleRelease{grid-column:span 4}
-.leagueScheduleActions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px!important;align-items:stretch!important;padding:12px 13px;background:#f7f9f7}
+.leagueScheduleClose{grid-column:span 7}
+.leagueScheduleProvisional{grid-column:span 5}
+.leagueScheduleRelease{grid-column:span 12}
+.leagueScheduleActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important;align-items:stretch!important;padding:12px 14px;background:#f7f9f7;border-top:1px solid #dfe6e1}
 .leagueScheduleActions button{width:100%;min-width:0;min-height:46px;margin:0;padding:9px 8px;box-sizing:border-box;white-space:nowrap}
-@media(max-width:800px){
- .leagueScheduleGrid{grid-template-columns:repeat(12,minmax(0,1fr))}
- .leagueScheduleName{grid-column:span 12}
- .leagueScheduleLaunch{grid-column:span 7}
- .leagueScheduleDuration{grid-column:span 5}
- .leagueScheduleClose{grid-column:span 7}
- .leagueScheduleProvisional{grid-column:span 5}
- .leagueScheduleRelease{grid-column:span 12}
+.leagueScheduleActions .primary{grid-column:1/-1}
+@media(min-width:760px){
+ .leagueScheduleSheetBackdrop{align-items:center}
+ .leagueScheduleSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .leagueScheduleSummaryGrid>div,.leagueScheduleSummaryGrid>div:nth-child(odd),.leagueScheduleSummaryGrid>div:nth-last-child(-n+2){border-bottom:0;border-right:1px solid #e1e7e3}
+ .leagueScheduleSummaryGrid>div:last-child{border-right:0}
 }
 @media(max-width:520px){
- .leagueScheduleHeading{min-height:48px;padding:9px 12px}
- .leagueScheduleGrid label{display:grid;grid-template-columns:1fr;align-content:start;gap:5px;min-width:0;overflow:hidden;padding:8px 10px;font-size:.65rem}
+ .leagueScheduleHeading{min-height:50px;padding:10px 13px}
+ .leagueScheduleSummaryName{padding:13px}
+ .leagueScheduleSummaryGrid>div{padding:11px 13px}
+ .leagueScheduleSummaryGrid b,.leagueScheduleSummaryProvisional b{font-size:.76rem}
+ .leagueScheduleSummaryProvisional{align-items:flex-start;padding:11px 13px}
+ .leagueScheduleSummaryAction{padding:10px 13px}
+ .leagueScheduleSheetBackdrop{padding:0;align-items:flex-end}
+ .leagueScheduleSheet{width:100%;max-height:94dvh;border-width:1px 0 0;border-radius:22px 22px 0 0}
+ .leagueScheduleSheetHeading{padding:13px 14px}
+ .leagueScheduleGrid label{display:grid;grid-template-columns:1fr;align-content:start;gap:5px;min-width:0;overflow:hidden;padding:10px 12px;font-size:.65rem}
  .leagueScheduleName,.leagueScheduleLaunch,.leagueScheduleProvisional,.leagueScheduleRelease{grid-column:span 12}
  .leagueScheduleDuration{grid-column:span 4}
  .leagueScheduleClose{grid-column:span 8}
- .leagueScheduleGrid input{height:38px;min-width:0;max-width:100%;padding:6px 9px;font-size:.75rem}
+ .leagueScheduleGrid input{height:40px;min-width:0;max-width:100%;padding:7px 9px;font-size:.76rem}
  .leagueScheduleGrid input[type="datetime-local"]{text-align:left}
- .leagueScheduleDuration input{padding-right:39px}
- .leagueScheduleDuration>small{right:17px;top:41px;bottom:auto;font-size:.64rem}
+ .leagueScheduleDuration input{padding-right:38px}
+ .leagueScheduleDuration>small{right:17px;top:43px;bottom:auto;font-size:.64rem}
  .leagueScheduleProvisional input.isUnset{background:#eef2ef;border-style:dashed;color:#68756f;-webkit-text-fill-color:#68756f}
- .leagueScheduleProvisional[data-empty="true"]::before{content:"Not scheduled";position:absolute;right:10px;top:8px;color:#7a857e;font-size:.58rem;font-weight:800;letter-spacing:0}
- .leagueScheduleActions{gap:7px!important;padding:8px 10px}
- .leagueScheduleActions button{min-height:42px;padding:8px 4px;font-size:.64rem;letter-spacing:0}
+ .leagueScheduleProvisional[data-empty="true"]::before{content:"Not scheduled";position:absolute;right:12px;top:10px;color:#7a857e;font-size:.58rem;font-weight:800;letter-spacing:0}
+ .leagueScheduleActions{gap:7px!important;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+ .leagueScheduleActions button{min-height:42px;padding:8px 4px;font-size:.66rem;letter-spacing:0}
 }
+

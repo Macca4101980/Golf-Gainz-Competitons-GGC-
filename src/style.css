@@ -516,3 +516,44 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .leagueScheduleHeading .pill.live{border-style:solid;background:#d7ffd0;color:#126427}
 .leagueScheduleHeading .pill.completed{border-style:solid;background:#dce6ff;color:#234d91}
 .leagueScheduleHeading .pill.cancelled{border-style:solid;background:#f1dddd;color:#8b3030}
+
+
+/* Accordion League team manager — compact until a team is opened. */
+.leagueTeamsCard{display:grid;gap:14px}
+.leagueTeamsHeader{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.leagueTeamsHeader h3{margin:0}
+.leagueAddTeam{width:auto;min-width:126px;min-height:44px;padding:10px 14px}
+.leagueNewTeamForm{display:grid;gap:12px;padding:14px;border:1px solid #d8e0da;border-radius:15px;background:#f6f8f6}
+.leagueNewTeamForm label{color:#253129}
+.leagueTeamAccordionList{display:grid;gap:10px}
+.leagueTeamAccordion{overflow:hidden;border:1px solid #d8e0da;border-radius:15px;background:#fafcfb}
+.leagueTeamSummary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:76px;margin:0;padding:12px 14px;border:0!important;border-radius:0!important;background:transparent!important;color:#101712!important;text-align:left}
+.leagueTeamSummary .teamBadgeIdentity b{font-size:1rem;line-height:1.2}
+.leagueTeamSummary .teamBadgeIdentity small{margin-top:3px;color:#8a958e;font-size:.78rem;font-weight:500;line-height:1.25}
+.leagueTeamSummary .teamBadgeEmpty{border-color:#9aa69e;color:#526058}
+.leagueTeamChevron{font-size:1.55rem;line-height:1;transition:transform .16s ease}
+.leagueTeamAccordion.open .leagueTeamChevron{transform:rotate(180deg)}
+.leagueTeamActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 12px 12px}
+.leagueTeamActions button{display:flex;align-items:center;justify-content:flex-start;gap:9px;min-width:0;min-height:50px;margin:0!important;padding:10px 12px!important;border-radius:11px!important;font-size:.7rem!important;line-height:1.1;white-space:normal;text-align:left}
+.leagueTeamActions button>span{display:grid;place-items:center;min-width:22px;color:var(--green);font-size:1.25rem;line-height:1}
+.leagueTeamActions .leagueRemoveBadge>span{color:#ff8c8c}
+.leagueTeamActions .leagueRemoveTeam{grid-column:1/-1;justify-content:center;background:#5b1717!important;color:#ffc1c1!important;border-color:#9a3b3b!important}
+.leagueTeamActions .leagueRemoveTeam>span{color:#ff9292}
+@media(max-width:520px){
+ .leagueTeamsCard{padding:15px}
+ .leagueTeamsHeader{align-items:center}
+ .leagueTeamsHeader h3{font-size:1.03rem}
+ .leagueAddTeam{min-width:112px;min-height:40px;padding:8px 11px;font-size:.7rem}
+ .leagueTeamSummary{min-height:70px;padding:10px 11px}
+ .leagueTeamSummary .teamBadgeIdentity{gap:10px}
+ .leagueTeamSummary .teamBadgeIdentity b{font-size:.92rem}
+ .leagueTeamSummary .teamBadgeIdentity small{font-size:.72rem}
+ .leagueTeamActions{gap:7px;padding:0 10px 10px}
+ .leagueTeamActions button{min-height:48px;padding:9px!important;font-size:.65rem!important}
+}
+@media(max-width:380px){
+ .leagueTeamsHeader{align-items:flex-start;flex-direction:column}
+ .leagueAddTeam{width:100%}
+ .leagueTeamActions{grid-template-columns:1fr}
+ .leagueTeamActions .leagueRemoveTeam{grid-column:1}
+}

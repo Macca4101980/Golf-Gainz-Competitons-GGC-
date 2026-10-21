@@ -331,14 +331,17 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
  .leagueScheduleRelease{grid-column:span 12}
 }
 @media(max-width:520px){
- .leagueScheduleHeading{min-height:50px;padding:10px 12px}
- .leagueScheduleGrid label{display:grid;grid-template-columns:1fr;align-content:start;gap:6px;min-width:0;overflow:hidden;padding:9px 10px;font-size:.65rem}
+ .leagueScheduleHeading{min-height:48px;padding:9px 12px}
+ .leagueScheduleGrid label{display:grid;grid-template-columns:1fr;align-content:start;gap:5px;min-width:0;overflow:hidden;padding:8px 10px;font-size:.65rem}
  .leagueScheduleName,.leagueScheduleLaunch,.leagueScheduleProvisional,.leagueScheduleRelease{grid-column:span 12}
  .leagueScheduleDuration{grid-column:span 4}
  .leagueScheduleClose{grid-column:span 8}
- .leagueScheduleGrid input{height:40px;min-width:0;max-width:100%;padding:7px 9px;font-size:.75rem}
+ .leagueScheduleGrid input{height:38px;min-width:0;max-width:100%;padding:6px 9px;font-size:.75rem}
+ .leagueScheduleGrid input[type="datetime-local"]{text-align:left}
  .leagueScheduleDuration input{padding-right:39px}
- .leagueScheduleGrid label>small{right:17px;bottom:21px;font-size:.64rem}
- .leagueScheduleActions{gap:7px!important;padding:9px 10px}
+ .leagueScheduleDuration>small{right:17px;top:41px;bottom:auto;font-size:.64rem}
+ .leagueScheduleProvisional input.isUnset{background:#eef2ef;border-style:dashed;color:#68756f;-webkit-text-fill-color:#68756f}
+ .leagueScheduleProvisional[data-empty="true"]::before{content:"Not scheduled";position:absolute;right:10px;top:8px;color:#7a857e;font-size:.58rem;font-weight:800;letter-spacing:0}
+ .leagueScheduleActions{gap:7px!important;padding:8px 10px}
  .leagueScheduleActions button{min-height:42px;padding:8px 4px;font-size:.64rem;letter-spacing:0}
 }

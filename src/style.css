@@ -499,3 +499,20 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
  .leagueTimelineCopy small{display:none}
  .leagueTimelineValue{max-width:112px;font-size:.61rem;white-space:normal}
 }
+
+
+/* Reuse the app-wide competition lifecycle pill treatment in league weeks. */
+.leagueScheduleHeading .pill{
+ display:inline-block;
+ padding:5px 8px;
+ border-radius:999px;
+ background:#d7ffd0;
+ color:#126427;
+ font-size:9px;
+ font-weight:950;
+ letter-spacing:0
+}
+.leagueScheduleHeading .pill.scheduled{border-style:dashed}
+.leagueScheduleHeading .pill.live{border-style:solid;background:#d7ffd0;color:#126427}
+.leagueScheduleHeading .pill.completed{border-style:solid;background:#dce6ff;color:#234d91}
+.leagueScheduleHeading .pill.cancelled{border-style:solid;background:#f1dddd;color:#8b3030}

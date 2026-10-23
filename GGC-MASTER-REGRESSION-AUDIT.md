@@ -1,3 +1,18 @@
+# V4 Beta 10 — explicit competition closing times (23 October 2026)
+
+- 🔵 Closing-time regression: Week 1 stays live until 18:00 UK and closes at the exact boundary.
+- 🔵 Schedule editor saves the explicit deadline; unrelated name/fee/scoring edits preserve it.
+- 🔵 New League weeks default to 18:00 on their final calendar day; admins can override the deadline.
+- 🔵 Calendar arithmetic covers UK spring/autumn DST, batch weeks, date cascades and custom deadline shifts.
+- 🔵 Manual completed status is consistent in the League schedule.
+- 🟢 All 182 automated tests pass, including scoring, Winter League, record saving, identity and deletion coverage. Production build passes.
+- 🟠 Authenticated browser/iPhone schedule save-and-reopen and PWA upgrade have not been exercised in this session.
+- 🟠 Existing production dates (apart from the earlier Week 1 data repair) are not migrated by this code change.
+- 🟠 No new PostgreSQL migration; production rollback and multi-user integration rehearsals not rerun for this UI/scheduling change.
+- Base: verified current production commit d793aa45a66b3866fccb1f1bd46faa30a7225a0c.
+
+---
+
 # V4 Beta 1 — Consolidation & Full Regression
 
 Status: 🔵 changed/tested this build · 🟢 retained and regression-tested · 🟠 requires live/device verification · 🔴 broken/missing · ⚫ regression.

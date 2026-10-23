@@ -5,6 +5,7 @@ export const WL_DEFAULTS={mode:'team',allowance:90,bestCount:8,target:36,netParT
 export function leagueCompetitionLifecycle(comp,now=new Date()){
  if(comp?.status==='cancelled')return'cancelled';
  if(comp?.status==='draft')return'draft';
+ if(comp?.status==='completed')return'closed';
  const at=now instanceof Date?now.getTime():new Date(now).getTime();
  const starts=comp?.starts?new Date(comp.starts).getTime():NaN;
  const ends=comp?.ends?new Date(comp.ends).getTime():NaN;

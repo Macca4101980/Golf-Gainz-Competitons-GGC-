@@ -6,7 +6,7 @@ const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 const migration=fs.readFileSync(new URL('../supabase/migrations/20261021154500_allow_member_competition_participation.sql',import.meta.url),'utf8');
 
 test('ordinary members keep competition pair definitions unchanged when starting a card',()=>{
- assert.match(main,/if\(admin&&pairFormat&&ids\.length>=2\)/);
+ assert.match(main,/if\(admin&&pairFormat&&!c\.leagueId&&ids\.length>=2\)/);
  assert.match(main,/pairs=\(c\.pairs\|\|\[\]\)\.filter\(pair=>!\(pair\.ids\|\|\[\]\)\.some\(id=>selected\.has\(id\)\)\)/);
 });
 
@@ -25,4 +25,11 @@ test('RLS and both versioned write RPCs use the same transition guard',()=>{
  assert.equal((migration.match(/private\.ggc_can_update_record\(p_kind,p_id/g)||[]).length,2);
  assert.match(migration,/security definer/);
  assert.match(migration,/revoke all on function private\.ggc_can_update_record/);
+});
+
+
+test('solo Winter League entries are allowed without changing fixed team pairs',()=>{
+ assert.match(main,/if\(pairFormat&&!c\.leagueId&&ids\.length%2!==0\)/);
+ assert.match(main,/if\(admin&&pairFormat&&!c\.leagueId&&ids\.length>=2\)/);
+ assert.match(main,/if\(!ids\.length\)return alert\('Choose at least one golfer\.'\)/);
 });

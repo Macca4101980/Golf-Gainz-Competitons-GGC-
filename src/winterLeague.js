@@ -1,4 +1,5 @@
 import{playingHandicap,scoreCard,whsRound}from'./scoring.js';
+import{competitionCourse}from'./competitionCourse.js';
 
 export const WL_DEFAULTS={mode:'team',allowance:90,bestCount:8,target:36,netParTarget:0,cutPerPoint:.5,giveBackPerPoint:0,direction:'down',teamAdjustment:'split',adjustFromNext:true,lockStartingHandicaps:true};
 
@@ -20,7 +21,7 @@ export function leagueHandicapSettings(league){
   cutPerPoint:+(league?.handicapSettings?.cutPerPoint??legacy.cutPerPoint??.5),
   allowance:+(league?.handicapSettings?.allowance??legacy.allowance??90)}
 }
-function compCourse(c,state,card){const course=(state.courses||[]).find(x=>x.id===(card?.courseId||c.course));const tee=course?.tees?.find(t=>t.name===(card?.tee||c.tee));const par=(tee?.holes||[]).reduce((a,h)=>a+(+h.par||0),0)||72;return{course,tee,par}}
+function compCourse(c,state,card){return competitionCourse(c,state,card)}
 export function handicapAdjustment(score,settings=WL_DEFAULTS){
  if(!Number.isFinite(score)||settings.mode==='fixed'||settings.mode==='manual')return 0;
  const target=+(settings.target??36),buffer=+(settings.netParTarget??0),above=score-target-buffer,cut=+(settings.cutPerPoint??0),back=+(settings.giveBackPerPoint??0);

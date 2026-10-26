@@ -97,13 +97,16 @@ export function createRecordSaveCoordinator(store){
   initialize(next);
   return structuredClone(next);
  }
- async function acceptRemoteRecord(kind,id,{canCommit=()=>true}={}){
+ async function acceptRemoteRecord(kind,id,{canCommit=()=>true,currentSnapshot=null}={}){
   if(!baseline||lastFailure||failedDesired)return null;
-  // Do not hydrate an entire app snapshot while any local write is pending.
-  // Finish/acknowledge the local queue first; version conflicts use explicit rebase.
-  if(latestDesired&&planRecordChanges(baseline,latestDesired).length)return null;
+  await pending;
+  if(!baseline||lastFailure||failedDesired)return null;
+  // Reconcile a realtime record against the live form snapshot. This preserves
+  // locally edited fields while allowing unrelated remote fields (including
+  // different scorecard holes) to appear immediately.
+  if(!currentSnapshot&&latestDesired&&planRecordChanges(baseline,latestDesired).length)return null;
   const desiredAtRead=latestDesired;
-  const original=structuredClone(baseline),desired=structuredClone(latestDesired||baseline);
+  const original=structuredClone(baseline),desired=structuredClone(currentSnapshot||latestDesired||baseline);
   if(!Array.isArray(original[kind])||!Array.isArray(desired[kind]))return null;
   const before=original[kind].find(r=>String(r?.id)===String(id));
   const local=desired[kind].find(r=>String(r?.id)===String(id));

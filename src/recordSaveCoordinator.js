@@ -99,12 +99,17 @@ export function createRecordSaveCoordinator(store){
  }
  async function acceptRemoteRecord(kind,id,{canCommit=()=>true,currentSnapshot=null}={}){
   if(!baseline||lastFailure||failedDesired)return null;
-  await pending;
-  if(!baseline||lastFailure||failedDesired)return null;
+  // Legacy callers must keep their non-blocking behavior: if a save is pending,
+  // defer the remote read instead of waiting on that save. Realtime form callers
+  // provide a live snapshot, so they may safely wait and then reconcile fields.
+  if(!currentSnapshot&&latestDesired&&planRecordChanges(baseline,latestDesired).length)return null;
+  if(currentSnapshot){
+   await pending;
+   if(!baseline||lastFailure||failedDesired)return null;
+  }
   // Reconcile a realtime record against the live form snapshot. This preserves
   // locally edited fields while allowing unrelated remote fields (including
   // different scorecard holes) to appear immediately.
-  if(!currentSnapshot&&latestDesired&&planRecordChanges(baseline,latestDesired).length)return null;
   const desiredAtRead=latestDesired;
   const original=structuredClone(baseline),desired=structuredClone(currentSnapshot||latestDesired||baseline);
   if(!Array.isArray(original[kind])||!Array.isArray(desired[kind]))return null;

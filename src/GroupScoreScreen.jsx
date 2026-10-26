@@ -3,11 +3,12 @@ import{ArrowLeft,CheckCircle2,Trophy}from'lucide-react';
 import{courseHandicap,playingHandicap,holeStrokes}from'./scoring.js';
 import{GROUP_FORMAT_RULES,groupScore,groupLeaderboard,scrambleTeamHandicap}from'./groupScoring.js';
 import{decrementHoleScore,displayHoleScore,incrementHoleScore,isNoReturnScore,normaliseHoleScoreInput}from'./scoreInput.js';
+import{competitionCourse}from'./competitionCourse.js';
 
 const fmt=v=>{const n=+v||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toFixed(1)};
 const id=()=>crypto.randomUUID?.()||Date.now()+''+Math.random();
 export default function GroupScoreScreen({c,state,setState,me,back,onPersist}){
- const course=state.courses.find(x=>x.id===c.course),tee=course?.tees?.find(t=>t.name===c.tee),hs=tee?.holes||[],par=hs.reduce((n,h)=>n+(+h.par||0),0)||72,rule=GROUP_FORMAT_RULES[c.format];
+ const {course,tee,holes:hs,par}=competitionCourse(c,state);const rule=GROUP_FORMAT_RULES[c.format];
  const saved=(c.roundGroups||[]).find(g=>(g.playerIds||[]).includes(me.id));const[ids,setIds]=useState(saved?.playerIds||[me.id]);const[setup,setSetup]=useState(!saved);const[board,setBoard]=useState(false);
  const current=state.comps.find(x=>x.id===c.id)||c;const group=(current.roundGroups||[]).find(g=>g.id===saved?.id)||(current.roundGroups||[]).find(g=>(g.playerIds||[]).includes(me.id));const teamMode=rule?.mode==='team-gross';
  const society=state.societies.find(s=>s.id===c.societyId);const candidates=state.players.filter(p=>[...new Set([...(society?.members||[]),...(society?.admins||[]),society?.ownerId,...(c.entries||[]),me.id].filter(Boolean))].includes(p.id));

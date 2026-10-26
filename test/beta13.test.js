@@ -8,4 +8,4 @@ test('Beta.13 temporary golfers have no claim token until invited',()=>assert.ma
 test('Beta.13 share token uses Web Crypto and records sent only after share succeeds',()=>{assert.match(main,/crypto\.randomUUID/);assert.match(main,/await markSharedInviteSent\(p,invite\.token\)/)});
 test('Beta.13 mobile competition group header uses name plus count only',()=>{assert.match(main,/groupCompName/);assert.match(main,/groupCompCount/);assert.doesNotMatch(main,/\{active\.length\} live \/ upcoming/)});
 test('Beta.13 scheduled go-live text has spacing',()=>assert.match(css,/\.goLiveAt\{display:inline-block;margin-left:14px/));
-test('V4 Beta 7 build marker',()=>{assert.equal(pkg.version,'4.0.0-beta.7');assert.match(main,/V4 Beta 7/)});
+test('V4 Beta 11 build marker',()=>{assert.equal(pkg.version,'4.0.0-beta.11');assert.match(main,/V4 Beta 11/)});

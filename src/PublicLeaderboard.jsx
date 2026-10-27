@@ -119,31 +119,22 @@ export function PublicLeaderboard({ url, apiKey, token }) {
               </small>
             </div>
             {data.rows?.length ? (
-              <table>
-                <caption className="srOnly">Competition standings</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Pos</th>
-                    <th scope="col">Golfer / team</th>
-                    <th scope="col">Holes</th>
-                    <th scope="col">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.position}</td>
-                      <th scope="row">{r.name}</th>
-                      <td>
-                        {r.complete}/{r.totalHoles}
-                      </td>
-                      <td>
-                        <strong>{r.result}</strong>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="leader card">
+                <div className="leaderHeader">
+                  <b>LIVE LEADERBOARD</b>
+                  <small>Published GGC results</small>
+                </div>
+                {data.rows.map((r, i) => (
+                  <div className="leaderrow" key={i}>
+                    <strong>{r.position}</strong>
+                    <span>
+                      <b>{r.name}</b>
+                      <small>{r.complete}/{r.totalHoles} holes</small>
+                    </span>
+                    <em>{r.result}</em>
+                  </div>
+                ))}
+              </div>
             ) : (
               <p className="card">
                 {data.visibleThrough === 0
@@ -152,7 +143,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
               </p>
             )}
             <p className="muted">
-              Names appear only when golfers choose to show them. Results
+              Names are shown by default; golfers can hide their identity in My Golf. Results
               refresh automatically from saved GGC scorecards.
             </p>
           </>
@@ -161,7 +152,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
     </div>
   );
 }
-export function PublicShareControls({ c, state, client }) {
+export function PublicShareControls({ c, state, client, publicEnabled = true }) {
   const [share, setShare] = useState(null),
     [link, setLink] = useState(""),
     [message, setMessage] = useState(""),
@@ -170,12 +161,20 @@ export function PublicShareControls({ c, state, client }) {
   latest.current = { c, state };
   const mounted = useRef(true);
   const working = useRef(false);
+  if (publicEnabled === false) {
+    return (
+      <div className="card publicShareControls" role="status">
+        <h3>PUBLIC SHARING OFF</h3>
+        <p>The Group admin has turned off public leaderboard sharing.</p>
+      </div>
+    );
+  }
   useEffect(() => {
     mounted.current = true;
     let active = true;
     setShare(null);
     setLink("");
-    if (client)
+    if (publicEnabled && client)
       client
         .rpc("ggc_public_share_status", { p_competition_id: c.id })
         .then(({ data, error }) => {
@@ -189,7 +188,7 @@ export function PublicShareControls({ c, state, client }) {
       active = false;
       mounted.current = false;
     };
-  }, [client, c.id]);
+  }, [client, c.id, publicEnabled]);
   async function action(mode) {
     if (working.current) return;
     working.current = true;
@@ -234,7 +233,7 @@ export function PublicShareControls({ c, state, client }) {
       <h3>PUBLIC LEADERBOARD</h3>
       <p>
         Anyone with the link can view published scores without a GGC account.
-        Names stay hidden unless each golfer opts in under My Golf.
+        Names are shown by default. Golfers can hide their identity under My Golf.
       </p>
       <p className="muted">
         The public page refreshes saved scores every 15 seconds, even when the
@@ -307,7 +306,7 @@ export function PublicShareControls({ c, state, client }) {
   );
 }
 export function PublicIdentityPreference({ client, playerId }) {
-  const [visible, setVisible] = useState(false),
+  const [visible, setVisible] = useState(true),
     [busy, setBusy] = useState(true),
     [message, setMessage] = useState("");
   useEffect(() => {
@@ -358,7 +357,7 @@ export function PublicIdentityPreference({ client, playerId }) {
         Show my name on public leaderboards
       </label>
       <p className="muted">
-        Off by default. Your scores can still appear as an anonymous golfer or
+        On by default. Turn this off if you want to appear as an anonymous golfer or
         team.
       </p>
       {message && <p role="status">{message}</p>}

@@ -79,6 +79,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
       <header>
         <div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div>
         <p>Shared results · view only</p>
+        <a className="publicGetGgc" href="/" aria-label="Open Golf Gain Comps">GET GGC</a>
       </header>
       <main>
         {status && <p role="status" className="card">{status}</p>}

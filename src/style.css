@@ -969,3 +969,35 @@ button.leaderboardShareBtn:active{
     max-height:40px!important;
   }
 }
+
+
+/* Compact, discreet masthead for read-only shared leaderboards */
+.publicLeaderboard > header{
+  position:relative;
+  top:auto;
+  min-height:0;
+  padding:10px 14px;
+  gap:12px;
+  background:#14291e;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:none;
+  backdrop-filter:none;
+}
+.publicLeaderboard > header .wordmark{
+  font-size:15px;
+  letter-spacing:-.45px;
+  line-height:1;
+}
+.publicLeaderboard > header .wordmark small{
+  margin-left:5px;
+  font-size:7px;
+  letter-spacing:1.4px;
+}
+.publicLeaderboard > header p{
+  margin:0;
+  color:#aebcb3;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}

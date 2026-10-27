@@ -209,3 +209,34 @@ export async function readPublicLeaderboard({
   if (!response.ok) throw Error("Leaderboard could not be refreshed");
   return response.json();
 }
+
+export function buildPublicLeagueLeaderboard(league, state, now = Date.now()) {
+  const weeks = winterLeagueTable(league, state, new Date(now));
+  const provisional = (weeks.weekly || []).some(w => w.provisional || w.resultsHidden);
+  const rows = (weeks.table || []).map((r, i) => {
+    const team = (league.teams || []).find((t) => t.id === r.id) || {};
+    return {
+      memberIds: r.memberIds || [],
+      teamId: r.id,
+      teamName: String(r.name || team.name || "").slice(0, 100),
+      badgeImage: typeof team.badgeImage === "string" ? team.badgeImage : "",
+      memberNames: (r.memberIds || []).map((id) => state.players.find((p) => p.id === id)?.name || "?"),
+      position: i + 1,
+      result: String(r.total ?? 0) + " pts",
+      complete: 18,
+      totalHoles: 18,
+      played: Number(r.played) || 0,
+      cut: Number(r.finalCut) || 0,
+      provisionalCut: !!r.provisionalCut,
+      counting: (r.counting || []).map((w) => Number(w.points)).filter(Number.isFinite),
+    };
+  });
+  return {
+    schemaVersion: 1,
+    scope: "league",
+    title: league.name,
+    provisional,
+    visibleThrough: 18,
+    rows,
+  };
+}

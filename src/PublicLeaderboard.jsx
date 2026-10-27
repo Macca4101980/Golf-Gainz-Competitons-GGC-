@@ -161,14 +161,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true }) 
   latest.current = { c, state };
   const mounted = useRef(true);
   const working = useRef(false);
-  if (publicEnabled === false) {
-    return (
-      <div className="card publicShareControls" role="status">
-        <h3>PUBLIC SHARING OFF</h3>
-        <p>The Group admin has turned off public leaderboard sharing.</p>
-      </div>
-    );
-  }
+  const sharingDisabled = publicEnabled === false;
   useEffect(() => {
     mounted.current = true;
     let active = true;
@@ -226,6 +219,14 @@ export function PublicShareControls({ c, state, client, publicEnabled = true }) 
       working.current = false;
       if (mounted.current) setBusy(false);
     }
+  }
+  if (sharingDisabled) {
+    return (
+      <div className="card publicShareControls" role="status">
+        <h3>PUBLIC SHARING OFF</h3>
+        <p>The Group admin has turned off public leaderboard sharing.</p>
+      </div>
+    );
   }
   return (
     <details className="card publicShareControls">

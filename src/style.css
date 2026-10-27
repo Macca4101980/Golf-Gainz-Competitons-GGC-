@@ -835,3 +835,137 @@ button.leaderboardShareBtn svg,
     max-width:215px;
   }
 }
+
+
+/* Unified share controls and panels — 2026-10-27 */
+/* Every icon-only share entry uses the same GGC treatment. */
+.shareIconBtn,
+button.leaderboardShareBtn,
+.wlTitleRow button.leaderboardShareBtn,
+.wlWeekResult>summary button.leaderboardShareBtn,
+.publicLeaderboard button.leaderboardShareBtn,
+.societybar button.shareIconBtn,
+.groupActions button.shareIconBtn{
+  display:inline-flex!important;
+  flex:0 0 42px!important;
+  width:42px!important;
+  min-width:42px!important;
+  max-width:42px!important;
+  height:42px!important;
+  min-height:42px!important;
+  max-height:42px!important;
+  margin:0!important;
+  padding:0!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:1px solid #263028!important;
+  border-radius:50%!important;
+  background:#071008!important;
+  color:var(--green)!important;
+  box-shadow:none!important;
+  line-height:0!important;
+}
+.shareIconBtn svg,
+button.leaderboardShareBtn svg,
+.wlTitleRow button.leaderboardShareBtn svg,
+.wlWeekResult>summary button.leaderboardShareBtn svg,
+.publicLeaderboard button.leaderboardShareBtn svg,
+.societybar button.shareIconBtn svg,
+.groupActions button.shareIconBtn svg{
+  display:block!important;
+  width:20px!important;
+  min-width:20px!important;
+  max-width:20px!important;
+  height:20px!important;
+  min-height:20px!important;
+  max-height:20px!important;
+  color:var(--green)!important;
+  stroke:currentColor!important;
+}
+.shareIconBtn:active,
+button.leaderboardShareBtn:active{
+  background:#101912!important;
+  transform:scale(.97);
+}
+.groupActions:has(.shareIconBtn){
+  display:flex!important;
+  justify-content:flex-end!important;
+  margin-top:14px;
+}
+.societyRow .leaderboardShareBtn{
+  justify-self:end;
+}
+
+/* Group invitation code uses the same readable information-card treatment. */
+.shareModal .shareCode{
+  max-width:46%;
+  overflow-wrap:anywhere;
+  text-align:right;
+  color:#176b35!important;
+  font-size:15px!important;
+  letter-spacing:.08em!important;
+}
+
+/* User > Share GGC follows the same heading, copy and action hierarchy. */
+.userSharePanel{
+  display:grid;
+  gap:12px;
+  margin:22px 0;
+  padding:18px;
+  border:1px solid #d7ddd8;
+  border-radius:18px;
+  background:#f5f6f3;
+  color:#101712;
+}
+.userSharePanel .shareTargetName{
+  color:#101712!important;
+}
+.userSharePanel .shareIntro{
+  color:#687169!important;
+}
+.userSharePanel .publicShareActions{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:9px;
+}
+.userSharePanel .publicShareActions button{
+  width:100%!important;
+  min-height:44px;
+  margin:0!important;
+  border-radius:12px!important;
+}
+.userSharePanel .publicShareActions .primary{
+  background:var(--green)!important;
+  color:#071008!important;
+  border-color:var(--green)!important;
+}
+.userSharePanel .publicShareActions .secondary{
+  background:#101912!important;
+  color:#f5f7f4!important;
+  border-color:#334036!important;
+}
+.userSharePanel .publicShareActions svg{
+  width:18px;
+  height:18px;
+}
+.userSharePanel .golfGainCard{
+  margin-top:4px;
+}
+
+@media(max-width:420px){
+  .shareIconBtn,
+  button.leaderboardShareBtn,
+  .wlTitleRow button.leaderboardShareBtn,
+  .wlWeekResult>summary button.leaderboardShareBtn,
+  .publicLeaderboard button.leaderboardShareBtn,
+  .societybar button.shareIconBtn,
+  .groupActions button.shareIconBtn{
+    flex-basis:40px!important;
+    width:40px!important;
+    min-width:40px!important;
+    max-width:40px!important;
+    height:40px!important;
+    min-height:40px!important;
+    max-height:40px!important;
+  }
+}

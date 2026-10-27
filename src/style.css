@@ -569,3 +569,21 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .leaderboardShareBtn svg{width:20px;height:20px}
 .liveLeaderboardSetting{margin-top:12px}
 .liveLeaderboardSetting small{display:block;margin-top:6px;color:var(--muted)}
+
+
+/* Beta 12 public leaderboard alignment and group sharing control */
+.publicLeaderboard .leader{display:grid;gap:0;overflow:hidden;background:#fff;border:1px solid #d9e2dc;border-radius:18px;box-shadow:0 10px 28px rgba(20,41,30,.08)}
+.publicLeaderboard .leaderHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:#13261a;color:#fff}
+.publicLeaderboard .leaderHeader small{color:#b8c7bd;font-size:.72rem;font-weight:700}
+.publicLeaderboard .leaderrow{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:72px;padding:12px 16px;border-bottom:1px solid #e1e7e3;background:#fff;color:#142019}
+.publicLeaderboard .leaderrow:last-child{border-bottom:0}
+.publicLeaderboard .leaderrow>strong{font-size:1.2rem;text-align:center}
+.publicLeaderboard .leaderrow>span{display:grid;gap:4px;min-width:0}
+.publicLeaderboard .leaderrow>span b{overflow-wrap:anywhere;font-size:.98rem}
+.publicLeaderboard .leaderrow>span small{color:#718078;font-size:.72rem}
+.publicLeaderboard .leaderrow>em{font-style:normal;font-size:1rem;font-weight:900;white-space:nowrap}
+.publicSharingSetting{margin-top:12px}
+.publicSharingSetting .toggleRow{display:flex;align-items:center;gap:10px;min-height:44px;color:var(--ink);font-weight:900}
+.publicSharingSetting .toggleRow input{width:20px;height:20px;margin:0}
+.publicSharingSetting>small{display:block;margin-top:6px;color:var(--muted)}
+@media(max-width:520px){.publicLeaderboard .leaderrow{grid-template-columns:34px minmax(0,1fr) auto;gap:9px;padding:11px 12px}.publicLeaderboard .leaderrow>span b{font-size:.88rem}.publicLeaderboard .leaderrow>em{font-size:.86rem}}

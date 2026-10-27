@@ -199,7 +199,8 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
       if (mode === "publish" || mode === "refresh" || mode === "rotate") {
         const snap = latest.current;
         args.p_payload = buildPublicLeaderboard(snap.c, snap.state);
-        // Members can create a fresh share link. Admins retain explicit rotate/revoke controls.\n        if (!share?.enabled || mode === "rotate" || !isAdmin) {
+        // Members can create a fresh share link. Admins retain explicit rotate/revoke controls.
+        if (!share?.enabled || mode === "rotate" || !isAdmin) {
           token = newShareToken();
           args.p_token_hash = await hashShareToken(token);
         }

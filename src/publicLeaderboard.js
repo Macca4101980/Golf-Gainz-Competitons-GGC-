@@ -209,3 +209,24 @@ export async function readPublicLeaderboard({
   if (!response.ok) throw Error("Leaderboard could not be refreshed");
   return response.json();
 }
+
+export function buildPublicLeagueLeaderboard(league, state, now = Date.now()) {
+  const weeks = winterLeagueTable(league, state, new Date(now));
+  const provisional = (weeks.weekly || []).some(w => w.provisional || w.resultsHidden);
+  const rows = (weeks.table || []).map((r, i) => ({
+    memberIds: r.memberIds || [],
+    teamId: r.id,
+    position: i + 1,
+    result: String(r.total ?? 0) + " pts",
+    complete: 18,
+    totalHoles: 18,
+  }));
+  return {
+    schemaVersion: 1,
+    scope: "league",
+    title: league.name,
+    provisional,
+    visibleThrough: 18,
+    rows,
+  };
+}

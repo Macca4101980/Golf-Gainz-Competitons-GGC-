@@ -152,7 +152,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
     </div>
   );
 }
-export function PublicShareControls({ c, state, client, publicEnabled = true }) {
+export function PublicShareControls({ c, state, client, publicEnabled = true, isAdmin = true }) {
   const [share, setShare] = useState(null),
     [link, setLink] = useState(""),
     [message, setMessage] = useState(""),
@@ -167,7 +167,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true }) 
     let active = true;
     setShare(null);
     setLink("");
-    if (publicEnabled && client)
+    if (publicEnabled && isAdmin && client)
       client
         .rpc("ggc_public_share_status", { p_competition_id: c.id })
         .then(({ data, error }) => {
@@ -181,7 +181,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true }) 
       active = false;
       mounted.current = false;
     };
-  }, [client, c.id, publicEnabled]);
+  }, [client, c.id, publicEnabled, isAdmin]);
   async function action(mode) {
     if (working.current) return;
     working.current = true;
@@ -228,6 +228,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true }) 
       </div>
     );
   }
+  if (!isAdmin) return null;
   return (
     <details className="card publicShareControls">
       <summary aria-label="Share leaderboard" style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer", minHeight:44}}><Share2 aria-hidden="true" size={20} /> SHARE LEADERBOARD</summary>

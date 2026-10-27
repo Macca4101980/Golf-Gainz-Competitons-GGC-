@@ -54,4 +54,3 @@ export function fourballMatchResult(pairA,pairB,c,state){
  for(let i=0;i<hs.length;i++){const h=hs[i];const best=pair=>Math.min(...(pair.ids||[]).map(id=>{const g=+(gross(id)[i]||0);return g?g-holeStrokes(rel[id]||0,h.si):999}));const av=best(pairA),bv=best(pairB);if(av===999||bv===999){holes.push(null);continue}played++;if(av<bv)up++;else if(bv<av)up--;const remaining=hs.length-(i+1);holes.push({a:av,b:bv,up});if(Math.abs(up)>remaining){decided=true;decisionLeft=remaining;break}}
  const left=decided?decisionLeft:Math.max(0,hs.length-played);let text=up===0?'All Square':`${Math.abs(up)} UP`;if(decided)text=`${Math.abs(up)} & ${left}`;return{up,played,left,holes,relativeHandicaps:rel,text,decided};
 }
-

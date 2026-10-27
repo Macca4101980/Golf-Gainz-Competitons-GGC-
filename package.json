@@ -1,13 +1,14 @@
 {
   "name": "golf-gainz-comps",
   "private": true,
-  "version": "4.0.0-beta.11.1",
+  "version": "4.0.0-beta.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "node --test test/*.test.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "package:public-leaderboard": "node scripts/package-public-leaderboard.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

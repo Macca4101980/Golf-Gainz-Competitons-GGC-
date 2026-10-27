@@ -1,5 +1,5 @@
 {
-  "productionCommit": "f489ce8a50affec6709c7072eb2a3aee9d105fad",
-  "productionDeployment": "dpl_CrMVZ9t3gWXwGpaTJHrYLA6RXZDr",
-  "note": "Verified working Beta 10. Update only after verifying the actual production deployment."
+  "productionCommit": "5d82994698e1d80e6dcee1f153568cc0733423b6",
+  "productionDeployment": "dpl_FXNPyysL3eYaPg84GmTjMoi3bSCn",
+  "note": "Verified Beta 11.1 serving golfgainzcomps.co.uk on 2026-10-27. Beta 12 work is isolated; production is unchanged."
 }

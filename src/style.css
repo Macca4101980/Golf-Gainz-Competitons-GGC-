@@ -557,3 +557,6 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
  .leagueTeamActions{grid-template-columns:1fr}
  .leagueTeamActions .leagueRemoveTeam{grid-column:1}
 }
+
+/* Beta 12 public standings */
+.publicLeaderboard{min-height:100vh;background:#f3f5f0;color:#15251d;font-family:inherit}.publicLeaderboard header{padding:40px 24px;background:#14291e;color:white}.publicLeaderboard header span{font-size:12px;letter-spacing:.15em;color:#b4f46b}.publicLeaderboard h1{margin:14px 0;font-size:clamp(24px,5vw,40px)}.publicLeaderboard main{max-width:920px;margin:auto;padding:24px 16px}.publicBoardMeta{display:grid;gap:8px;margin-bottom:24px}.publicLeaderboard table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden}.publicLeaderboard th,.publicLeaderboard td{text-align:left;padding:16px 10px;border-bottom:1px solid #dce4db}.publicLeaderboard thead{background:#e0eadb;font-size:12px}.publicLeaderboard tbody th{font-weight:600}.publicLeaderboard td:last-child{text-align:right;white-space:nowrap}.publicShareActions{display:flex;flex-wrap:wrap;gap:8px}.publicShareControls input{width:100%;margin:8px 0}.publicLeaderboard .muted{color:#536451;line-height:1.5}.srOnly{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}@media(max-width:480px){.publicLeaderboard th,.publicLeaderboard td{padding:13px 6px;font-size:13px}}

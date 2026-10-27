@@ -642,3 +642,35 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
     max-height:40px!important;
   }
 }
+
+
+/* Beta 12 share sheets: readable light content and no nested dark/black panel. */
+.shareModal{
+  background:#f5f6f3!important;
+  color:#101712!important;
+  padding:0 20px calc(22px + env(safe-area-inset-bottom))!important;
+}
+.shareModal .modalhead{
+  margin:0 -20px 0;
+  padding:20px 20px 14px;
+  background:#13261a;
+  color:#fff;
+}
+.shareModal .modalhead h2{color:#fff!important}
+.shareModal .publicShareControls{
+  margin:0!important;
+  padding:17px 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#f5f6f3!important;
+  box-shadow:none!important;
+}
+.shareModal .publicShareControls h3,
+.shareModal .publicShareControls p,
+.shareModal .publicShareControls label{color:#13261a!important}
+.shareModal .publicShareControls .muted{color:#30473a!important}
+.shareUnavailable{display:grid;gap:10px;padding:20px 0 4px;color:#13261a}
+.shareUnavailable>svg{width:28px;height:28px;color:#176b35}
+.shareUnavailable h3{margin:0;color:#13261a}
+.shareUnavailable p{margin:0;color:#30473a;line-height:1.45}
+.shareUnavailable .secondary{width:100%;margin-top:8px;background:#102216!important;color:#fff!important;border-color:#36513c!important}

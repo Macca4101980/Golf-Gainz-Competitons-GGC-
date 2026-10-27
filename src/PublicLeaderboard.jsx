@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Share2 } from "lucide-react";
 import {
   buildPublicLeaderboard,
   newShareToken,
@@ -6,6 +7,30 @@ import {
   publicShareUrl,
   readPublicLeaderboard,
 } from "./publicLeaderboard.js";
+function ShareLeaderboardButton({ url, title }) {
+  const [message, setMessage] = useState("");
+  async function share() {
+    setMessage("");
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setMessage("Link copied.");
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError")
+        setMessage("Could not share. Copy the link from the address bar.");
+    }
+  }
+  return <div>
+    <button type="button" className="secondary" onClick={share}
+      aria-label="Share leaderboard" title="Share leaderboard">
+      <Share2 aria-hidden="true" size={20} /> SHARE LEADERBOARD
+    </button>
+    {message && <p role="status">{message}</p>}
+  </div>;
+}
 export function PublicLeaderboard({ url, apiKey, token }) {
   const [data, setData] = useState(null),
     [status, setStatus] = useState("Loading leaderboard…");
@@ -72,6 +97,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
         <span>GOLF GAIN COMPS</span>
         <h1>{data?.title || "Public leaderboard"}</h1>
         <p>Shared results · view only</p>
+        {data && <ShareLeaderboardButton url={publicShareUrl(token)} title={data.title} />}
       </header>
       <main>
         {status && (
@@ -203,7 +229,8 @@ export function PublicShareControls({ c, state, client }) {
     }
   }
   return (
-    <section className="card publicShareControls">
+    <details className="card publicShareControls">
+      <summary aria-label="Share leaderboard" style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer", minHeight:44}}><Share2 aria-hidden="true" size={20} /> SHARE LEADERBOARD</summary>
       <h3>PUBLIC LEADERBOARD</h3>
       <p>
         Anyone with the link can view published scores without a GGC account.
@@ -247,6 +274,7 @@ export function PublicShareControls({ c, state, client }) {
           </>
         )}
       </div>
+      {link && <ShareLeaderboardButton url={link} title={c.name} />}
       {link && (
         <label>
           Shareable link
@@ -275,7 +303,7 @@ export function PublicShareControls({ c, state, client }) {
         <p>The link is active. Replace it to create a new link you can copy.</p>
       )}
       {message && <p role="status">{message}</p>}
-    </section>
+    </details>
   );
 }
 export function PublicIdentityPreference({ client, playerId }) {

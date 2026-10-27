@@ -167,7 +167,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
     let active = true;
     setShare(null);
     setLink("");
-    if (publicEnabled && isAdmin && client)
+    if (publicEnabled && client)
       client
         .rpc("ggc_public_share_status", { p_competition_id: c.id })
         .then(({ data, error }) => {
@@ -199,7 +199,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
       if (mode === "publish" || mode === "refresh" || mode === "rotate") {
         const snap = latest.current;
         args.p_payload = buildPublicLeaderboard(snap.c, snap.state);
-        if (!share?.enabled || mode === "rotate") {
+        // Members can create a fresh share link. Admins retain explicit rotate/revoke controls.\n        if (!share?.enabled || mode === "rotate" || !isAdmin) {
           token = newShareToken();
           args.p_token_hash = await hashShareToken(token);
         }
@@ -228,7 +228,6 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
       </div>
     );
   }
-  if (!isAdmin) return null;
   return (
     <details className="card publicShareControls">
       <summary aria-label="Share leaderboard" style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer", minHeight:44}}><Share2 aria-hidden="true" size={20} /> SHARE LEADERBOARD</summary>
@@ -247,9 +246,9 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
           disabled={busy || !client}
           onClick={() => action("publish")}
         >
-          {share?.enabled ? "PUBLISH NOW" : "ENABLE & CREATE LINK"}
+          {share?.enabled ? (isAdmin ? "PUBLISH NOW" : "CREATE NEW SHARE LINK") : "ENABLE & CREATE LINK"}
         </button>
-        {share?.enabled && (
+        {share?.enabled && isAdmin && (
           <>
             <button
               className="secondary"

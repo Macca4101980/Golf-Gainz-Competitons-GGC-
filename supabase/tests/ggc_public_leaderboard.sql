@@ -4,7 +4,7 @@ insert into auth.users(id,email) values('b1200000-0000-4000-8000-000000000001','
 insert into public.ggc_records(kind,record_id,data,owner_id,updated_by) values
 ('players','qa-beta12-owner','{"id":"qa-beta12-owner","name":"QA Owner","authUserId":"b1200000-0000-4000-8000-000000000001"}','b1200000-0000-4000-8000-000000000001','b1200000-0000-4000-8000-000000000001'),
 ('players','qa-beta12-member','{"id":"qa-beta12-member","name":"QA Private Name","authUserId":"b1200000-0000-4000-8000-000000000002","email":"secret@example.invalid"}','b1200000-0000-4000-8000-000000000002','b1200000-0000-4000-8000-000000000002'),
-('societies','qa-beta12-group','{"id":"qa-beta12-group","ownerId":"qa-beta12-owner","admins":["qa-beta12-owner"],"members":["qa-beta12-owner","qa-beta12-member"]}','b1200000-0000-4000-8000-000000000001','b1200000-0000-4000-8000-000000000001'),
+('societies','qa-beta12-group','{"id":"qa-beta12-group","ownerId":"qa-beta12-owner","admins":["qa-beta12-owner"],"members":["qa-beta12-owner","qa-beta12-member"],"publicLeaderboardsEnabled":true}','b1200000-0000-4000-8000-000000000001','b1200000-0000-4000-8000-000000000001'),
 ('comps','qa-beta12-comp','{"id":"qa-beta12-comp","societyId":"qa-beta12-group","name":"QA Beta 12","format":"stableford","entries":["qa-beta12-member"]}','b1200000-0000-4000-8000-000000000001','b1200000-0000-4000-8000-000000000001');
 insert into public.ggc_group_memberships(group_id,player_id,role) values('qa-beta12-group','qa-beta12-owner','owner'),('qa-beta12-group','qa-beta12-member','member');
 set local role authenticated;
@@ -39,7 +39,7 @@ select set_config('request.jwt.claim.sub','',true);
 do $$declare answer jsonb;begin
  answer:=public.get_public_leaderboard(repeat('a',64));
  if answer->'rows'->0->>'name' is distinct from 'QA Private Name' or answer->'rows'->0->>'result' is distinct from '37 pts' then raise exception 'Default name/result wrong: %',answer;end if;
- if answer::text ~ 'secret|must-drop|memberIds|competition_id|group_id|token_hash|QA Private Name' then raise exception 'Private data exposed';end if;
+ if answer::text ~ 'secret|must-drop|memberIds|competition_id|group_id|token_hash' then raise exception 'Private data exposed';end if;
  if public.get_public_leaderboard('bad') is not null or public.get_public_leaderboard(repeat('c',64)) is not null then raise exception 'Invalid token accepted';end if;
  begin perform public.ggc_public_leaderboard_source(repeat('a',64));raise exception 'Anonymous source access allowed';exception when insufficient_privilege then null;end;
  begin perform 1 from public.ggc_public_shares;raise exception 'Direct table read allowed';exception when insufficient_privilege then null;end;

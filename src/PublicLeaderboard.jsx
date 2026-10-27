@@ -261,7 +261,6 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
       {share?.enabled && !link && <p className="shareStatus">The link is active. Publish again to create a link on this device.</p>}
       {message && <p role="status" className="shareStatus">{message}</p>}
     </div>
-  )
   );
 }
 export function PublicIdentityPreference({ client, playerId }) {

@@ -1001,3 +1001,21 @@ button.leaderboardShareBtn:active{
   letter-spacing:.04em;
   white-space:nowrap;
 }
+
+.publicLeaderboard > header .publicGetGgc{
+  flex:0 0 auto;
+  padding:5px 8px;
+  border:1px solid rgba(112,230,75,.55);
+  border-radius:999px;
+  color:#9af17d;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1;
+  text-decoration:none;
+  white-space:nowrap;
+}
+.publicLeaderboard > header .publicGetGgc:focus-visible{
+  outline:2px solid #70e64b;
+  outline-offset:2px;
+}

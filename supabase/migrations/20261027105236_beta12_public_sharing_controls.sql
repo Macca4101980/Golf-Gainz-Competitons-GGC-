@@ -6,7 +6,7 @@ create unique index if not exists ggc_public_shares_competition_unique on public
 revoke all on public.ggc_public_shares from anon,authenticated;
 drop policy if exists "public shares owner access" on public.ggc_public_shares;
 create table if not exists private.ggc_public_identity_preferences (
- player_id text primary key, visible boolean not null default false, updated_at timestamptz not null default now()
+ player_id text primary key, visible boolean not null default true, updated_at timestamptz not null default now()
 );
 alter table private.ggc_public_identity_preferences enable row level security;
 revoke all on private.ggc_public_identity_preferences from public,anon,authenticated;
@@ -42,7 +42,7 @@ begin
    on conflict(player_id) do update set visible=excluded.visible,updated_at=now();
  end if;
  select visible into answer from private.ggc_public_identity_preferences where player_id=actor;
- return coalesce(answer,false);
+ return coalesce(answer,true);
 end $$;
 create or replace function public.ggc_public_identity(p_visible boolean default null)
 returns boolean language sql security invoker set search_path='' as $$select private.ggc_public_identity(p_visible)$$;
@@ -79,6 +79,7 @@ begin
  if p_action='refresh' and (old.id is null or not old.enabled or old.revoked_at is not null) then raise exception 'GGC_SHARE_DISABLED'; end if;
  select data into comp from public.ggc_records where kind='comps' and record_id=p_competition_id and not deleted;
  select data into grp from public.ggc_records where kind='societies' and record_id=comp->>'societyId' and not deleted;
+ if coalesce(grp->>'publicLeaderboardsEnabled','true')='false' then raise exception 'GGC_PUBLIC_SHARING_DISABLED'; end if;
  e:=comp->'resultsEmbargo';
  if e->>'enabled'='true' and (e->>'releaseAt')::timestamptz>now() then
   provisional:=true;
@@ -125,7 +126,7 @@ begin
  for entry in select value from jsonb_array_elements(s.payload->'rows') loop
   names:=array[]::text[];all_visible:=true;
   for pid in select jsonb_array_elements_text(entry->'memberIds') loop
-   select case when pref.visible then left(r.data->>'name',100) end into player_name from public.ggc_records r left join private.ggc_public_identity_preferences pref on pref.player_id=r.record_id where r.kind='players' and r.record_id=pid and not r.deleted;
+   select case when coalesce(pref.visible,true) then left(r.data->>'name',100) end into player_name from public.ggc_records r left join private.ggc_public_identity_preferences pref on pref.player_id=r.record_id where r.kind='players' and r.record_id=pid and not r.deleted;
    if player_name is null then all_visible:=false;end if;
    names:=array_append(names,coalesce(player_name,'Anonymous golfer'));
   end loop;
@@ -154,6 +155,7 @@ begin
  select * into s from public.ggc_public_shares where enabled and revoked_at is null and token_hash=encode(extensions.digest(p_token,'sha256'),'hex');
  if s.id is null then return null;end if;
  if not exists(select 1 from public.ggc_records where kind='comps' and record_id=s.competition_id and not deleted and data->>'societyId'=s.group_id) then return null;end if;
+ if exists(select 1 from public.ggc_records where kind='societies' and record_id=s.group_id and not deleted and data->>'publicLeaderboardsEnabled'='false') then return null; end if;
  select coalesce(jsonb_agg(jsonb_build_object('kind',r.kind,'data',r.data,'version',r.version,'updatedAt',r.updated_at) order by r.kind,r.record_id),'[]') into records
  from public.ggc_records r where not r.deleted and (
   (r.kind in ('comps','cards','leagues') and r.data->>'societyId'=s.group_id)

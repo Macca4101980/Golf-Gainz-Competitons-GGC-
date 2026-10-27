@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
       }
       return response.json();
     };
+    const leaguePayload = await rpc("ggc_get_public_league_leaderboard", { p_token: token });
+    if (leaguePayload) return reply(leaguePayload);
     for (let attempt = 0; attempt < 2; attempt++) {
       const source = await rpc("ggc_public_leaderboard_source", {
         p_token: token,

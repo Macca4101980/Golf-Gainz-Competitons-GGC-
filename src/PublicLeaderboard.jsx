@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Share2 } from "lucide-react";
 import {
   buildPublicLeaderboard,
+  buildPublicLeagueLeaderboard,
   newShareToken,
   hashShareToken,
   publicShareUrl,
@@ -152,7 +153,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
     </div>
   );
 }
-export function PublicShareControls({ c, state, client, publicEnabled = true, isAdmin = true }) {
+export function PublicShareControls({ c, state, client, publicEnabled = true, isAdmin = true, scope = "competition" }) {
   const [share, setShare] = useState(null),
     [link, setLink] = useState(""),
     [message, setMessage] = useState(""),
@@ -169,7 +170,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
     setLink("");
     if (publicEnabled && client)
       client
-        .rpc("ggc_public_share_status", { p_competition_id: c.id })
+        .rpc(scope === "league" ? "ggc_public_league_share_status" : "ggc_public_share_status", scope === "league" ? { p_league_id: c.id } : { p_competition_id: c.id })
         .then(({ data, error }) => {
           if (active) {
             if (error)
@@ -198,14 +199,14 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
       let token;
       if (mode === "publish" || mode === "refresh" || mode === "rotate") {
         const snap = latest.current;
-        args.p_payload = buildPublicLeaderboard(snap.c, snap.state);
+        args.p_payload = scope === "league"\n          ? buildPublicLeagueLeaderboard(snap.c, snap.state)\n          : buildPublicLeaderboard(snap.c, snap.state);
         // Members can create a fresh share link. Admins retain explicit rotate/revoke controls.
         if (!share?.enabled || mode === "rotate" || !isAdmin) {
           token = newShareToken();
           args.p_token_hash = await hashShareToken(token);
         }
       }
-      const { data, error } = await client.rpc("ggc_manage_public_share", args);
+      const { data, error } = await client.rpc(scope === "league" ? "ggc_manage_public_league_share" : "ggc_manage_public_share", args);
       if (error) throw error;
       if (mounted.current) {
         setShare(data);

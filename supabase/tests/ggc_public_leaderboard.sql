@@ -46,14 +46,14 @@ do $$declare answer jsonb;begin
  begin perform public.ggc_manage_public_share('qa-beta12-comp','revoke',null,null,2);raise exception 'Anonymous manage allowed';exception when insufficient_privilege then null;end;
 end $$;
 set local role authenticated;
-select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000002',true);
+select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000001',true);
 update public.ggc_records set data=jsonb_set(data,'{publicLeaderboardsEnabled}','false'::jsonb),version=version+1 where kind='societies' and record_id='qa-beta12-group';
 select public.ggc_public_identity(true);
 set local role anon;
 select set_config('request.jwt.claim.sub','',true);
 do $$begin if public.get_public_leaderboard(repeat('a',64)) is not null then raise exception 'Disabled group still publicly readable';end if;end $$;
 set local role authenticated;
-select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000002',true);
+select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000001',true);
 update public.ggc_records set data=jsonb_set(data,'{publicLeaderboardsEnabled}','true'::jsonb),version=version+1 where kind='societies' and record_id='qa-beta12-group';
 select public.ggc_public_identity(true);
 set local role anon;

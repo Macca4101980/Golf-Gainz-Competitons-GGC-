@@ -199,7 +199,9 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
       let token;
       if (mode === "publish" || mode === "refresh" || mode === "rotate") {
         const snap = latest.current;
-        args.p_payload = scope === "league"\n          ? buildPublicLeagueLeaderboard(snap.c, snap.state)\n          : buildPublicLeaderboard(snap.c, snap.state);
+        args.p_payload = scope === "league"
+          ? buildPublicLeagueLeaderboard(snap.c, snap.state)
+          : buildPublicLeaderboard(snap.c, snap.state);
         // Members can create a fresh share link. Admins retain explicit rotate/revoke controls.
         if (!share?.enabled || mode === "rotate" || !isAdmin) {
           token = newShareToken();

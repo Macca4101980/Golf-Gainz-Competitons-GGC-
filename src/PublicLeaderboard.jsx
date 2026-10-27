@@ -231,79 +231,34 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
   }
   return (
     <div className="publicShareControls">
-      <h3>PUBLIC LEADERBOARD</h3>
-      <p>
-        Anyone with the link can view published scores without a GGC account.
-        Names are shown by default. Golfers can hide their identity under My Golf.
-      </p>
-      <p className="muted">
-        The public page refreshes saved scores every 15 seconds, even when the
-        organiser closes GGC.
-      </p>
-      <div className="publicShareActions">
-        <button
-          className="primary"
-          disabled={busy || !client}
-          onClick={() => action("publish")}
-        >
-          {share?.enabled ? (isAdmin ? "PUBLISH NOW" : "CREATE NEW SHARE LINK") : "ENABLE & CREATE LINK"}
-        </button>
-        {share?.enabled && isAdmin && (
-          <>
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() => {
-                if (
-                  confirm(
-                    "Replace the share link? The previous link will stop working.",
-                  )
-                )
-                  void action("rotate");
-              }}
-            >
-              REPLACE LINK
-            </button>
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() => action("revoke")}
-            >
-              DISABLE LINK
-            </button>
-          </>
-        )}
+      <h3>{c.name ? `SHARE ${c.name.toUpperCase()} LEADERBOARD` : "SHARE LEADERBOARD"}</h3>
+      <p className="shareIntro">Anyone with the link can view this leaderboard without a GGC account.</p>
+      <div className="shareQuestionBox">
+        <div className="shareQuestionHeading"><strong>PUBLIC SHARING</strong><b>ON</b></div>
+        <small>Controlled by the Group admin</small>
       </div>
-      {link && <ShareLeaderboardButton url={link} title={c.name} />}
-      {link && (
-        <label>
-          Shareable link
-          <input
-            aria-label="Public leaderboard link"
-            readOnly
-            value={link}
-            onFocus={(e) => e.target.select()}
-          />
-          <button
-            className="secondary"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(link);
-                setMessage("Link copied.");
-              } catch {
-                setMessage("Select and copy the link above.");
-              }
-            }}
-          >
-            COPY LINK
-          </button>
-        </label>
-      )}
-      {share?.enabled && !link && (
-        <p>The link is active. Replace it to create a new link you can copy.</p>
-      )}
-      {message && <p role="status">{message}</p>}
+      <div className="shareQuestionBox">
+        <strong>PLAYER NAMES</strong>
+        <label className="shareChoice"><span className="shareRadio selected" aria-hidden="true"/>Show names by default</label>
+        <small>Players can hide their own name under My Golf.</small>
+      </div>
+      <div className="shareQuestionBox">
+        <strong>PUBLISHING</strong>
+        <small>Scores shown as provisional until released.</small>
+        <label className="shareChoice"><span className="shareRadio selected" aria-hidden="true"/>Follow GGC visibility rules</label>
+      </div>
+      <div className="publicShareActions">
+        <button className="primary" disabled={busy || !client} onClick={() => action("publish")}>
+          {share?.enabled ? (isAdmin ? "PUBLISH NOW" : "CREATE PUBLIC LINK") : "CREATE PUBLIC LINK"}
+        </button>
+        {share?.enabled && isAdmin && <><button className="secondary" disabled={busy} onClick={() => { if (confirm("Replace the share link? The previous link will stop working.")) void action("rotate"); }}>REPLACE LINK</button><button className="secondary" disabled={busy} onClick={() => action("revoke")}>DISABLE LINK</button></>}
+        <button className="secondary" type="button" onClick={() => setMessage("")}>CANCEL</button>
+      </div>
+      {link && <div className="shareCreatedBox"><strong>PUBLIC LINK CREATED</strong><input aria-label="Public leaderboard link" readOnly value={link} onFocus={e => e.target.select()} /><div className="publicShareActions"><button className="primary" onClick={async () => { try { await navigator.clipboard.writeText(link); setMessage("Link copied."); } catch { setMessage("Select and copy the link above."); } }}>COPY LINK</button><ShareLeaderboardButton url={link} title={c.name} /></div><small>No GGC account is required to view this page.</small></div>}
+      {share?.enabled && !link && <p className="shareStatus">The link is active. Publish again to create a link on this device.</p>}
+      {message && <p role="status" className="shareStatus">{message}</p>}
     </div>
+  )
   );
 }
 export function PublicIdentityPreference({ client, playerId }) {

@@ -190,7 +190,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
     setMessage("");
     try {
       let args = {
-        p_competition_id: c.id,
+        [scope === "league" ? "p_league_id" : "p_competition_id"]: c.id,
         p_action: mode,
         p_token_hash: null,
         p_payload: null,
@@ -203,7 +203,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
           ? buildPublicLeagueLeaderboard(snap.c, snap.state)
           : buildPublicLeaderboard(snap.c, snap.state);
         // Members can create a fresh share link. Admins retain explicit rotate/revoke controls.
-        if (!share?.enabled || mode === "rotate" || !isAdmin) {
+        if (mode === "publish" || mode === "rotate" || !share?.enabled) {
           token = newShareToken();
           args.p_token_hash = await hashShareToken(token);
         }
@@ -234,22 +234,27 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
   }
   return (
     <div className="publicShareControls">
-      <h3>{c.name ? `SHARE ${c.name.toUpperCase()} LEADERBOARD` : "SHARE LEADERBOARD"}</h3>
-      <p className="shareIntro">Anyone with the link can view this leaderboard without a GGC account.</p>
-      <div className="callout shareSettingRow">
-        <div><b>PUBLIC SHARING · ON</b><span>Controlled by the Group admin</span></div>
-      </div>
-      <div className="callout shareSettingRow">
-        <div><b>PLAYER NAMES</b><span>Names show by default. Players can hide their own name under My Golf.</span></div>
-      </div>
-      <div className="callout shareSettingRow">
-        <div><b>PUBLISHING</b><span>Follows GGC visibility rules. Scores remain provisional until released.</span></div>
+      <p className="shareTargetName">{c.name || "Leaderboard"}</p>
+      <p className="shareIntro">Share a read-only version of this leaderboard. No GGC account is required.</p>
+      <div className="shareDetails card">
+        <div className="shareInfoRow">
+          <span><b>PUBLIC SHARING</b><small>Controlled by the Group admin</small></span>
+          <strong className="shareOnPill">ON</strong>
+        </div>
+        <div className="shareInfoRow">
+          <span><b>PLAYER NAMES</b><small>Names are shown unless a player hides theirs under My Golf.</small></span>
+          <strong>SHOWN</strong>
+        </div>
+        <div className="shareInfoRow">
+          <span><b>RESULTS</b><small>Provisional and release rules match GGC.</small></span>
+          <strong>LIVE</strong>
+        </div>
       </div>
       <div className="publicShareActions">
         <button className="primary" disabled={busy || !client} onClick={() => action("publish")}>
-          {"SHARE LINK"}
+          <Share2 aria-hidden="true" size={19} /> SHARE LINK
         </button>
-        {share?.enabled && isAdmin && <><button className="secondary" disabled={busy} onClick={() => { if (confirm("Replace the share link? The previous link will stop working.")) void action("rotate"); }}>REPLACE LINK</button><button className="secondary" disabled={busy} onClick={() => action("revoke")}>DISABLE LINK</button></>}
+        {share?.enabled && isAdmin && <button className="secondary shareDisableBtn" disabled={busy} onClick={() => action("revoke")}>DISABLE LINK</button>}
         <button className="secondary" type="button" onClick={onClose}>CANCEL</button>
       </div>
       {link && <div className="shareCreatedBox"><strong>SHARE LINK READY</strong><input aria-label="Public leaderboard link" readOnly value={link} onFocus={e => e.target.select()} /><div className="publicShareActions"><button className="primary" onClick={async () => { try { await navigator.clipboard.writeText(link); setMessage("Link copied."); } catch { setMessage("Select and copy the link above."); } }}>COPY LINK</button><ShareLeaderboardButton url={link} title={c.name} label="SHARE LINK" /></div><small>No GGC account is required to view this page.</small></div>}

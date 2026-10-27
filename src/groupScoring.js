@@ -1,4 +1,5 @@
 import{courseHandicap,playingHandicap,holeStrokes}from'./scoring.js';
+import{competitionCourse}from'./competitionCourse.js';
 
 export const GROUP_FORMATS=new Set(['scramble','scramble-standard','florida','shamble','best1','best2','best3','cha-cha-cha','irish-fourball','bowmaker','alliance','yellow-ball']);
 export const GROUP_FORMAT_RULES={
@@ -18,7 +19,7 @@ export const GROUP_FORMAT_RULES={
 export function isGroupFormat(format){return GROUP_FORMATS.has(format)}
 export function stablefordPoints(gross,par,shots){return gross>0?Math.max(0,2+(par+shots-gross)):0}
 function selectedIndexes(c,hs){return c.holesMode==='front9'?[0,1,2,3,4,5,6,7,8]:c.holesMode==='back9'?[9,10,11,12,13,14,15,16,17]:hs.map((_,i)=>i)}
-function courseData(c,state){const course=(state.courses||[]).find(x=>x.id===c.course);const tee=course?.tees?.find(t=>t.name===c.tee);const holes=tee?.holes||[];const par=holes.reduce((n,h)=>n+(+h.par||0),0)||72;return{course,tee,holes,par}}
+function courseData(c,state){return competitionCourse(c,state)}
 function cardFor(state,c,id){return(state.cards||[]).find(x=>x.compId===c.id&&x.playerId===id)}
 function playerHole(state,c,id,h,i,tee,par){const p=(state.players||[]).find(x=>x.id===id);const card=cardFor(state,c,id);const allowance=c.handicapAllowance??95;const ph=card?.playingHandicap??playingHandicap(card?.handicapIndexUsed??p?.hi??0,tee,par,allowance);const gross=+(card?.gross?.[i]||0),shots=holeStrokes(ph,h.si);return{id,name:p?.name||'Golfer',gross,shots,net:gross?gross-shots:null,points:stablefordPoints(gross,h.par,shots)}}
 export function scrambleTeamHandicap(playerIds,c,state){const{tee,par}=courseData(c,state);const hs=playerIds.map(id=>{const p=(state.players||[]).find(x=>x.id===id);return courseHandicap(p?.hi??0,tee,par)}).sort((a,b)=>a-b);const pct=hs.length>=4?[.25,.20,.15,.10]:hs.length===3?[.30,.20,.10]:hs.length===2?[.35,.15]:[1];return hs.reduce((n,h,i)=>n+h*(pct[i]??0),0)}

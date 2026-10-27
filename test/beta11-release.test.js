@@ -1,6 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {declineCompetitionInvite,groupCodeError,scoreGroupStartError} from '../src/beta11.js';
+import {planRecordChanges} from '../src/recordChanges.js';
+
+test('decline queues only its competition through production record saving',()=>{
+  const before={comps:[{id:'invite',invites:['me','other'],entries:['entrant'],pairs:[{ids:['a','b']}]},{id:'untouched',invites:['me']}],cards:[{id:'card',gross:[4,5]}],societies:[{id:'group',members:['me']}]};
+  const after=declineCompetitionInvite(before,'invite','me');
+  const changes=planRecordChanges(before,after);
+  assert.equal(changes.length,1);
+  assert.equal(changes[0].kind,'comps');
+  assert.equal(changes[0].id,'invite');
+  assert.deepEqual(changes[0].data.invites,['other']);
+  assert.deepEqual(changes[0].data.entries,['entrant']);
+  assert.equal(after.cards,before.cards);
+  assert.equal(after.societies,before.societies);
+});
 
 test('declining a competition invitation persists the response without entering',()=>{
   const before={comps:[{id:'c1',invites:['p1','p2'],declinedInvites:[]}]};

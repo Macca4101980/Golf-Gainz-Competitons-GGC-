@@ -289,6 +289,271 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 /* 2s Club payout breakdown: readable two-column rows on phones. */
 .twosLedgerWeek{border-top:1px solid rgba(0,0,0,.12);padding:10px 0}.twosLedgerSummary,.twosPayoutRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}.twosLedgerSummary>span,.twosPayoutRow>span{display:flex;flex-direction:column;min-width:0}.twosLedgerSummary small,.twosPayoutRow small{display:block;margin-top:3px;color:#68756f;font-size:.82rem;line-height:1.3;white-space:normal;overflow-wrap:anywhere}.twosLedgerSummary em,.twosPayoutRow em{font-style:normal;font-weight:900;color:var(--green);text-align:right;white-space:nowrap}.twosPayoutRow{margin:7px 0 0 10px;padding:7px 0 7px 12px;border-left:2px solid var(--green)}.twosPayoutRow em{font-size:.82rem}
 
+/* Beta 8 league-money reconciliation: compact bank check and readable weekly payments. */
+.leagueMoney{display:grid;gap:14px}.leagueMoney>.card{margin:0}.leagueMoney>.card>h3{margin-bottom:14px}.leagueMoney>.card:nth-child(2){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.leagueMoney>.card:nth-child(2)>h3{grid-column:1/-1;margin-bottom:2px}.leagueMoney>.card:nth-child(2)>.leaderrow{display:flex;min-width:0;min-height:94px;padding:13px;border:1px solid #d9dfdc;border-radius:14px;background:#f5f7f5;flex-direction:column;justify-content:space-between;gap:8px}.leagueMoney>.card:nth-child(2)>.leaderrow span{min-width:0}.leagueMoney>.card:nth-child(2)>.leaderrow b{font-size:.78rem;line-height:1.2;text-transform:uppercase;letter-spacing:.025em}.leagueMoney>.card:nth-child(2)>.leaderrow small{font-size:.72rem;line-height:1.25;white-space:normal}.leagueMoney>.card:nth-child(2)>.leaderrow em{font-size:1.45rem;line-height:1;color:#132119;text-align:left}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(5){grid-column:1/-1;order:5;min-height:108px;background:#102319;border-color:#315c40;color:#fff}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(6){order:4}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(5) b{font-size:.86rem}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(5) small{color:#aab8ae}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(5) em{font-size:2rem;color:var(--green)}
+.leagueMoney>.card:nth-child(3)>.memberRow,.leagueMoney>.card:nth-child(4)>.memberRow{gap:12px;padding:11px 0;margin:0;border-top:1px solid #e0e5e1}.leagueMoney>.card:nth-child(3)>.memberRow span,.leagueMoney>.card:nth-child(4)>.memberRow span{min-width:0}.leagueMoney>.card:nth-child(3)>.memberRow small,.leagueMoney>.card:nth-child(4)>.memberRow small{line-height:1.25;white-space:normal}.leagueMoney>.card:nth-child(3)>.memberRow button,.leagueMoney>.card:nth-child(4)>.memberRow button{flex:0 0 auto;min-width:92px}.leagueMoney>.card:nth-child(4)>h4{margin:24px 0 5px;padding-top:18px;border-top:2px solid #dce3de}.leagueMoney .twosLedgerWeek{margin-top:10px;padding:13px;border:1px solid #d9dfdc;border-radius:14px;background:#f7f9f7}.leagueMoney .twosLedgerSummary{padding:0}.leagueMoney .twosPayoutRow{margin-left:0;padding:9px 0 0 11px}.leagueMoney .twosLedgerSummary>em{padding:4px 8px;border-radius:8px;background:#132119;color:var(--green)}
+@media(max-width:520px){.leagueMoney{gap:11px}.leagueMoney>.card{padding:16px}.leagueMoney>.card:nth-child(2){gap:8px}.leagueMoney>.card:nth-child(2)>.leaderrow{min-height:100px;padding:11px}.leagueMoney>.card:nth-child(2)>.leaderrow em{font-size:1.3rem}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(5){min-height:100px}.leagueMoney>.card:nth-child(2)>.leaderrow:nth-child(5) em{font-size:1.8rem}.leagueMoney>.card:nth-child(3)>.memberRow,.leagueMoney>.card:nth-child(4)>.memberRow{align-items:flex-start}.leagueMoney>.card:nth-child(3)>.memberRow button,.leagueMoney>.card:nth-child(4)>.memberRow button{min-width:84px;padding-left:9px;padding-right:9px}.leagueMoney .twosLedgerWeek{padding:12px 11px}.leagueMoney .twosLedgerSummary,.leagueMoney .twosPayoutRow{gap:8px}}
+
+/* Beta 8 scorecard administration for Group Owners and Admins. */
+.adminRoundManager main{padding-bottom:36px}.adminRoundManager .card>h3{margin-bottom:6px}.adminRoundRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 0;border-top:1px solid #dfe5e1}.adminRoundRow>span{display:flex;min-width:0;flex-direction:column;gap:4px}.adminRoundRow>span>b{font-size:.98rem}.adminRoundRow small{color:#68756f;font-size:.76rem;line-height:1.3;white-space:normal;overflow-wrap:anywhere}.adminRoundRow>div{display:flex;gap:7px;align-items:center}.adminRoundRow .mini{min-width:70px}.adminNewCard{margin-top:16px}.scoreactions{display:grid;gap:9px}
+@media(max-width:520px){.adminRoundRow{grid-template-columns:1fr;gap:9px}.adminRoundRow>div{display:grid;grid-template-columns:1fr 1fr}.adminRoundRow .mini{width:100%}}
+
 /* Login options shown in the production GGC sign-in reference. */
 .ggcCompactLogin{gap:18px;padding:28px 26px}.ggcCompactLogin .authbrand h1{font-size:2rem;margin:20px 0 8px}.ggcCompactLogin .authbrand p{font-size:1rem;line-height:1.45;margin:0 0 54px}.ggcLoginTabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #334038;border-radius:16px;overflow:hidden;margin:0 0 24px}.ggcLoginTabs button{min-height:58px;border:1px solid transparent;background:transparent;color:#c4cbc6;font-size:1rem;font-weight:800}.ggcLoginTabs button.selected{border-color:#70e748;border-radius:16px;background:#0e2516;color:#70e748;box-shadow:0 0 0 1px #70e748}.ggcCompactLogin label{margin-top:12px}.ggcCompactLogin .authPasswordField{position:relative}.ggcCompactLogin .authPasswordField input{padding-right:76px}.ggcCompactLogin .authShowPassword{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:#70e748;font-weight:800;padding:8px}.ggcCompactLogin .authRecovery{display:flex;justify-content:flex-end;margin:-2px 0 6px}.ggcCompactLogin .authRecovery .textbtn{color:#70e748;text-decoration:underline}.ggcCompactLogin .ggcCreateAccount{margin-top:10px}.ggcCompactLogin .authdivider{display:flex;gap:14px;align-items:center;color:#89928b;font-weight:900;margin:4px 0}.ggcCompactLogin .authdivider:before,.ggcCompactLogin .authdivider:after{content:"";height:1px;background:#29342d;flex:1}.ggcCompactLogin .authdivider span{padding:0 2px}.ggcCompactLogin .secondary{min-height:58px;border-radius:14px}.ggcCompactLogin .primary{min-height:58px;border-radius:14px}.ggcCompactLogin .authbrand .wordmark{font-size:28px}
 @media(max-width:520px){.ggcCompactLogin{padding:24px 20px}.ggcCompactLogin .authbrand p{margin-bottom:38px}}
+
+
+/* Compact league schedule summary with an on-demand edit sheet (Option C). */
+.leagueScheduleCard{display:grid;gap:0;padding:0!important;overflow:hidden;border:1px solid #d9e2dc!important;background:#fff!important}
+.leagueScheduleHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:12px 16px;background:#13261a;color:#fff;box-sizing:border-box}
+.leagueScheduleHeading>b{font-size:1rem;letter-spacing:.01em}
+.leagueScheduleHeading small{padding:6px 10px;border-radius:999px;background:rgba(104,235,66,.12);color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.09em}
+.leagueScheduleHeading small.cancelled{background:rgba(255,112,112,.13);color:#ff9a9a}
+.leagueScheduleHeading small.live{background:rgba(104,235,66,.2);color:#75ee51}
+.leagueScheduleHeading small.closed{background:rgba(170,181,174,.16);color:#c3ccc6}
+.leagueScheduleHeading small.draft{background:rgba(255,211,87,.15);color:#ffe08a}
+.leagueScheduleSummary{display:grid;gap:0;color:#142019;background:#fff}
+.leagueScheduleSummaryName{display:grid;gap:5px;padding:15px 16px;border-bottom:1px solid #e1e7e3}
+.leagueScheduleSummary small{color:#69766f;font-size:.63rem;font-weight:950;letter-spacing:.08em}
+.leagueScheduleSummaryName strong{font-size:1rem;line-height:1.28;overflow-wrap:anywhere}
+.leagueScheduleSummaryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-bottom:1px solid #e1e7e3}
+.leagueScheduleSummaryGrid>div{display:grid;align-content:start;gap:5px;min-width:0;padding:13px 16px;border-bottom:1px solid #e1e7e3}
+.leagueScheduleSummaryGrid>div:nth-child(odd){border-right:1px solid #e1e7e3}
+.leagueScheduleSummaryGrid>div:nth-last-child(-n+2){border-bottom:0}
+.leagueScheduleSummaryGrid b,.leagueScheduleSummaryProvisional b{font-size:.82rem;line-height:1.3;color:#1d2922;overflow-wrap:anywhere}
+.leagueScheduleSummaryProvisional{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;background:#f5f8f6}
+.leagueScheduleSummaryProvisional b{text-align:right}
+.leagueScheduleSummaryAction{padding:12px 16px;background:#f7f9f7}
+.leagueScheduleSummaryAction button{min-height:46px;margin:0}
+.leagueScheduleSheetBackdrop{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:rgba(2,8,4,.76);backdrop-filter:blur(4px)}
+.leagueScheduleSheet{display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(680px,100%);max-height:calc(100dvh - 36px);overflow:hidden;border:1px solid #496053;border-radius:22px;background:#f7f9f7;box-shadow:0 24px 80px rgba(0,0,0,.52)}
+.leagueScheduleSheetHeading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;background:#13261a;color:#fff}
+.leagueScheduleSheetHeading small{display:block;margin-bottom:3px;color:#75ee51;font-size:.65rem;font-weight:950;letter-spacing:.12em}
+.leagueScheduleSheetHeading h3{margin:0;font-size:1.08rem}
+.leagueScheduleSheetClose{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid #47604f;border-radius:50%;background:#0c1b11;color:#fff;font-size:1.6rem;line-height:1}
+.leagueScheduleSheetBody{min-height:0;overflow-y:auto}
+.leagueScheduleGrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1px;background:#dfe6e1}
+.leagueScheduleGrid label{position:relative;display:grid;align-content:start;gap:7px;min-width:0;margin:0;padding:13px 14px;background:#fff;color:#4f5b54;font-size:.68rem;font-weight:900;letter-spacing:.025em;box-sizing:border-box}
+.leagueScheduleGrid input{display:block;width:100%;height:46px;min-width:0;margin:0;padding:9px 11px;border-radius:9px;box-sizing:border-box;font-size:.86rem;letter-spacing:0}
+.leagueScheduleGrid input:disabled{opacity:1;background:#f1f4f2;color:#66716b;-webkit-text-fill-color:#66716b}
+.leagueScheduleGrid label>small{position:absolute;right:22px;bottom:27px;color:#68756f;font-size:.72rem;font-weight:800;letter-spacing:0;pointer-events:none}
+.leagueScheduleName{grid-column:span 12}
+.leagueScheduleLaunch{grid-column:span 7}
+.leagueScheduleDuration{grid-column:span 5}
+.leagueScheduleDuration input{padding-right:48px}
+.leagueScheduleClose{grid-column:span 7}
+.leagueScheduleProvisional{grid-column:span 5}
+.leagueScheduleRelease{grid-column:span 12}
+.leagueScheduleActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important;align-items:stretch!important;padding:12px 14px;background:#f7f9f7;border-top:1px solid #dfe6e1}
+.leagueScheduleActions button{width:100%;min-width:0;min-height:46px;margin:0;padding:9px 8px;box-sizing:border-box;white-space:nowrap}
+.leagueScheduleActions .primary{grid-column:1/-1}
+@media(min-width:760px){
+ .leagueScheduleSheetBackdrop{align-items:center}
+ .leagueScheduleSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .leagueScheduleSummaryGrid>div,.leagueScheduleSummaryGrid>div:nth-child(odd),.leagueScheduleSummaryGrid>div:nth-last-child(-n+2){border-bottom:0;border-right:1px solid #e1e7e3}
+ .leagueScheduleSummaryGrid>div:last-child{border-right:0}
+}
+@media(max-width:520px){
+ .leagueScheduleHeading{min-height:50px;padding:10px 13px}
+ .leagueScheduleSummaryName{padding:13px}
+ .leagueScheduleSummaryGrid>div{padding:11px 13px}
+ .leagueScheduleSummaryGrid b,.leagueScheduleSummaryProvisional b{font-size:.76rem}
+ .leagueScheduleSummaryProvisional{align-items:flex-start;padding:11px 13px}
+ .leagueScheduleSummaryAction{padding:10px 13px}
+ .leagueScheduleSheetBackdrop{padding:0;align-items:flex-end}
+ .leagueScheduleSheet{width:100%;max-height:94dvh;border-width:1px 0 0;border-radius:22px 22px 0 0}
+ .leagueScheduleSheetHeading{padding:13px 14px}
+ .leagueScheduleGrid label{display:grid;grid-template-columns:1fr;align-content:start;gap:5px;min-width:0;overflow:hidden;padding:10px 12px;font-size:.65rem}
+ .leagueScheduleName,.leagueScheduleLaunch,.leagueScheduleProvisional,.leagueScheduleRelease{grid-column:span 12}
+ .leagueScheduleDuration{grid-column:span 4}
+ .leagueScheduleClose{grid-column:span 8}
+ .leagueScheduleGrid input{height:40px;min-width:0;max-width:100%;padding:7px 9px;font-size:.76rem}
+ .leagueScheduleGrid input[type="datetime-local"]{text-align:left}
+ .leagueScheduleDuration input{padding-right:38px}
+ .leagueScheduleDuration>small{right:17px;top:43px;bottom:auto;font-size:.64rem}
+ .leagueScheduleProvisional input.isUnset{background:#eef2ef;border-style:dashed;color:#68756f;-webkit-text-fill-color:#68756f}
+ .leagueScheduleProvisional[data-empty="true"]::before{content:"Not scheduled";position:absolute;right:12px;top:10px;color:#7a857e;font-size:.58rem;font-weight:800;letter-spacing:0}
+ .leagueScheduleActions{gap:7px!important;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+ .leagueScheduleActions button{min-height:42px;padding:8px 4px;font-size:.66rem;letter-spacing:0}
+}
+
+/* Mobile schedule-sheet refinement: keep every action visible and reduce oversized fields. */
+body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
+@media(max-width:520px){
+ body:has(.leagueScheduleSheetBackdrop) .app>nav{opacity:0;visibility:hidden;pointer-events:none}
+ .leagueScheduleSheetBackdrop{z-index:1000}
+ .leagueScheduleSheet{max-height:calc(100dvh - env(safe-area-inset-top))}
+ .leagueScheduleSheetHeading{padding:11px 13px}
+ .leagueScheduleSheetHeading h3{font-size:1rem}
+ .leagueScheduleSheetClose{width:36px;height:36px;font-size:1.35rem}
+ .leagueScheduleGrid label{gap:4px;padding:7px 10px}
+ .leagueScheduleGrid input{height:36px;padding:5px 8px;font-size:.72rem}
+ .leagueScheduleDuration input{padding-right:34px}
+ .leagueScheduleDuration>small{right:14px;top:35px}
+ .leagueScheduleProvisional[data-empty="true"]::before{top:7px;right:10px}
+ .leagueScheduleProvisional[data-empty="true"]::after{content:"Tap to schedule";position:absolute;left:20px;top:42px;color:#68756f;font-size:.7rem;font-weight:800;letter-spacing:0;pointer-events:none}
+ .leagueScheduleActions{position:relative;z-index:2;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+ .leagueScheduleActions button{min-height:39px;padding:7px 4px}
+}
+
+
+/* Compact mobile schedule editor: readable name plus slim settings rows. */
+@media(max-width:520px){
+ .leagueScheduleGrid{display:grid;grid-template-columns:1fr}
+ .leagueScheduleGrid label,
+ .leagueScheduleName,
+ .leagueScheduleLaunch,
+ .leagueScheduleDuration,
+ .leagueScheduleClose,
+ .leagueScheduleProvisional,
+ .leagueScheduleRelease{grid-column:1/-1}
+ .leagueScheduleGrid label:not(.leagueScheduleName){
+  display:grid;
+  grid-template-columns:minmax(118px,.8fr) minmax(0,1.2fr);
+  align-items:center;
+  align-content:center;
+  gap:10px;
+  min-height:54px;
+  padding:8px 12px;
+  overflow:visible
+ }
+ .leagueScheduleName{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:4px;
+  min-height:64px;
+  padding:8px 12px
+ }
+ .leagueScheduleGrid label:not(.leagueScheduleName) input{grid-column:2;min-width:0;max-width:100%;height:36px}
+ .leagueScheduleName input{grid-column:1;height:36px}
+ .leagueScheduleDuration input{padding-right:36px}
+ .leagueScheduleDuration>small{right:18px;top:50%;bottom:auto;transform:translateY(-50%)}
+ .leagueScheduleProvisional[data-empty="true"]::before{content:none}
+ .leagueScheduleProvisional[data-empty="true"]::after{
+  content:"SET DATE";
+  position:absolute;
+  left:auto;
+  right:22px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#68756f;
+  font-size:.65rem;
+  font-weight:950;
+  letter-spacing:.04em;
+  pointer-events:none
+ }
+ .leagueScheduleProvisional[data-empty="true"] input{color:transparent;-webkit-text-fill-color:transparent}
+}
+
+
+/* Timeline schedule editor — selected visual direction. */
+.leagueTimelineEditor{background:#fff;color:#142019}
+.leagueTimelineName{position:relative;display:grid;gap:7px;margin:0;padding:15px 18px 17px;background:#fff;color:#59655e;font-size:.72rem;font-weight:900}
+.leagueTimelineName input{width:100%;height:46px;margin:0;padding:9px 42px 9px 13px;border:1px solid #d2dbd5;border-radius:10px;background:#f4f7f5;color:#111914;-webkit-text-fill-color:#111914;font-size:.9rem;font-weight:500}
+.leagueTimelineName>b{position:absolute;right:32px;bottom:27px;color:#68756f;font-size:1.7rem;font-weight:400;line-height:1;pointer-events:none}
+.leagueTimeline{position:relative;padding:7px 18px 9px;background:#fff}
+.leagueTimeline::before{content:"";position:absolute;left:42px;top:52px;bottom:58px;width:3px;border-radius:99px;background:var(--green)}
+.leagueTimelineRow{position:relative;display:grid;grid-template-columns:50px minmax(0,1fr) auto 12px;align-items:center;gap:10px;min-height:88px;margin:0;padding:10px 0;border-bottom:1px solid #e1e7e3;background:#fff;color:#111914}
+.leagueTimelineRow:last-child{border-bottom:0}
+.leagueTimelineIcon{position:relative;z-index:2;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#eef3ef;color:#123322}
+.leagueTimelineIcon svg{width:23px;height:23px}
+.leagueTimelineIcon.launch{background:var(--green);color:#fff}
+.leagueTimelineIcon.close,.leagueTimelineIcon.release{background:#103421;color:#fff}
+.leagueTimelineCopy{display:grid;gap:2px;min-width:0}
+.leagueTimelineCopy strong{font-size:.9rem;line-height:1.15}
+.leagueTimelineCopy small{color:#7b8680;font-size:.7rem;font-weight:500;line-height:1.25}
+.leagueTimelineDuration{position:relative;z-index:4;display:flex;align-items:center;gap:5px;width:max-content;max-width:100%;margin-top:5px;padding:6px 10px;border-radius:999px;background:#edf3ef;color:#183325;font-size:.72rem;font-weight:700;white-space:nowrap}
+.leagueTimelineDuration>span{font-size:.68rem}
+.leagueTimelineDuration input{display:inline-block;width:1.7rem;height:auto;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:#183325;-webkit-text-fill-color:#183325;font:inherit;text-align:center;appearance:textfield}
+.leagueTimelineDuration input::-webkit-inner-spin-button,.leagueTimelineDuration input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.leagueTimelineValue{max-width:210px;color:#172019;font-size:.78rem;font-weight:500;text-align:right;white-space:nowrap}
+.leagueTimelineValue.mutedValue{color:#7b8680}
+.leagueTimelineChevron{color:#748078;font-size:1.5rem;font-weight:400;line-height:1}
+.leagueTimelinePicker{position:absolute;inset:0;z-index:3;width:100%;height:100%;margin:0;padding:0;border:0;opacity:0;cursor:pointer}
+.leagueTimelineLaunch .leagueTimelinePicker{left:55%;width:45%}
+.leagueTimelineRow:focus-within{outline:2px solid rgba(112,230,75,.55);outline-offset:-2px;border-radius:10px}
+.leagueTimelineRow:has(.leagueTimelineDuration input:focus){outline:none}
+.leagueScheduleSheetBody{background:#fff}
+.leagueScheduleActions{position:relative;z-index:5}
+@media(max-width:520px){
+ .leagueTimelineName{padding:11px 15px 13px;font-size:.66rem}
+ .leagueTimelineName input{height:41px;padding:7px 38px 7px 11px;font-size:.78rem}
+ .leagueTimelineName>b{right:27px;bottom:21px}
+ .leagueTimeline{padding:3px 15px 5px}
+ .leagueTimeline::before{left:36px;top:46px;bottom:51px}
+ .leagueTimelineRow{grid-template-columns:42px minmax(0,1fr) auto 9px;gap:8px;min-height:72px;padding:8px 0}
+ .leagueTimelineIcon{width:38px;height:38px}
+ .leagueTimelineIcon svg{width:20px;height:20px}
+ .leagueTimelineCopy strong{font-size:.76rem}
+ .leagueTimelineCopy small{font-size:.62rem}
+ .leagueTimelineDuration{gap:4px;margin-top:4px;padding:5px 8px;font-size:.64rem}
+ .leagueTimelineValue{max-width:150px;font-size:.66rem}
+ .leagueTimelineChevron{font-size:1.25rem}
+ .leagueScheduleActions{padding-top:8px}
+}
+@media(max-width:380px){
+ .leagueTimelineRow{grid-template-columns:38px minmax(0,1fr) 112px 7px;gap:6px}
+ .leagueTimelineIcon{width:34px;height:34px}
+ .leagueTimeline::before{left:32px}
+ .leagueTimelineCopy strong{font-size:.71rem}
+ .leagueTimelineCopy small{display:none}
+ .leagueTimelineValue{max-width:112px;font-size:.61rem;white-space:normal}
+}
+
+
+/* Reuse the app-wide competition lifecycle pill treatment in league weeks. */
+.leagueScheduleHeading .pill{
+ display:inline-block;
+ padding:5px 8px;
+ border-radius:999px;
+ background:#d7ffd0;
+ color:#126427;
+ font-size:9px;
+ font-weight:950;
+ letter-spacing:0
+}
+.leagueScheduleHeading .pill.scheduled{border-style:dashed}
+.leagueScheduleHeading .pill.live{border-style:solid;background:#d7ffd0;color:#126427}
+.leagueScheduleHeading .pill.completed{border-style:solid;background:#dce6ff;color:#234d91}
+.leagueScheduleHeading .pill.cancelled{border-style:solid;background:#f1dddd;color:#8b3030}
+
+
+/* Accordion League team manager — compact until a team is opened. */
+.leagueTeamsCard{display:grid;gap:14px}
+.leagueTeamsHeader{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.leagueTeamsHeader h3{margin:0}
+.leagueAddTeam{width:auto;min-width:126px;min-height:44px;padding:10px 14px}
+.leagueNewTeamForm{display:grid;gap:12px;padding:14px;border:1px solid #d8e0da;border-radius:15px;background:#f6f8f6}
+.leagueNewTeamForm label{color:#253129}
+.leagueTeamAccordionList{display:grid;gap:10px}
+.leagueTeamAccordion{overflow:hidden;border:1px solid #d8e0da;border-radius:15px;background:#fafcfb}
+.leagueTeamSummary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:76px;margin:0;padding:12px 14px;border:0!important;border-radius:0!important;background:transparent!important;color:#101712!important;text-align:left}
+.leagueTeamSummary .teamBadgeIdentity b{font-size:1rem;line-height:1.2}
+.leagueTeamSummary .teamBadgeIdentity small{margin-top:3px;color:#8a958e;font-size:.78rem;font-weight:500;line-height:1.25}
+.leagueTeamSummary .teamBadgeEmpty{border-color:#9aa69e;color:#526058}
+.leagueTeamChevron{font-size:1.55rem;line-height:1;transition:transform .16s ease}
+.leagueTeamAccordion.open .leagueTeamChevron{transform:rotate(180deg)}
+.leagueTeamActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 12px 12px}
+.leagueTeamActions button{display:flex;align-items:center;justify-content:flex-start;gap:9px;min-width:0;min-height:50px;margin:0!important;padding:10px 12px!important;border-radius:11px!important;font-size:.7rem!important;line-height:1.1;white-space:normal;text-align:left}
+.leagueTeamActions button>span{display:grid;place-items:center;min-width:22px;color:var(--green);font-size:1.25rem;line-height:1}
+.leagueTeamActions .leagueRemoveBadge>span{color:#ff8c8c}
+.leagueTeamActions .leagueRemoveTeam{grid-column:1/-1;justify-content:center;background:#5b1717!important;color:#ffc1c1!important;border-color:#9a3b3b!important}
+.leagueTeamActions .leagueRemoveTeam>span{color:#ff9292}
+@media(max-width:520px){
+ .leagueTeamsCard{padding:15px}
+ .leagueTeamsHeader{align-items:center}
+ .leagueTeamsHeader h3{font-size:1.03rem}
+ .leagueAddTeam{min-width:112px;min-height:40px;padding:8px 11px;font-size:.7rem}
+ .leagueTeamSummary{min-height:70px;padding:10px 11px}
+ .leagueTeamSummary .teamBadgeIdentity{gap:10px}
+ .leagueTeamSummary .teamBadgeIdentity b{font-size:.92rem}
+ .leagueTeamSummary .teamBadgeIdentity small{font-size:.72rem}
+ .leagueTeamActions{gap:7px;padding:0 10px 10px}
+ .leagueTeamActions button{min-height:48px;padding:9px!important;font-size:.65rem!important}
+}
+@media(max-width:380px){
+ .leagueTeamsHeader{align-items:flex-start;flex-direction:column}
+ .leagueAddTeam{width:100%}
+ .leagueTeamActions{grid-template-columns:1fr}
+ .leagueTeamActions .leagueRemoveTeam{grid-column:1}
+}

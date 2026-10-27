@@ -26,3 +26,19 @@ export function hydrateSignedInPlayer(players,profile,identityLinks={}){
    :[...source,player],
  };
 }
+
+/**
+ * A golfer already in a competition cannot also have a pending invitation.
+ * This removes stale cached invitations without changing entries or scorecards.
+ */
+export function sanitiseCompetitionParticipation(comp={}){
+ const entries=[...new Set(Array.isArray(comp.entries)?comp.entries:[])];
+ const entryIds=new Set(entries);
+ const invites=[...new Set(Array.isArray(comp.invites)?comp.invites:[])].filter(id=>!entryIds.has(id));
+ return {...comp,entries,invites};
+}
+
+export function hasPendingCompetitionInvite(comp,playerId){
+ if(!playerId)return false;
+ return sanitiseCompetitionParticipation(comp).invites.includes(playerId);
+}

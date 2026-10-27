@@ -120,6 +120,7 @@ begin
  if s.id is null or s.payload->>'schemaVersion' is distinct from '1' then return null; end if;
  select data into comp from public.ggc_records where kind='comps' and record_id=s.competition_id and not deleted;
  if comp is null or comp->>'societyId' is distinct from s.group_id then return null; end if;
+ if exists(select 1 from public.ggc_records where kind='societies' and record_id=s.group_id and not deleted and data->>'publicLeaderboardsEnabled'='false') then return null; end if;
  -- If the admin tightens the embargo, fail closed until a new projection is published.
  if coalesce(comp->'resultsEmbargo','{}') is distinct from s.payload->'embargo' then return null; end if;
  select data into league from public.ggc_records where kind='leagues' and record_id=comp->>'leagueId' and not deleted;

@@ -598,3 +598,47 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .publicShareActions .secondary,.publicShareControls label button{color:#13261a!important;border-color:#52715d!important;background:#eef5ef!important;font-weight:900}
 
 .wlTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px}.wlTitleRow h3{margin:0}.wlTitleRow .leaderboardShareBtn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px}.wlTitleRow .leaderboardShareBtn svg{width:20px;height:20px}
+
+
+/* Beta 12 share icon sizing fix: keep the control square in every leaderboard header. */
+.leaderboardShareBtn,
+.wlTitleRow .leaderboardShareBtn,
+.wlWeekResult>summary .leaderboardShareBtn{
+  flex:0 0 44px!important;
+  width:44px!important;
+  min-width:44px!important;
+  max-width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
+  max-height:44px!important;
+  aspect-ratio:1/1!important;
+  box-sizing:border-box!important;
+  padding:0!important;
+  border-radius:50%!important;
+  line-height:0!important;
+  justify-self:end;
+  align-self:center;
+}
+.leaderboardShareBtn svg{
+  display:block;
+  flex:0 0 20px!important;
+  width:20px!important;
+  min-width:20px!important;
+  max-width:20px!important;
+  height:20px!important;
+  min-height:20px!important;
+  max-height:20px!important;
+}
+@media(max-width:520px){
+  .leaderboardShareBtn,
+  .wlTitleRow .leaderboardShareBtn,
+  .wlWeekResult>summary .leaderboardShareBtn{
+    flex-basis:40px!important;
+    width:40px!important;
+    min-width:40px!important;
+    max-width:40px!important;
+    height:40px!important;
+    min-height:40px!important;
+    max-height:40px!important;
+  }
+}

@@ -223,15 +223,14 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
   }
   if (sharingDisabled) {
     return (
-      <div className="card publicShareControls" role="status">
+      <div className="publicShareControls" role="status">
         <h3>PUBLIC SHARING OFF</h3>
         <p>The Group admin has turned off public leaderboard sharing.</p>
       </div>
     );
   }
   return (
-    <details className="card publicShareControls">
-      <summary aria-label="Share leaderboard" style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer", minHeight:44}}><Share2 aria-hidden="true" size={20} /> SHARE LEADERBOARD</summary>
+    <div className="publicShareControls">
       <h3>PUBLIC LEADERBOARD</h3>
       <p>
         Anyone with the link can view published scores without a GGC account.
@@ -304,7 +303,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
         <p>The link is active. Replace it to create a new link you can copy.</p>
       )}
       {message && <p role="status">{message}</p>}
-    </details>
+    </details>  </div>
   );
 }
 export function PublicIdentityPreference({ client, playerId }) {

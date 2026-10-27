@@ -644,16 +644,30 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 }
 
 
-/* Beta 12 sharing uses the same dark modal, callout cards and buttons as the rest of GGC. */
-.shareModal .publicShareControls{display:grid;gap:10px}
-.shareModal .publicShareControls>h3{margin:0}
-.shareModal .shareIntro{margin:0 0 2px;color:var(--muted);line-height:1.45}
-.shareModal .shareSettingRow{margin:0}
-.shareModal .shareSettingRow b,.shareModal .shareSettingRow span{display:block}
-.shareModal .shareSettingRow span{color:var(--muted);font-size:12px;margin-top:4px}
+/* Beta 12 leaderboard sharing follows the existing GGC light-card leaderboard treatment. */
+.shareModal{background:#0b130d!important;color:#fff!important}
+.shareModal .modalhead{border-bottom:1px solid #29342b;padding-bottom:12px}
+.shareModal .modalhead h2{font-size:17px;letter-spacing:.4px}
+.shareModal .publicShareControls{display:grid;gap:12px;padding-top:4px}
+.shareTargetName{margin:2px 0 0;font-size:20px;font-weight:950;line-height:1.15;color:#fff}
+.shareIntro{margin:0;color:#aab2ac;font-size:13px;line-height:1.45}
+.shareDetails.card{margin:2px 0;padding:0 16px;border-radius:18px;background:#f5f6f3;color:#101712;overflow:hidden}
+.shareInfoRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0;border-bottom:1px solid #d9ded9}
+.shareInfoRow:last-child{border-bottom:0}
+.shareInfoRow span{display:block;min-width:0}
+.shareInfoRow b,.shareInfoRow small{display:block}
+.shareInfoRow b{font-size:12px;letter-spacing:.35px;color:#101712}
+.shareInfoRow small{margin-top:4px;color:#687169;font-size:11px;line-height:1.35;font-weight:500}
+.shareInfoRow>strong{flex:none;color:#176b35;font-size:11px;letter-spacing:.4px}
+.shareOnPill{padding:5px 9px;border-radius:999px;background:#d7ffd0;color:#126427!important}
 .shareModal .publicShareActions{display:grid;gap:8px}
 .shareModal .publicShareActions .secondary{margin-top:0}
-.shareCreatedBox{display:grid;gap:9px;padding:14px;background:#0e1710;border:1px solid #29342b;border-radius:15px}
-.shareCreatedBox input{margin:0}
-.shareCreatedBox small,.shareStatus{color:var(--muted);font-size:12px;line-height:1.4}
-.shareStatus{margin:0}
+.shareModal .primary{background:var(--green);color:#071008}
+.shareModal .secondary{background:#101912;color:#f5f7f4;border-color:#334036}
+.shareModal .shareDisableBtn{color:#ffb5b5;border-color:#663636;background:#261010}
+.shareCreatedBox{display:grid;gap:9px;padding:14px;background:#f5f6f3;color:#101712;border-radius:18px}
+.shareCreatedBox input{margin:0;background:#fff;color:#101712;border-color:#ccd2cd;font-size:12px}
+.shareCreatedBox small,.shareStatus{font-size:12px;line-height:1.4}
+.shareCreatedBox small{color:#687169}
+.shareStatus{margin:0;color:#d9ded9}
+@media(max-width:420px){.shareModal{padding-left:16px;padding-right:16px}.shareInfoRow{align-items:flex-start}.shareInfoRow small{max-width:230px}}

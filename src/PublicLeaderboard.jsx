@@ -43,14 +43,10 @@ export function PublicLeaderboard({ url, apiKey, token }) {
     referrer.name = "referrer";
     referrer.content = "no-referrer";
     document.head.append(robots, referrer);
-    return () => {
-      robots.remove();
-      referrer.remove();
-    };
+    return () => { robots.remove(); referrer.remove(); };
   }, []);
   useEffect(() => {
-    let active = true,
-      busy = false;
+    let active = true, busy = false;
     setData(null);
     setStatus("Loading leaderboard…");
     const controller = new AbortController();
@@ -58,101 +54,74 @@ export function PublicLeaderboard({ url, apiKey, token }) {
       if (busy || document.hidden) return;
       busy = true;
       try {
-        const next = await readPublicLeaderboard({
-          url,
-          key: apiKey,
-          token,
-          signal: controller.signal,
-        });
-        if (active) {
-          setData(next);
-          setStatus(next ? "" : "This leaderboard link is unavailable.");
-        }
+        const next = await readPublicLeaderboard({ url, key: apiKey, token, signal: controller.signal });
+        if (active) { setData(next); setStatus(next ? "" : "This leaderboard link is unavailable."); }
       } catch (e) {
-        if (active && e.name !== "AbortError") {
-          setData(null);
-          setStatus("Unable to refresh. Check your connection and try again.");
-        }
-      } finally {
-        busy = false;
-      }
+        if (active && e.name !== "AbortError") { setData(null); setStatus("Unable to refresh. Check your connection and try again."); }
+      } finally { busy = false; }
     };
     void refresh();
     const timer = setInterval(refresh, 15000);
-    const wake = () => {
-      if (!document.hidden) void refresh();
-    };
+    const wake = () => { if (!document.hidden) void refresh(); };
     document.addEventListener("visibilitychange", wake);
     window.addEventListener("online", wake);
     return () => {
-      active = false;
-      controller.abort();
-      clearInterval(timer);
+      active = false; controller.abort(); clearInterval(timer);
       document.removeEventListener("visibilitychange", wake);
       window.removeEventListener("online", wake);
     };
   }, [url, apiKey, token]);
+  const Badge = ({ row }) => row.badgeImage
+    ? <img className="wlResultBadge" src={row.badgeImage} alt="" loading="lazy"/>
+    : <span className="wlResultBadge empty" aria-hidden="true">{String(row.teamName || row.name || "?").trim().charAt(0).toUpperCase()}</span>;
   return (
     <div className="publicLeaderboard">
       <header>
-        <span>GOLF GAIN COMPS</span>
-        <h1>{data?.title || "Public leaderboard"}</h1>
+        <div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div>
         <p>Shared results · view only</p>
-        {data && <ShareLeaderboardButton url={publicShareUrl(token)} title={data.title} />}
       </header>
       <main>
-        {status && (
-          <p role="status" className="card">
-            {status}
-          </p>
-        )}
-        {data && (
-          <>
-            <div className="publicBoardMeta">
-              <b>
-                {data.provisional
-                  ? (data.visibleThrough === 0 ? "RESULTS SCHEDULED" : "PROVISIONAL · THROUGH HOLE " + data.visibleThrough)
-                  : "PUBLISHED RESULTS"}
-              </b>
-              <small>
-                Last published {new Date(data.publishedAt).toLocaleString()} ·
-                checks for updates every 15 seconds
-              </small>
-            </div>
-            {data.rows?.length ? (
-              <div className="leader card">
-                <div className="leaderHeader">
-                  <b>LIVE LEADERBOARD</b>
-                  <small>Published GGC results</small>
+        {status && <p role="status" className="card">{status}</p>}
+        {data && <>
+          <div className="historicalLeagueResults">
+            <div className="card wlOomCard">
+              <div className="wlCardTitle">
+                <span>{data.provisional ? "PROVISIONAL LEAGUE STANDINGS" : "LEAGUE STANDINGS"}</span>
+                <div className="wlTitleRow">
+                  <h3>{data.title} LEAGUE TABLE</h3>
+                  <ShareLeaderboardButton url={publicShareUrl(token)} title={data.title}/>
                 </div>
-                {data.rows.map((r, i) => (
-                  <div className="leaderrow" key={i}>
-                    <strong>{r.position}</strong>
-                    <span>
-                      <b>{r.name}</b>
-                      <small>{r.complete}/{r.totalHoles} holes</small>
-                    </span>
-                    <em>{r.result}</em>
-                  </div>
-                ))}
               </div>
-            ) : (
-              <p className="card">
-                {data.visibleThrough === 0
-                  ? "Results are scheduled for later."
-                  : "No published scores yet."}
-              </p>
-            )}
-            <p className="muted">
-              Names are shown by default; golfers can hide their identity in My Golf. Results
-              refresh automatically from saved GGC scorecards.
-            </p>
-          </>
-        )}
+              {data.summary && <small>{data.summary}</small>}
+              {data.provisional && <p className="muted">Results are provisional{data.visibleThrough && data.visibleThrough < 18 ? " through hole " + data.visibleThrough : ""}.</p>}
+              {data.rows?.length ? <div className="wlMobileTable">
+                {data.rows.map((r, i) => <details className={`wlMobileRow wlPos${r.position}`} key={i}>
+                  <summary>
+                    <strong className="wlPosition">{r.position}</strong>
+                    <Badge row={r}/>
+                    <span className="wlTeamCopy">
+                      <b>{r.teamName || r.name}</b>
+                      {r.memberLine && <small>{r.memberLine}</small>}
+                      <small>{r.played != null ? `Played ${r.played} · ${r.provisionalCut ? "Provisional WL cut" : "WL cut"} ${r.cut ? "-" + Number(r.cut).toFixed(1) : "—"}` : `${r.complete}/${r.totalHoles} holes`}</small>
+                    </span>
+                    <em>{String(r.result).replace(/\s*pts$/i, "")}<small>PTS</small></em>
+                  </summary>
+                  <div className="wlCounting">Counting scores: <b>{r.counting?.length ? r.counting.join(" · ") : "—"}</b></div>
+                </details>)}
+              </div> : <p className="muted">{data.visibleThrough === 0 ? "Results are scheduled for later." : "No published scores yet."}</p>}
+            </div>
+          </div>
+          <div className="publicBoardMeta">
+            <b>{data.provisional ? "PROVISIONAL RESULTS" : "PUBLISHED RESULTS"}</b>
+            <small>Last published {new Date(data.publishedAt).toLocaleString()} · checks for updates every 15 seconds</small>
+          </div>
+          <p className="muted">This is the same read-only GGC leaderboard shared by the Group. Golfers who hide their identity are shown anonymously.</p>
+        </>}
       </main>
     </div>
   );
 }
+
 export function PublicShareControls({ c, state, client, publicEnabled = true, isAdmin = true, scope = "competition", onClose = () => {} }) {
   const [share, setShare] = useState(null),
     [link, setLink] = useState(""),

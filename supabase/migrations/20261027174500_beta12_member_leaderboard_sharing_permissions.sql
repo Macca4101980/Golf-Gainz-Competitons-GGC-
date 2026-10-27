@@ -266,3 +266,33 @@ begin
 end $$;
 revoke all on function private.ggc_public_league_share_status(text) from public,anon,authenticated;
 notify pgrst,'reload schema';
+
+
+-- Keep exposed RPC wrappers security-invoker. Authenticated users receive execute only
+-- on the exact private authorization functions needed by these wrappers.
+create or replace function public.ggc_public_share_status(p_competition_id text)
+returns jsonb language sql security invoker set search_path='' as $$
+ select private.ggc_public_share_status(p_competition_id)
+$$;
+create or replace function public.ggc_manage_public_share(p_competition_id text,p_action text,p_token_hash text default null,p_payload jsonb default null,p_expected_version bigint default 0)
+returns jsonb language sql security invoker set search_path='' as $$
+ select private.ggc_manage_public_share(p_competition_id,p_action,p_token_hash,p_payload,p_expected_version)
+$$;
+create or replace function public.ggc_public_league_share_status(p_league_id text)
+returns jsonb language sql security invoker set search_path='' as $$
+ select private.ggc_public_league_share_status(p_league_id)
+$$;
+create or replace function public.ggc_manage_public_league_share(p_league_id text,p_action text,p_token_hash text default null,p_payload jsonb default null,p_expected_version bigint default 0)
+returns jsonb language sql security invoker set search_path='' as $$
+ select private.ggc_manage_public_league_share(p_league_id,p_action,p_token_hash,p_payload,p_expected_version)
+$$;
+
+revoke all on function private.ggc_public_share_status(text) from public,anon;
+revoke all on function private.ggc_manage_public_share(text,text,text,jsonb,bigint) from public,anon;
+revoke all on function private.ggc_public_league_share_status(text) from public,anon;
+revoke all on function private.ggc_manage_public_league_share(text,text,text,jsonb,bigint) from public,anon;
+grant execute on function private.ggc_public_share_status(text) to authenticated;
+grant execute on function private.ggc_manage_public_share(text,text,text,jsonb,bigint) to authenticated;
+grant execute on function private.ggc_public_league_share_status(text) to authenticated;
+grant execute on function private.ggc_manage_public_league_share(text,text,text,jsonb,bigint) to authenticated;
+notify pgrst,'reload schema';

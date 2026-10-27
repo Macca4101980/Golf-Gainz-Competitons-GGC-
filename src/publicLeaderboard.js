@@ -214,11 +214,23 @@ export function buildPublicLeagueLeaderboard(league, state, now = Date.now()) {
   const weeks = winterLeagueTable(league, state, new Date(now));
   const provisional = (weeks.weekly || []).some(w => w.provisional || w.resultsHidden);
   const rows = (weeks.table || []).map((r, i) => {
-    const team = (league.teams || []).find((t) => t.id === r.id) || {};
+    const ownTeam = (league.teams || []).find((t) => t.id === r.id) || {};
+    const teamName = String(r.name || ownTeam.name || "").trim();
+    const matchingTeam = ownTeam.badgeImage
+      ? ownTeam
+      : (state.leagues || [])
+          .flatMap((item) => item.teams || [])
+          .find(
+            (team) =>
+              team.badgeImage &&
+              String(team.name || "").trim().toLowerCase() ===
+                teamName.toLowerCase(),
+          );
+    const team = matchingTeam ? { ...ownTeam, badgeImage: matchingTeam.badgeImage } : ownTeam;
     return {
       memberIds: r.memberIds || [],
       teamId: r.id,
-      teamName: String(r.name || team.name || "").slice(0, 100),
+      teamName: teamName.slice(0, 100),
       badgeImage: typeof team.badgeImage === "string" ? team.badgeImage : "",
       memberNames: (r.memberIds || []).map((id) => state.players.find((p) => p.id === id)?.name || "?"),
       position: i + 1,

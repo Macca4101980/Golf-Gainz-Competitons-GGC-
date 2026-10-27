@@ -8,7 +8,7 @@ import {
   publicShareUrl,
   readPublicLeaderboard,
 } from "./publicLeaderboard.js";
-function ShareLeaderboardButton({ url, title, label = "SHARE LEADERBOARD" }) {
+function ShareLeaderboardButton({ url, title, label = "SHARE LEADERBOARD", compact = false }) {
   const [message, setMessage] = useState("");
   async function share() {
     setMessage("");
@@ -25,7 +25,7 @@ function ShareLeaderboardButton({ url, title, label = "SHARE LEADERBOARD" }) {
     }
   }
   return <div>
-    <button type="button" className="secondary" onClick={share}
+    <button type="button" className={compact ? "secondary leaderboardShareBtn" : "secondary"} onClick={share}
       aria-label="Share leaderboard" title="Share leaderboard">
       <Share2 aria-hidden="true" size={20} /> {label}
     </button>
@@ -89,7 +89,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
                 <span>{data.provisional ? "PROVISIONAL LEAGUE STANDINGS" : "LEAGUE STANDINGS"}</span>
                 <div className="wlTitleRow">
                   <h3>{data.title} LEAGUE TABLE</h3>
-                  <ShareLeaderboardButton url={publicShareUrl(token)} title={data.title}/>
+                  <ShareLeaderboardButton url={publicShareUrl(token)} title={data.title} label="" compact/>
                 </div>
               </div>
               {data.summary && <small>{data.summary}</small>}

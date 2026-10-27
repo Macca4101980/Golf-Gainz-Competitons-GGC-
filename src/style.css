@@ -671,3 +671,9 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .shareCreatedBox small{color:#687169}
 .shareStatus{margin:0;color:#d9ded9}
 @media(max-width:420px){.shareModal{padding-left:20px!important;padding-right:20px!important}.shareInfoRow{align-items:flex-start}.shareInfoRow small{max-width:215px}.shareModal .publicShareActions .primary,.shareModal .publicShareActions .secondary{min-height:38px;padding:9px 13px;font-size:12px}}
+
+
+/* Public leaderboard uses the same 720px GGC canvas and uncompressed title row as the app. */
+.publicLeaderboard main{max-width:720px;padding:18px}
+.publicLeaderboard .wlTitleRow{min-width:0}
+.publicLeaderboard .wlTitleRow h3{min-width:0;line-height:1.15}

@@ -587,3 +587,12 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .publicSharingSetting .toggleRow input{width:20px;height:20px;margin:0}
 .publicSharingSetting>small{display:block;margin-top:6px;color:var(--muted)}
 @media(max-width:520px){.publicLeaderboard .leaderrow{grid-template-columns:34px minmax(0,1fr) auto;gap:9px;padding:11px 12px}.publicLeaderboard .leaderrow>span b{font-size:.88rem}.publicLeaderboard .leaderrow>em{font-size:.86rem}}
+
+
+/* Beta 12 public sharing contrast */
+.publicShareControls,.publicSharingSetting{background:#fff!important;color:#13261a!important;border-color:#b9c9bd!important}
+.publicShareControls h3,.publicSharingSetting h3,.publicShareControls p,.publicSharingSetting p,.publicShareControls label,.publicSharingSetting label,.publicShareControls summary{color:#13261a!important}
+.publicShareControls .muted,.publicSharingSetting .muted,.publicSharingSetting>small{color:#30473a!important}
+.publicShareControls input{background:#fff!important;color:#13261a!important;border:1px solid #809486!important}
+.publicShareActions .primary{background:#0d4b2a!important;color:#fff!important;border-color:#0d4b2a!important;font-weight:950}
+.publicShareActions .secondary,.publicShareControls label button{color:#13261a!important;border-color:#52715d!important;background:#eef5ef!important;font-weight:900}

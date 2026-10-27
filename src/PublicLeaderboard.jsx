@@ -303,7 +303,7 @@ export function PublicShareControls({ c, state, client, publicEnabled = true, is
         <p>The link is active. Replace it to create a new link you can copy.</p>
       )}
       {message && <p role="status">{message}</p>}
-    </details>  </div>
+    </div>
   );
 }
 export function PublicIdentityPreference({ client, playerId }) {

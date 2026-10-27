@@ -688,9 +688,9 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .wlWeekResult>summary .leaderboardShareBtn{
   margin:0!important;
   border-radius:50%!important;
-  background:#102216!important;
-  color:#f7faf7!important;
-  border:1px solid #36513c!important;
+  background:var(--green)!important;
+  color:#071008!important;
+  border:1px solid var(--green)!important;
 }
 .wlWeekResult>summary .leaderboardShareBtn{
   grid-column:3;

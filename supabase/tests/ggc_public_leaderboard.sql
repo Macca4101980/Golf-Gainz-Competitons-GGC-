@@ -32,13 +32,13 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000002',true);
 do $$begin
  begin perform public.ggc_manage_public_share('qa-beta12-comp','revoke',null,null,2);raise exception 'Member managed share';exception when raise_exception then if sqlerrm is distinct from 'GGC_GROUP_ADMIN_REQUIRED' then raise;end if;end;
- if public.ggc_public_identity(null) then raise exception 'Names enabled by default';end if;
+ if not public.ggc_public_identity(null) then raise exception 'Names are not enabled by default';end if;
 end $$;
 set local role anon;
 select set_config('request.jwt.claim.sub','',true);
 do $$declare answer jsonb;begin
  answer:=public.get_public_leaderboard(repeat('a',64));
- if answer->'rows'->0->>'name' is distinct from 'Anonymous golfer 1' or answer->'rows'->0->>'result' is distinct from '37 pts' then raise exception 'Anonymous result wrong: %',answer;end if;
+ if answer->'rows'->0->>'name' is distinct from 'QA Private Name' or answer->'rows'->0->>'result' is distinct from '37 pts' then raise exception 'Default name/result wrong: %',answer;end if;
  if answer::text ~ 'secret|must-drop|memberIds|competition_id|group_id|token_hash|QA Private Name' then raise exception 'Private data exposed';end if;
  if public.get_public_leaderboard('bad') is not null or public.get_public_leaderboard(repeat('c',64)) is not null then raise exception 'Invalid token accepted';end if;
  begin perform public.ggc_public_leaderboard_source(repeat('a',64));raise exception 'Anonymous source access allowed';exception when insufficient_privilege then null;end;
@@ -47,6 +47,14 @@ do $$declare answer jsonb;begin
 end $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000002',true);
+update public.ggc_records set data=jsonb_set(data,'{publicLeaderboardsEnabled}','false'::jsonb),version=version+1 where kind='societies' and record_id='qa-beta12-group';
+select public.ggc_public_identity(true);
+set local role anon;
+select set_config('request.jwt.claim.sub','',true);
+do $begin if public.get_public_leaderboard(repeat('a',64)) is not null then raise exception 'Disabled group still publicly readable';end if;end $;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','b1200000-0000-4000-8000-000000000002',true);
+update public.ggc_records set data=jsonb_set(data,'{publicLeaderboardsEnabled}','true'::jsonb),version=version+1 where kind='societies' and record_id='qa-beta12-group';
 select public.ggc_public_identity(true);
 set local role anon;
 select set_config('request.jwt.claim.sub','',true);

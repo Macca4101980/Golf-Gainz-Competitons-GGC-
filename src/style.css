@@ -677,3 +677,45 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .publicLeaderboard main{max-width:720px;padding:18px}
 .publicLeaderboard .wlTitleRow{min-width:0}
 .publicLeaderboard .wlTitleRow h3{min-width:0;line-height:1.15}
+
+
+/* Keep every in-app leaderboard share action identical and prevent weekly rows from creating a spare grid row. */
+.wlWeekResult>summary{
+  grid-template-columns:42px minmax(0,1fr) 44px 20px!important;
+}
+.leaderboardShareBtn,
+.wlTitleRow .leaderboardShareBtn,
+.wlWeekResult>summary .leaderboardShareBtn{
+  margin:0!important;
+  border-radius:50%!important;
+  background:#102216!important;
+  color:#f7faf7!important;
+  border:1px solid #36513c!important;
+}
+.wlWeekResult>summary .leaderboardShareBtn{
+  grid-column:3;
+  grid-row:1;
+}
+.wlWeekResult>summary>strong{
+  grid-column:4;
+  grid-row:1;
+}
+.shareModal .publicShareControls{
+  gap:8px;
+}
+.shareModal .shareDetails.card{
+  margin:0;
+}
+.shareModal .publicShareActions{
+  margin:0;
+}
+.shareModal .publicShareActions .primary,
+.shareModal .publicShareActions .secondary{
+  margin:0!important;
+}
+@media(max-width:520px){
+  .wlWeekResult>summary{
+    grid-template-columns:38px minmax(0,1fr) 40px 18px!important;
+    gap:8px!important;
+  }
+}

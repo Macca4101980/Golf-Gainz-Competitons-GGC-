@@ -238,7 +238,7 @@ const myGroups=(state.societies||[]).filter(s=>currentMe&&((s.members||[]).inclu
 const visibleGroups=myGroups.filter(s=>!hiddenGroups.includes(s.id));
 const orderedVisibleGroups=[...visibleGroups].sort((a,b)=>(a.id===society?.id?-1:0)-(b.id===society?.id?-1:0));
 const myGroupIds=new Set(myGroups.map(s=>s.id));
-const visibleGroupIds=new Set(visibleGroups.map(s=>s.id));const adminGroupIds=new Set(myGroups.filter(s=>s.ownerId===currentMe?.id||(s.admins||[]).includes(currentMe?.id)).map(s=>s.id));const canManageAny=adminGroupIds.size>0;
+const visibleGroupIds=new Set(visibleGroups.map(s=>s.id));const adminIdentityIds=new Set([currentMe?.id,auth?.user?.id].filter(Boolean));const adminGroupIds=new Set(myGroups.filter(s=>adminIdentityIds.has(s.ownerId)||(s.admins||[]).some(id=>adminIdentityIds.has(id))).map(s=>s.id));const canManageAny=adminGroupIds.size>0;
 const comps=(state.comps||[]).filter(c=>visibleGroupIds.has(c.societyId)&&c.status!=='deleted');
 const live=comps.filter(c=>effectiveCompStatus(c)==='live');
 const dashboardLive=currentMe?live.filter(c=>!state.cards.some(card=>card.compId===c.id&&card.playerId===currentMe.id&&card.submitted)):live;

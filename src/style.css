@@ -596,3 +596,5 @@ body:has(.leagueScheduleSheetBackdrop){overflow:hidden}
 .publicShareControls input{background:#fff!important;color:#13261a!important;border:1px solid #809486!important}
 .publicShareActions .primary{background:#0d4b2a!important;color:#fff!important;border-color:#0d4b2a!important;font-weight:950}
 .publicShareActions .secondary,.publicShareControls label button{color:#13261a!important;border-color:#52715d!important;background:#eef5ef!important;font-weight:900}
+
+.wlTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px}.wlTitleRow h3{margin:0}.wlTitleRow .leaderboardShareBtn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px}.wlTitleRow .leaderboardShareBtn svg{width:20px;height:20px}

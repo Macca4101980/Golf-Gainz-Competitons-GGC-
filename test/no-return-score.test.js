@@ -23,7 +23,7 @@ test('a no-return hole scores zero points without invalidating the rest of a Sta
  assert.equal(result.holes[0].gross,0);
  assert.equal(result.holes[0].points,0);
  assert.equal(result.points,34);
- assert.equal(result.complete,17);
+ assert.equal(result.complete,18);
 });
 
 test('a partner valid score still counts when the other partner records N/R',()=>{

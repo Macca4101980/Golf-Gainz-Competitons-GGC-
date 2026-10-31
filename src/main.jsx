@@ -364,8 +364,8 @@ function SocietyModal({state,setState,me,setSocId,auth,setCloud,close}){const[na
 function winterLeagueCardHandicap(c,state,playerId){
  const league=(state.leagues||[]).find(l=>l.id===c.leagueId&&(l.teams||[]).some(t=>(t.memberIds||[]).includes(playerId)));
  if(!league)return null;
- const week=winterLeagueTable(league,state).weekly.find(w=>w.comp.id===c.id);
- for(const row of week?.rows||[]){const h=row.playerHandicaps?.[playerId];if(h)return h}
+ const table=winterLeagueTable(league,state);
+ for(const team of table.table||[]){const week=(team.weeks||[]).find(w=>w.compId===c.id);const h=week?.playerHandicaps?.[playerId];if(h)return h}
  return null;
 }
 function calcCard(card,c,state){const h=winterLeagueCardHandicap(c,state,card.playerId);return scoreCard(h?{...card,playingHandicap:h.playingHandicap}:card,c,state)}

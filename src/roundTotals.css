@@ -1,0 +1,17 @@
+.roundTotalLabel,.roundTotalCell{box-sizing:border-box;padding:12px 4px;border-top:2px solid #536b55;border-right:1px solid #334036;background:#152219;min-width:0;text-align:center;overflow-wrap:anywhere}
+.roundTotalLabel{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;font-size:.5rem;line-height:1.6;letter-spacing:0}
+.roundTotalLabel b,.roundTotalLabel small{white-space:nowrap;color:#f5f7f4;font-size:inherit}
+.roundTotalCell strong{display:block;color:#f5f7f4;font-size:1.1rem}
+.roundTotalCell small{display:block;margin-top:6px;color:#c8d5c9;font-size:.6rem;line-height:1.5}
+.roundTotalCell.full,.roundTotalLabel.full{background:#1e3021;border-top-color:#68eb42}
+.roundTeamTotals{margin:0 0 20px;padding:16px;border:1px solid #3f5141;border-radius:16px;background:#101a12;color:#f5f7f4}
+.roundTeamTotals h3{margin:0 0 10px;color:#f5f7f4;font-size:.9rem}
+.roundTeamTotals>p{margin:0 0 12px;color:#bfcdc0;font-size:.72rem;line-height:1.5}
+.roundTeamTotal+.roundTeamTotal{border-top:1px solid #3f5141;margin-top:16px;padding-top:16px}
+.roundTeamNames b,.roundTeamNames small{display:block;color:#f5f7f4}
+.roundTeamNames small{margin-top:5px;color:#c8d5c9;font-size:.75rem}
+.roundTeamWindows{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:12px}
+.roundTeamWindows>div{display:grid;gap:6px;padding:12px;border-radius:10px;background:#1b2b1e}
+.roundTeamWindows>div>b{font-size:.62rem;color:#bce6b5}
+.roundTeamWindows strong{font-size:1.2rem;color:#fff}
+.roundTeamWindows small{font-size:.65rem;color:#c8d5c9}

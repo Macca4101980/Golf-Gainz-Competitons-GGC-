@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import LeaderboardBadge from './LeaderboardBadge.jsx';
 import { Share2 } from "lucide-react";
 import {
   buildPublicLeaderboard,
@@ -71,9 +72,6 @@ export function PublicLeaderboard({ url, apiKey, token }) {
       window.removeEventListener("online", wake);
     };
   }, [url, apiKey, token]);
-  const Badge = ({ row }) => row.badgeImage
-    ? <img className="wlResultBadge" src={row.badgeImage} alt="" loading="lazy"/>
-    : <span className="wlResultBadge empty" aria-hidden="true">{String(row.teamName || row.name || "?").trim().charAt(0).toUpperCase()}</span>;
   return (
     <div className="publicLeaderboard">
       <header>
@@ -99,7 +97,7 @@ export function PublicLeaderboard({ url, apiKey, token }) {
                 {data.rows.map((r, i) => <details className={`wlMobileRow wlPos${r.position}`} key={i}>
                   <summary>
                     <strong className="wlPosition">{r.position}</strong>
-                    <Badge row={r}/>
+                    <LeaderboardBadge badgeImage={r.badgeImage} name={r.teamName || r.name} memberLine={r.memberLine}/>
                     <span className="wlTeamCopy">
                       <b>{r.teamName || r.name}</b>
                       {r.memberLine && <small>{r.memberLine}</small>}

@@ -1,5 +1,6 @@
 import{declineCompetitionInvite,groupCodeError,scoreGroupStartError}from'./beta11.js';
 import LeaderboardBadge from './LeaderboardBadge.jsx';
+import {leagueDisplayTable} from './leagueDisplay.js';
 import {buildRoundTotals} from './roundTotals.js';
 import {IndividualTotalRows,TeamRoundTotals} from './RoundTotals.jsx';
 import{PublicLeaderboard,PublicShareControls,PublicIdentityPreference}from'./PublicLeaderboard.jsx';
@@ -284,7 +285,7 @@ function maskEmbargoedCards(c,state,now=Date.now()){if(!resultsEmbargoActive(c,n
 function HistoricalLeagueResults({league,state,isAdmin=false}){
  const [sharingComp,setSharingComp]=useState(null);
  const publicEnabled=(state.societies||[]).find(s=>s.id===league.societyId)?.publicLeaderboardsEnabled!==false;
- let wl=null;try{const now=Date.now();const masked={...state,cards:(state.cards||[]).map(card=>{const comp=(state.comps||[]).find(c=>c.id===card.compId&&c.leagueId===league.id);if(!resultsEmbargoActive(comp,now))return card;const through=embargoVisibleThrough(comp,now);return {...card,gross:(card.gross||[]).map((v,i)=>i<through?v:'')}})};wl=winterLeagueTable(league,masked);const blocked=new Set((state.comps||[]).filter(c=>c.leagueId===league.id&&resultsEmbargoActive(c,now)).map(c=>c.id));if(blocked.size){wl={...wl,table:wl.table.map(t=>{const visible=t.weeks.filter(w=>Number.isFinite(w.points));const best=[...visible].sort((a,b)=>b.points-a.points).slice(0,wl.bestCount);const official=t.weeks.filter(w=>!blocked.has(w.compId)&&Number.isFinite(w.points));return {...t,total:best.reduce((sum,w)=>sum+w.points,0),played:visible.length,counting:best,countingIds:new Set(best.map(w=>w.compId)),finalCut:Math.max(0,...official.map(w=>w.cut||0))}}),weekly:wl.weekly.map(w=>blocked.has(w.comp.id)?{...w,provisional:true}:w)};wl.table.sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));wl.table.forEach((t,i)=>{t.position=t.played?i+1:null})}}catch(e){console.error('League results failed',e)}
+ let wl=null;try{wl=leagueDisplayTable(league,state)}catch(e){console.error('League results failed',e)}
  if(!wl)return <div className="card"><h3>{league?.name||'League'} RESULTS</h3><p className="muted">League standings could not be calculated.</p></div>;
  const h=v=>{const n=Number(v)||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toFixed(1)};
  const teamById=id=>{const own=(league.teams||[]).find(t=>t.id===id)||{};if(own.badgeImage)return own;const name=String(own.name||'').trim().toLowerCase();const match=(state.leagues||[]).flatMap(l=>l.teams||[]).find(t=>t.badgeImage&&String(t.name||'').trim().toLowerCase()===name);return match?{...own,badgeImage:match.badgeImage}:own};

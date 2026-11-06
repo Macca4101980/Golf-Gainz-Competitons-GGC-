@@ -32,8 +32,8 @@ export function handicapAdjustment(score,settings=WL_DEFAULTS){
 export function wlCutForScore(score,settings=WL_DEFAULTS){return Math.max(0,-handicapAdjustment(score,{...settings,mode:'team',direction:'down'}))}
 function manualFor(league,playerId,throughDate){return(league?.manualHandicapAdjustments||[]).filter(x=>x.playerId===playerId&&(!throughDate||!x.effectiveFrom||new Date(x.effectiveFrom)<=new Date(throughDate))).reduce((a,x)=>a+(+x.shots||0),0)}
 function leagueBaseHi(league,player,c,settings){if(!settings.lockStartingHandicaps)return player?.hi;const snap=league?.startingHandicaps||{};return Number.isFinite(+snap[player?.id])?+snap[player.id]:player?.hi}
-// Apply the workbook's plus-handicap rule from the first new week after release.
-const PLUS_HANDICAP_RULE_START=Date.parse('2026-11-07T06:00:00Z');
+// Apply the workbook's plus-handicap rule from the start of the 2026/27 season.
+const PLUS_HANDICAP_RULE_START=Date.parse('2026-10-16T00:00:00Z');
 function roundWeeklyHandicap(value,competition){
  const starts=Date.parse(competition?.starts);
  return value<0&&starts>=PLUS_HANDICAP_RULE_START?(Math.trunc(value)||0):whsRound(value);

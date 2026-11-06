@@ -17,9 +17,22 @@ export default function CrossCourseFixtures({client, state, groups}) {
   const [drafts, setDrafts] = useState({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const group = groups.find(item => item.id === groupId);
-  const players = state.players.filter(player => player.authUserId &&
-    (group?.ownerId === player.id || group?.members?.includes(player.id) || group?.admins?.includes(player.id)));
+  const [search, setSearch] = useState('');
+  const [matches, setMatches] = useState([]);
+  const [selected, setSelected] = useState({});
+  const players = Object.values(selected);
+
+  useEffect(() => {
+    if (!groupId) return;
+    let active = true;
+    const timer = setTimeout(async () => {
+      const {data, error} = await client.rpc('ggc_cross_course_roster', {p_group_id: groupId, p_search: search});
+      if (!active) return;
+      if (error) setError(error.message);
+      else setMatches(data);
+    }, 250);
+    return () => {active = false; clearTimeout(timer);};
+  }, [client, groupId, search]);
 
   async function rpc(method, args) {
     const {data, error} = await client.rpc(method, args);
@@ -123,16 +136,23 @@ export default function CrossCourseFixtures({client, state, groups}) {
     {groups.length > 0 && <form onSubmit={create}>
       <h3>Create cross-course Pairs Matchplay</h3>
       <label>Fixture name<input required value={name} onChange={event => setName(event.target.value)}/></label>
-      <label>Group<select required value={groupId} onChange={event => {setGroupId(event.target.value);setSlots(emptySlots());}}>
+      <label>Group<select required value={groupId} onChange={event => {setGroupId(event.target.value);setSlots(emptySlots());setMatches([]);setSelected({});setSearch('');}}>
         <option value="">Choose group</option>
         {groups.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select></label>
       <label>Entry deadline<input required type="datetime-local" value={deadline} onChange={event => setDeadline(event.target.value)}/></label>
+      {groupId && <label>Search group golfers<input value={search} onChange={event => setSearch(event.target.value)}/></label>}
       {slots.map((slot, index) => <fieldset key={index}>
         <legend>Pair {slot.side} · Golfer {index % 2 + 1}</legend>
-        <label>Golfer<select required value={slot.playerId} onChange={event => updateSlot(index, {playerId:event.target.value})}>
+        <label>Golfer<select required value={slot.playerId} onChange={event => {
+          const playerId = event.target.value;
+          const golfer = matches.find(item => item.id === playerId);
+          if (golfer) setSelected(current => ({...current, [playerId]: golfer}));
+          updateSlot(index, {playerId});
+        }}>
           <option value="">Choose golfer</option>
-          {players.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}
+          {(selected[slot.playerId] && !matches.some(item => item.id === slot.playerId)
+            ? [selected[slot.playerId], ...matches] : matches).map(player => <option key={player.id} value={player.id}>{player.name}</option>)}
         </select></label>
         <label>Course<select required value={slot.courseId} onChange={event => updateSlot(index, {courseId:event.target.value,teeName:''})}>
           <option value="">Choose course</option>

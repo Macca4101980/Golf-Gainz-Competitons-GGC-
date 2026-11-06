@@ -6,6 +6,7 @@ const dir = new URL(
 await mkdir(dir, { recursive: true });
 for (const name of [
   "publicLeaderboard.js",
+  "leagueDisplay.js",
   "scoring.js",
   "winterLeague.js",
   "groupScoring.js",

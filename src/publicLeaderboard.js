@@ -6,6 +6,8 @@ import {
   fourballMatchResult,
 } from "./scoring.js";
 import { winterLeagueTable } from "./winterLeague.js";
+import {leagueDisplayTable,publicVisibility} from './leagueDisplay.js';
+export {publicVisibility} from './leagueDisplay.js';
 import { groupLeaderboard, isGroupFormat } from "./groupScoring.js";
 export const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 export function newShareToken(cryptoApi = globalThis.crypto) {
@@ -31,30 +33,6 @@ export function publicShareUrl(token, base = globalThis.location.href) {
 }
 export function shareTokenFromHash(hash) {
   return new URLSearchParams(String(hash).replace(/^#/, "")).get("leaderboard");
-}
-export function publicVisibility(c, now = Date.now()) {
-  const e = c?.resultsEmbargo;
-  const release = Date.parse(e?.releaseAt);
-  if (
-    e?.enabled &&
-    (!Number.isFinite(release) ||
-      (e.provisionalAt && !Number.isFinite(Date.parse(e.provisionalAt))))
-  )
-    return { provisional: true, visibleThrough: 0 };
-  const provisional = !!(
-    e?.enabled &&
-    Number.isFinite(release) &&
-    now < release
-  );
-  const at = Date.parse(e?.provisionalAt);
-  return {
-    provisional,
-    visibleThrough: provisional
-      ? Number.isFinite(at) && now < at
-        ? 0
-        : Math.max(1, Math.min(17, Number(e.visibleThroughHole) || 15))
-      : 18,
-  };
 }
 export function buildPublicLeaderboard(c, state, now = Date.now()) {
   const visibility = publicVisibility(c, now);
@@ -211,8 +189,8 @@ export async function readPublicLeaderboard({
 }
 
 export function buildPublicLeagueLeaderboard(league, state, now = Date.now()) {
-  const weeks = winterLeagueTable(league, state, new Date(now));
-  const provisional = (weeks.weekly || []).some(w => w.provisional || w.resultsHidden);
+  const weeks = leagueDisplayTable(league, state, now);
+  const provisional = weeks.provisional;
   const rows = (weeks.table || []).map((r, i) => {
     const ownTeam = (league.teams || []).find((t) => t.id === r.id) || {};
     const teamName = String(r.name || ownTeam.name || "").trim();
@@ -248,7 +226,7 @@ export function buildPublicLeagueLeaderboard(league, state, now = Date.now()) {
     scope: "league",
     title: league.name,
     provisional,
-    visibleThrough: 18,
+    visibleThrough: weeks.visibleThrough,
     rows,
   };
 }

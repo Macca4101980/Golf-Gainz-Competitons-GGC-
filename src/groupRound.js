@@ -1,11 +1,13 @@
+import {GROUP_FORMAT_RULES} from './groupScoring.js';
 import {isEnteredHoleScore} from './scoreInput.js';
 
 export const ENABLED_TEAM_STABLEFORD=['best1','best2','best3','cha-cha-cha'];
-export function groupMinimumPlayers(format){return ['best3','cha-cha-cha'].includes(format)?3:2;}
+export function groupMinimumPlayers(format){return format==='irish-fourball'?4:['best3','cha-cha-cha','florida'].includes(format)?3:2;}
 export function groupStartError({c,ids,me,admin=false,memberIds=[],saved=null}){
  const players=ids.filter(Boolean);
  if(new Set(players).size!==players.length)return 'Choose each golfer only once.';
  const min=groupMinimumPlayers(c.format);
+ if(c.format==='pairs-scramble'&&players.length!==2)return 'Pairs Scramble needs exactly two golfers.';
  if(players.length<min||players.length>4)return `This format needs ${min}–4 golfers.`;
  if(!admin&&!players.includes(me.id))return 'Your playing group must include you.';
  if(!admin&&players.some(id=>id!==me.id&&!memberIds.includes(id)))return 'Choose golfers who belong to this group.';
@@ -25,7 +27,7 @@ export function groupCompetitionUpdate(c,patch,{admin=false,now}={}){
 
 export function groupSubmissionError(group,c,state){
  const holes=c.holesMode==='front9'?Array.from({length:9},(_,i)=>i):c.holesMode==='back9'?Array.from({length:9},(_,i)=>i+9):Array.from({length:18},(_,i)=>i);
- if(c.format==='scramble-standard'){
+ if(GROUP_FORMAT_RULES[c.format]?.mode==='team-gross'){
   const missing=holes.filter(i=>!isEnteredHoleScore(group?.teamGross?.[i])).length;
   return missing ? 'Enter a team score or N/R for every competition hole before submitting.' : null;
  }

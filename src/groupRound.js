@@ -25,6 +25,10 @@ export function groupCompetitionUpdate(c,patch,{admin=false,now}={}){
 
 export function groupSubmissionError(group,c,state){
  const holes=c.holesMode==='front9'?Array.from({length:9},(_,i)=>i):c.holesMode==='back9'?Array.from({length:9},(_,i)=>i+9):Array.from({length:18},(_,i)=>i);
+ if(c.format==='scramble-standard'){
+  const missing=holes.filter(i=>!isEnteredHoleScore(group?.teamGross?.[i])).length;
+  return missing ? 'Enter a team score or N/R for every competition hole before submitting.' : null;
+ }
  for(const id of group?.playerIds||[]){
   const card=(state.cards||[]).find(x=>x.compId===c.id&&x.playerId===id);
   const missing=holes.filter(i=>!isEnteredHoleScore(card?.gross?.[i])).length;

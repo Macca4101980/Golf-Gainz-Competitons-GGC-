@@ -30,3 +30,19 @@ test('Florida and standard Scramble use isolated team gross scoring path',()=>{f
 test('scramble default allowance is deterministic low-to-high',()=>{const h=scrambleTeamHandicap(ids,comp('scramble'),state());assert.equal(h,0*.25+8*.20+18*.15+28*.10)});
 test('team gross incomplete holes are not added to gross total',()=>{const scores=holes.map(h=>h.par);scores[17]='';const r=groupScore({...group,teamGross:scores,teamPlayingHandicap:8},comp('scramble'),state());assert.equal(r.complete,17);assert.equal(r.gross,67)});
 test('leaderboard orders Stableford high-to-low and scramble nett low-to-high',()=>{const cards=gross.map((g,i)=>card(ids[i],g,players[i].hi));const c=comp('best1');c.roundGroups=[{id:'one',playerIds:ids},{id:'two',playerIds:['a','b']}];const b=groupLeaderboard(c,state(cards));assert.ok(b[0].points>=b[1].points);const sc=comp('scramble');sc.roundGroups=[{id:'x',playerIds:ids,teamGross:holes.map(h=>h.par),teamPlayingHandicap:8},{id:'y',playerIds:ids,teamGross:holes.map(h=>h.par+1),teamPlayingHandicap:8}];const sb=groupLeaderboard(sc,state());assert.ok(sb[0].rankValue<sb[1].rankValue)});
+
+test('standard Scramble counts the selected nine and excludes N/R from ranking',()=>{
+ for(const holesMode of ['front9','back9','18']){
+  const c={...comp('scramble-standard'),holesMode};
+  const first=holesMode==='back9'?9:0;
+  const count=holesMode==='18'?18:9;
+  const scores=Array.from({length:18},(_,i)=>i>=first&&i<first+count?4:'');
+  const full={...group,id:'full',teamGross:scores,teamPlayingHandicap:4};
+  const partial={...full,id:'partial',teamGross:scores.map((v,i)=>i===first?'':v)};
+  const nr={...full,id:'nr',teamGross:scores.map((v,i)=>i===first?0:v)};
+  assert.equal(groupScore(full,c,state()).net,count*4-4);
+  assert.equal(groupScore(nr,c,state()).complete,count);
+  c.roundGroups=[partial,nr,full];
+  assert.deepEqual(groupLeaderboard(c,state()).map(r=>r.groupId),['full','partial']);
+ }
+});

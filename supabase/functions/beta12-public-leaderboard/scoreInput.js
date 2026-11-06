@@ -24,3 +24,7 @@ export function incrementHoleScore(value,par){
  if(isNoReturnScore(value))return 1;
  return (Number(value)||Number(par)||0)+1;
 }
+
+export function isEnteredHoleScore(value){
+ return isNoReturnScore(value)||Number(value)>0;
+}

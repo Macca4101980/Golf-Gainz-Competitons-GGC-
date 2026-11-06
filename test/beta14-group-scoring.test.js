@@ -1,4 +1,5 @@
 import test from'node:test';import assert from'node:assert/strict';import{groupScore,isGroupFormat,GROUP_FORMAT_RULES}from'../src/groupScoring.js';
+import { pairScore } from '../src/scoring.js';
 const players=['a','b','c','d'].map((id,i)=>({id,name:id.toUpperCase(),hi:0}));const holes=Array.from({length:18},(_,i)=>({n:i+1,par:4,si:i+1}));const course={id:'x',tees:[{name:'White',rating:72,slope:113,holes}]};const gross={a:3,b:4,c:5,d:6};
 function state(format){return{players,courses:[course],comps:[],cards:players.map(p=>({id:'c'+p.id,compId:'comp',playerId:p.id,courseId:'x',tee:'White',gross:Array(18).fill(gross[p.id]),handicapIndexUsed:0,playingHandicap:0}))}}
 const group={id:'g',playerIds:['a','b','c','d']};const expected={best1:54,best2:90,best3:108,'cha-cha-cha':84,'irish-fourball':84,bowmaker:90,alliance:90,'yellow-ball':78};
@@ -6,3 +7,28 @@ for(const[format,total]of Object.entries(expected))test(format+' matches indepen
 test('all Beta.14 formats route to separate engine',()=>['scramble','scramble-standard','florida','shamble',...Object.keys(expected)].forEach(f=>{assert.equal(isGroupFormat(f),true);assert.ok(GROUP_FORMAT_RULES[f])}));
 test('scramble uses one team gross card and returns nett team score',()=>{const c={id:'comp',format:'scramble',course:'x',tee:'White'},g={...group,teamGross:Array(18).fill(4),teamPlayingHandicap:8};const r=groupScore(g,c,state('scramble'));assert.equal(r.gross,72);assert.equal(r.net,64);assert.equal(r.rankValue,64)});
 test('group scoring does not mutate individual cards',()=>{const s=state('best2'),before=JSON.stringify(s.cards);groupScore(group,{id:'comp',format:'best2',course:'x',tee:'White'},s);assert.equal(JSON.stringify(s.cards),before)});
+
+for (const [holesMode, firstHole, length] of [['front9', 0, 9], ['back9', 9, 9], ['18', 0, 18]]) {
+ test(`Best 1/2/3 and Cha Cha Cha use only the ${holesMode} holes`, () => {
+  const selected = Array.from({length}, (_, i) => firstHole + i);
+  const fixture = state();
+  for (const card of fixture.cards) {
+   card.gross = card.gross.map((score, i) => selected.includes(i) ? score : 1);
+  }
+  for (const [format, points] of [['best1', 3], ['best2', 5], ['best3', 6], ['cha-cha-cha', 14 / 3]]) {
+   const result = groupScore(group, {id:'comp', format, course:'x', tee:'White', holesMode}, fixture);
+   assert.equal(result.points, points * length);
+   assert.equal(result.complete, length);
+  }
+ });
+}
+
+for (const [holesMode, start, length] of [['front9', 0, 9], ['back9', 9, 9], ['18', 0, 18]]) {
+ test(`4BBB Stroke Play uses the partner score on an N/R in ${holesMode}`, () => {
+  const fixture = state();
+  fixture.cards[0].gross[start] = 0;
+  const result = pairScore({ids:['a','b']}, {id:'comp', format:'4bbb-stroke', course:'x', tee:'White', holesMode}, fixture);
+  assert.equal(result.complete, length);
+  assert.equal(result.net, 3 * length + 1);
+ });
+}

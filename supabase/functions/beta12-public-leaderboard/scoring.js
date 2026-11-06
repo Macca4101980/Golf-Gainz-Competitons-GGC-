@@ -50,7 +50,27 @@ export function fourballMatchHandicaps(pairA,pairB,c,state){
  const all=[...(pairA?.ids||[]),...(pairB?.ids||[])].filter(Boolean);const {course,tee,holes:hs}=competitionCourse(c,state);const par=hs.reduce((a,h)=>a+h.par,0)||72;const allowance=c.handicapAllowance??90;const ch=Object.fromEntries(all.map(id=>{const p=state.players.find(x=>x.id===id);return[id,courseHandicap(p?.hi,tee,par)]}));if(!all.length)return{};const low=Math.min(...Object.values(ch));return Object.fromEntries(all.map(id=>[id,whsRound((ch[id]-low)*(allowance/100))]));
 }
 export function fourballMatchResult(pairA,pairB,c,state){
- const all=[...(pairA?.ids||[]),...(pairB?.ids||[])];const {course,tee,holes:hs}=competitionCourse(c,state);const rel=fourballMatchHandicaps(pairA,pairB,c,state);const gross=id=>state.cards.find(x=>x.compId===c.id&&x.playerId===id)?.gross||[];let up=0,played=0,decided=false,decisionLeft=0;const holes=[];
- for(let i=0;i<hs.length;i++){const h=hs[i];const best=pair=>Math.min(...(pair.ids||[]).map(id=>{const g=+(gross(id)[i]||0);return g?g-holeStrokes(rel[id]||0,h.si):999}));const av=best(pairA),bv=best(pairB);if(av===999||bv===999){holes.push(null);continue}played++;if(av<bv)up++;else if(bv<av)up--;const remaining=hs.length-(i+1);holes.push({a:av,b:bv,up});if(Math.abs(up)>remaining){decided=true;decisionLeft=remaining;break}}
- const left=decided?decisionLeft:Math.max(0,hs.length-played);let text=up===0?'All Square':`${Math.abs(up)} UP`;if(decided)text=`${Math.abs(up)} & ${left}`;return{up,played,left,holes,relativeHandicaps:rel,text,decided};
+ const {holes:courseHoles}=competitionCourse(c,state);
+ const indexes=selectedIndexes(c,courseHoles).filter(i=>courseHoles[i]);
+ const relativeHandicaps=fourballMatchHandicaps(pairA,pairB,c,state);
+ const cards=new Map(state.cards.filter(card=>card.compId===c.id).map(card=>[card.playerId,card.gross]));
+ const holes=[];
+ let up=0;
+ for(const i of indexes){
+  const bestNet=pair=>{
+   const scores=pair.ids.map(id=>cards.get(id)?.[i]);
+   if(!scores.every(isEnteredHoleScore))return null;
+   return Math.min(...scores.map((score,j)=>isNoReturnScore(score)?Infinity:Number(score)-holeStrokes(relativeHandicaps[pair.ids[j]]||0,courseHoles[i].si)));
+  };
+  const a=bestNet(pairA),b=bestNet(pairB);
+  if(a===null||b===null)break;
+  if(a<b)up++;
+  if(b<a)up--;
+  holes.push({a,b,up});
+  if(Math.abs(up)>indexes.length-holes.length)break;
+ }
+ const played=holes.length,left=indexes.length-played;
+ const decided=played>0&&(left===0||Math.abs(up)>left);
+ const text=up===0?(decided?'Match halved':'All Square'):decided&&left>0?`${Math.abs(up)} & ${left}`:`${Math.abs(up)} UP`;
+ return {up,played,left,holes,relativeHandicaps,text,decided};
 }

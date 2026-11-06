@@ -11,7 +11,6 @@ export default function CrossCourseFixtures({client, state, groups}) {
   const [groupId, setGroupId] = useState('');
   const [slots, setSlots] = useState(emptySlots);
   const [name, setName] = useState('');
-  const [deadline, setDeadline] = useState('');
   const [response, setResponse] = useState(null);
   const [fixtureId, setFixtureId] = useState('');
   const [drafts, setDrafts] = useState({});
@@ -77,13 +76,15 @@ export default function CrossCourseFixtures({client, state, groups}) {
 
   function create(event) {
     event.preventDefault();
+    const deadline = new Date(new FormData(event.currentTarget).get('deadline'));
     return run(async () => {
+      if (!Number.isFinite(deadline.getTime()) || deadline.getTime() <= Date.now()) throw new Error('Choose a future entry deadline.');
       if (!name.trim()) throw new Error('Enter a fixture name.');
       const fixture = lockCrossCourseSetup({slots, players, courses: state.courses});
       await rpc('ggc_cross_course_fixtures', {
         p_group_id: groupId, p_fixture: {...fixture, name: name.trim(), cards: fixture.cards.map(card => ({
           ...card, name: players.find(player => player.id === card.id).name
-        }))}, p_closes_at: new Date(deadline).toISOString()
+        }))}, p_closes_at: deadline.toISOString()
       });
       setName('');
       setSlots(emptySlots());
@@ -140,7 +141,7 @@ export default function CrossCourseFixtures({client, state, groups}) {
         <option value="">Choose group</option>
         {groups.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select></label>
-      <label>Entry deadline<input required type="datetime-local" value={deadline} onChange={event => setDeadline(event.target.value)}/></label>
+      <label>Entry deadline<input required type="datetime-local" name="deadline"/></label>
       {groupId && <label>Search group golfers<input value={search} onChange={event => setSearch(event.target.value)}/></label>}
       {slots.map((slot, index) => <fieldset key={index}>
         <legend>Pair {slot.side} · Golfer {index % 2 + 1}</legend>

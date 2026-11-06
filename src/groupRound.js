@@ -2,13 +2,13 @@ import {isEnteredHoleScore} from './scoreInput.js';
 
 export const ENABLED_TEAM_STABLEFORD=['best1','best2','best3','cha-cha-cha'];
 export function groupMinimumPlayers(format){return ['best3','cha-cha-cha'].includes(format)?3:2;}
-export function groupStartError({c,ids,me,admin=false,saved=null}){
+export function groupStartError({c,ids,me,admin=false,memberIds=[],saved=null}){
  const players=ids.filter(Boolean);
  if(new Set(players).size!==players.length)return 'Choose each golfer only once.';
  const min=groupMinimumPlayers(c.format);
  if(players.length<min||players.length>4)return `This format needs ${min}–4 golfers.`;
  if(!admin&&!players.includes(me.id))return 'Your playing group must include you.';
- if(!admin&&players.some(id=>id!==me.id&&!(c.entries||[]).includes(id)))return 'Ask the other golfers to enter this competition before adding them to your playing group.';
+ if(!admin&&players.some(id=>id!==me.id&&!memberIds.includes(id)))return 'Choose golfers who belong to this group.';
  const other=(c.roundGroups||[]).find(g=>g.id!==saved?.id&&(g.playerIds||[]).some(id=>players.includes(id)));
  if(other)return 'A selected golfer already belongs to another playing group. Open that existing round instead.';
  return null;

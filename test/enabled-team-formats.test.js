@@ -36,11 +36,15 @@ test('group minimums, duplicates and already assigned golfers are rejected befor
  assert.equal(groupStartError({c,ids:['a','b','c'],me:players[0],admin:true}),null);
 });
 
-test('member group changes include self and only already-entered partners',()=>{
- const c={...base,format:'best1',roundGroups:[],entries:['a','b']};
- assert.equal(groupStartError({c,ids:['a','b'],me:players[0]}),null);
- assert.match(groupStartError({c,ids:['a','c'],me:players[0]}),/enter this competition/);
- assert.match(groupStartError({c,ids:['b','c'],me:players[0]}),/include you/);
+test('members can start with group members before their partners enter',()=>{
+ for(const format of ['best1','best2','best3','cha-cha-cha']){
+  const c={...base,format,roundGroups:[],entries:['a','outsider']};
+  const options={c,me:players[0],memberIds:['a','b','c']};
+  assert.equal(groupStartError({...options,ids:['a','b','c']}),null);
+  assert.match(groupStartError({...options,ids:['a','b','outsider']}),/belong to this group/);
+  assert.match(groupStartError({...options,ids:['b','c','outsider']}),/include you/);
+  assert.match(groupStartError({...options,c:{...c,roundGroups:[{id:'other',playerIds:['b']}]},ids:['a','b','c']}),/already belongs/);
+ }
 });
 
 test('member persistence changes participation only and preserves competition timestamps/settings',()=>{

@@ -1019,3 +1019,34 @@ button.leaderboardShareBtn:active{
   outline:2px solid #70e64b;
   outline-offset:2px;
 }
+
+.pullRefreshIndicator {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #17663a;
+  box-shadow: 0 2px 8px #0003;
+  pointer-events: none;
+}
+.pullRefreshIndicator span {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: pullRefreshSpin .7s linear infinite;
+}
+@keyframes pullRefreshSpin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pullRefreshIndicator span { animation: none; }
+}

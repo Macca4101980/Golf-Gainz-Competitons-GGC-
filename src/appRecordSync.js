@@ -13,14 +13,25 @@ export function createAppRecordSession(client){
  return {store,coordinator,hydrated:false,
   async load(snapshot,context={}){
    if(!loading)loading=(async()=>{
-    const records=await store.loadAll(APP_RECORD_KINDS);
+    // Audit history grows continuously and is not required to render the app.
+    // Load the operational records first so a large audit cannot hold the
+    // signed-in user on the profile loading screen.
+    const startupKinds=APP_RECORD_KINDS.filter(kind=>kind!=='audit');
+    const records=await store.loadAll(startupKinds);
+    records.audit=[];
     const base={...snapshot,settings:{},contacts:{},hiddenContacts:{},identityLinks:{},oom:{},
      deletedCompIds:[],deletedCardIds:[],deletedSocietyIds:[],deletedCourseIds:[],deletedLeagueIds:[]};
     const next=mergeRecordSnapshotIntoAppState(base,records,context);
-    coordinator.initialize(records);
-    return {snapshot:next,records};
+    const finishHydration=(async()=>{
+     const loaded=await store.loadAll(['audit']);
+     const complete={...records,audit:loaded.audit||[]};
+     coordinator.initialize(complete);
+     return {records:complete,audit:complete.audit};
+    })();
+    return {snapshot:next,records,finishHydration};
    })().catch(error=>{loading=null;throw error});
-   return structuredClone(await loading);
+   const result=await loading;
+   return {...structuredClone({snapshot:result.snapshot,records:result.records}),finishHydration:result.finishHydration};
   }
  };
 }

@@ -253,10 +253,11 @@ useEffect(()=>{
    next=prepared.snapshot;recordsReady=true;
    // Audit history completes separately so it cannot block the signed-in UI.
    // Keep record writes disabled until its versions are safely loaded.
-   void prepared.finishHydration.then(({audit})=>{
+   void prepared.finishHydration.then(()=>{
     if(cancelled)return;
-    remoteStateRef.current=true;
-    setState(current=>({...current,audit:mergeLiveState({audit:current.audit||[]},{audit:audit||[]}).audit}));
+    // The coordinator keeps the complete audit baseline and versions. Do not
+    // copy thousands of historical audit entries into React/localStorage;
+    // new audit records can still be appended and saved independently.
     recordSession.hydrated=true;
     appFieldWritesReadyFor=auth.access_token;
     setAppRecordReadyUser(auth.user.id);

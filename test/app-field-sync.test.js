@@ -113,12 +113,34 @@ test('record startup reads real groups without importing hidden default IDs or s
  assert.deepEqual(local,before);
  assert.equal(client.writes,0);
  assert.equal(session.store.getVersion('societies','real-group'),3);
+ await result.finishHydration;
+ assert.equal(session.coordinator.isInitialized(),true);
+});
+
+test('large audit history does not block operational startup',async()=>{
+ let releaseAudit;
+ const auditGate=new Promise(resolve=>{releaseAudit=resolve});
+ const client={
+  from(){let kind;return {select(){return this},eq(_key,value){kind=value;return this},order(){return this},async range(){
+   if(kind==='audit')await auditGate;
+   const data=kind==='players'?[{record_id:'p1',data:{id:'p1',name:'Ready'},version:1,deleted:false}]:[];
+   return {data,error:null};
+  }}}
+ };
+ const session=createAppRecordSession(client);
+ const started=await session.load({}, {userId:'u1'});
+ assert.equal(started.snapshot.players[0].name,'Ready');
+ assert.equal(session.coordinator.isInitialized(),false);
+ releaseAudit();
+ await started.finishHydration;
+ assert.equal(session.coordinator.isInitialized(),true);
 });
 
 test('concurrent startup and token refresh share one load and preserve pending local changes',async()=>{
  const client=readClient({players:[{id:'p1',name:'Original'}]});
  const session=createAppRecordSession(client);
  const [a,b]=await Promise.all([session.load({}, {userId:'u1'}),session.load({}, {userId:'u1'})]);
+ await a.finishHydration;
  assert.equal(client.reads,9);
  a.snapshot.players[0].name='Local edit';
  assert.equal(b.snapshot.players[0].name,'Original');

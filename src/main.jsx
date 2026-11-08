@@ -250,7 +250,22 @@ useEffect(()=>{
   if(APP_FIELD_STORE_ENABLED){
    const prepared=await recordSession.load(next,{userId:auth.user.id});
    if(cancelled)return;
-   next=prepared.snapshot;appReady=true;recordsReady=true;
+   next=prepared.snapshot;recordsReady=true;
+   // Audit history completes separately so it cannot block the signed-in UI.
+   // Keep record writes disabled until its versions are safely loaded.
+   void prepared.finishHydration.then(({audit})=>{
+    if(cancelled)return;
+    remoteStateRef.current=true;
+    setState(current=>({...current,audit:mergeLiveState({audit:current.audit||[]},{audit:audit||[]}).audit}));
+    recordSession.hydrated=true;
+    appFieldWritesReadyFor=auth.access_token;
+    setAppRecordReadyUser(auth.user.id);
+    setCloud('Field sync ready');
+   }).catch(error=>{
+    if(cancelled)return;
+    setCloud('History sync delayed — changes retained');
+    console.error('Audit hydration failed; record writes remain paused',error?.message||error);
+   });
   }else if(RECORD_STORE_ENABLED){
    try{const prepared=await prepareScorecardRecordBaseline({store:scorecardRecordStore,coordinator:scorecardRecordCoordinator,cards:next.cards||[]});next.cards=prepared.cards;recordsReady=true}catch(error){console.error('Scorecard records need review; legacy snapshot retained',error?.message||error)}
   }

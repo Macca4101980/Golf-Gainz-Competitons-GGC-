@@ -1050,3 +1050,5 @@ button.leaderboardShareBtn:active{
 @media (prefers-reduced-motion: reduce) {
   .pullRefreshIndicator span { animation: none; }
 }
+
+.leaderboardPayoutSummary{border:1px solid var(--line,#d6ddd5);border-radius:14px;padding:12px 16px;margin-top:12px;background:var(--card,#f6f8f4);color:inherit;text-align:left;overflow-wrap:anywhere}.leaderboardPayoutSummary p{margin:0;font-size:14px;line-height:1.55;font-weight:600}.leaderboardPayoutSummary p+p{margin-top:6px}

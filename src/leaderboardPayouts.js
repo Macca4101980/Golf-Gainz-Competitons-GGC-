@@ -21,16 +21,25 @@ function twos(c, state, pot) {
 
 // Display only: use the same standings and pot rules as the existing money screens.
 export function leaderboardPayoutLines(c, state, now = Date.now()) {
- if (!completed(c, now) || publicVisibility(c, now).provisional) return [];
+ if (['draft','scheduled','cancelled','deleted'].includes(c.status) && !(c.status === 'scheduled' && now >= Date.parse(c.starts))) return [];
+ const visibility = publicVisibility(c, now);
+ const releaseAt = c.resultsEmbargo?.enabled ? Date.parse(c.resultsEmbargo.releaseAt) : NaN;
+ const winnersReady = !visibility.provisional && (completed(c, now) || (Number.isFinite(releaseAt) && now >= releaseAt));
  const league = (state.leagues || []).find(l=>l.id === c.leagueId && l.teams?.length);
  const lines = [];
+ if (!winnersReady && Number.isFinite(releaseAt)) {
+  const date = new Date(releaseAt);
+  const time = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'numeric',minute:'2-digit',hour12:true}).format(date).replace(':00','').replace(' ','');
+  const day = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'numeric',month:'long'}).format(date);
+  lines.push(`Comp Winners shown at ${time} ${day}`);
+ }
  let twosResult;
  if (league) {
   const cfg = {twosFee:8, weeklyPrizePerPlayer:10, ...league.moneySettings};
   const weeks = winterLeagueTable(league, state, new Date(now)).weekly;
   const week = weeks.find(w=>w.comp.id === c.id), winner = week?.rows.find(r=>r.position === 1 && r.complete === indexes(c).length && Number.isFinite(r.points));
   const team = league.teams.find(t=>t.id === winner?.teamId);
-  if (team && +cfg.weeklyPrizePerPlayer > 0) lines.push(`Comp Winners ${amount(+cfg.weeklyPrizePerPlayer)} each = ${names(team.memberIds || [], state)}`);
+  if (winnersReady && team && +cfg.weeklyPrizePerPlayer > 0) lines.push(`Comp Winners ${amount(+cfg.weeklyPrizePerPlayer)} each = ${names(team.memberIds || [], state)}`);
   const members = (league.memberIds || []).filter(id=>state.players.some(p=>p.id === id));
   const contribution = members.length * (+cfg.twosFee || 0) / Math.max(1, weeks.length || league.targetCompetitions || 1);
   let carry = 0;
@@ -58,7 +67,7 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
   const pot = (c.entries || []).length * (+c.fee || 0) * (+(c.payouts?.overall ?? 100))/100;
   [split.first,split.second,split.third].forEach((pct,i)=>{
    const row=rows[i], prize=pot*(+pct||0)/100;
-   if (row?.ids?.length && prize>0) lines.push(`${i===0?'Comp Winners':i===1?'Comp 2nd':'Comp 3rd'} ${amount(prize/row.ids.length)} each = ${names(row.ids,state)}`);
+   if (winnersReady && row?.ids?.length && prize>0) lines.push(`${i===0?'Comp Winners':i===1?'Comp 2nd':'Comp 3rd'} ${amount(prize/row.ids.length)} each = ${names(row.ids,state)}`);
   });
   if (c.twoClub) twosResult = twos(c,state,(c.entries || []).length*(+c.twoFee || 0));
  }

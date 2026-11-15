@@ -33,7 +33,7 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
   const day = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',day:'numeric',month:'long'}).format(date);
   lines.push(`Comp Winners shown at ${time} ${day}`);
  }
- let twosResult;
+ let twosResult, leagueForTwos;
  if (league) {
   const cfg = {twosFee:8, weeklyPrizePerPlayer:10, ...league.moneySettings};
   const weeks = winterLeagueTable(league, state, new Date(now)).weekly;
@@ -49,6 +49,7 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
    if (w.comp.id === c.id) {twosResult = result; break;}
    if (completed(w.comp, now) && result.hits.size) carry = 0;
   }
+  leagueForTwos = league;
  } else {
   let rows = [];
   if (isGroupFormat(c.format)) rows = groupLeaderboard(c,state).map(r=>({...r, ids:r.playerIds}));
@@ -72,6 +73,24 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
   if (c.twoClub) twosResult = twos(c,state,(c.entries || []).length*(+c.twoFee || 0));
  }
  if (twosResult?.share > 0) {
+  if (leagueForTwos) {
+   const allocated=new Set();
+   for (const team of leagueForTwos.teams || []) {
+    const memberIds=(team.memberIds || []).filter(id=>state.players.some(p=>p.id === id));
+    const hitCount=memberIds.reduce((total,id)=>total+(twosResult.hits.get(id)||0),0);
+    if (!hitCount) continue;
+    memberIds.forEach(id=>allocated.add(id));
+    if (team.shareTwos && memberIds.length) {
+     const each=twosResult.share*hitCount/memberIds.length;
+     lines.push(`Weekly 2s · ${team.name} · ${amount(each)} each : ${names(memberIds,state)}`);
+    } else for (const id of memberIds) {
+     const count=twosResult.hits.get(id)||0;
+     if (count) lines.push(`Weekly 2s ${amount(twosResult.share*count)} : ${state.players.find(p=>p.id===id)?.name || 'Unknown golfer'}`);
+    }
+   }
+   for (const [id,count] of twosResult.hits) if (!allocated.has(id)) lines.push(`Weekly 2s ${amount(twosResult.share*count)} : ${state.players.find(p=>p.id===id)?.name || 'Unknown golfer'}`);
+   return lines;
+  }
   // Multiple 2s earn multiple shares; group by actual per-person payout.
   const groups = new Map();
   for (const [id,count] of twosResult.hits) {

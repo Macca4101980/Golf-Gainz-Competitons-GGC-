@@ -72,7 +72,7 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
   });
   if (c.twoClub) twosResult = twos(c,state,(c.entries || []).length*(+c.twoFee || 0));
  }
- if (twosResult?.share > 0) {
+ if (winnersReady && twosResult?.share > 0) {
   if (leagueForTwos) {
    const allocated=new Set();
    for (const team of leagueForTwos.teams || []) {

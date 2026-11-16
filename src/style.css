@@ -1053,3 +1053,32 @@ button.leaderboardShareBtn:active{
 
 .leaderboardPayoutSummary{border:1px solid #34483a;border-radius:14px;padding:12px 16px;margin-top:12px;background:#101b14;color:#f4f7f4;text-align:left;overflow-wrap:anywhere}.leaderboardPayoutSummary p{margin:0;font-size:14px;line-height:1.55;font-weight:600}.leaderboardPayoutSummary p+p{margin-top:6px}
 .payoutEntry{display:grid;grid-template-columns:minmax(0,1fr) 110px auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid #e0e5e1}.payoutEntry>span{display:flex;flex-direction:column;min-width:0}.payoutEntry small{margin-top:3px;color:#68756f}.payoutEntry label{margin:0;font-size:.75rem}.payoutEntry input{margin-top:4px}.payoutEntry button{margin:0;white-space:nowrap}@media(max-width:600px){.payoutEntry{grid-template-columns:minmax(0,1fr) 100px}.payoutEntry>span{grid-column:1/-1}.payoutEntry button{min-height:42px}}
+
+/* Beta 12.2 compact League Money payout roster. */
+.payoutRoster{display:grid;gap:0;margin-bottom:16px;border:1px solid #d9dfdc;border-radius:12px;overflow:hidden}
+.payoutRosterHead,.payoutGolfer{display:grid;grid-template-columns:minmax(150px,1.7fr) repeat(3,minmax(72px,.65fr)) minmax(105px,.8fr) 84px 82px;align-items:center}
+.payoutRosterHead{padding:9px 10px;background:#edf1ee;border-bottom:1px solid #c8d0cb;font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:.025em}
+.payoutGolfer{padding:9px 10px;border-bottom:1px solid #d9dfdc}
+.payoutGolfer:last-child{border-bottom:0}
+.payoutGolferName{min-width:0;padding:0;border:0;background:none;color:inherit;text-align:left}
+.payoutGolferName span{display:block;overflow:hidden;font-weight:900;text-overflow:ellipsis;white-space:nowrap}
+.payoutGolferName small,.payoutFigure small,.payoutAmount small,.payoutShare small{display:none}
+.payoutFigure b{font-size:.9rem}
+.payoutAmount{margin:0}.payoutAmount span{display:flex;align-items:center;gap:3px;font-weight:800}.payoutAmount input{width:78px;margin:0;padding:8px 6px}
+.payoutRecord{margin:0;justify-self:start}
+.payoutShare{display:flex;align-items:center;justify-content:center;margin:0}.payoutShare input{width:22px;height:22px;margin:0}
+.payoutHistory{grid-column:1/-1;margin-top:10px;padding:12px;border-radius:10px;background:#f2f5f3}
+.payoutHistory ul{margin:6px 0 12px;padding-left:20px}
+@media(max-width:700px){
+ .payoutRoster{border:0;border-radius:0;overflow:visible}
+ .payoutRosterHead{display:none}
+ .payoutGolfer{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;margin-bottom:10px;padding:12px;border:1px solid #d9dfdc;border-radius:12px;background:#fff}
+ .payoutGolferName{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid #e2e7e4}
+ .payoutGolferName span{white-space:normal}.payoutGolferName small{display:block;flex:0 0 auto;color:var(--green);font-weight:800}
+ .payoutFigure{text-align:left}.payoutFigure small,.payoutAmount small,.payoutShare small{display:block;margin-bottom:3px;color:#68756f;font-size:.68rem;font-weight:800;text-transform:uppercase}
+ .payoutFigure b{font-size:1rem}.payoutOwed b{color:var(--green)}
+ .payoutAmount{grid-column:1/3}.payoutAmount input{box-sizing:border-box;width:100%;min-width:0}
+ .payoutRecord{grid-column:3;align-self:end;width:100%;min-height:40px;justify-content:center}
+ .payoutShare{grid-column:1/-1;justify-content:flex-start;gap:9px;padding-top:2px}.payoutShare small{margin:0}
+ .payoutHistory{grid-column:1/-1;margin-top:0}
+}

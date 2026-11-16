@@ -1082,3 +1082,12 @@ button.leaderboardShareBtn:active{
  .payoutShare{grid-column:1/-1;justify-content:flex-start;gap:9px;padding-top:2px}.payoutShare small{margin:0}
  .payoutHistory{grid-column:1/-1;margin-top:0}
 }
+
+.payoutTotals{display:grid;grid-template-columns:minmax(150px,1fr) repeat(3,minmax(80px,auto)) minmax(105px,auto) minmax(70px,auto) minmax(72px,auto);gap:0;padding:11px 10px;border-top:2px solid #102319;background:#e8eee9;align-items:center}
+.payoutTotalsName{text-transform:uppercase;letter-spacing:.025em}
+@media(max-width:700px){
+ .payoutTotals{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;margin-top:2px;padding:12px;border:2px solid #102319;border-radius:12px}
+ .payoutTotalsName{grid-column:1/-1}
+ .payoutTotals .payoutFigure small{display:block}
+ .payoutTotalsBlank{display:none}
+}

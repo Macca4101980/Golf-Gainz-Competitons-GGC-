@@ -482,6 +482,7 @@ function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
 function LeagueMoneyManager({state,setState,me,society}){
  const leagues=(state.leagues||[]).filter(l=>l.societyId===society?.id&&(l.memberIds||[]).length),[leagueId,setLeagueId]=useState(leagues[0]?.id||'');
  useEffect(()=>{if(!leagues.some(l=>l.id===leagueId))setLeagueId(leagues[0]?.id||'')},[society?.id,state.leagues?.length]);
+ const [paymentDrafts,setPaymentDrafts]=useState({}),[historyGolfer,setHistoryGolfer]=useState(null);
  const league=leagues.find(l=>l.id===leagueId);if(!league)return <div className="card"><h3>LEAGUE MONEY</h3><p className="muted">No League with players in this Group.</p></div>;
  const cfg={entryFee:12,twosFee:8,weeklyPrizePerPlayer:10,finalFirst:60,...(league.moneySettings||{})},paid=league.moneyPaidIn||{},settled=league.moneyPaidOut||{},payments=league.moneyPayoutPayments||{};
  const members=(league.memberIds||[]).map(id=>state.players.find(p=>p.id===id)).filter(Boolean),totalPerPlayer=(+cfg.entryFee||0)+(+cfg.twosFee||0),expected=members.length*totalPerPlayer,received=members.reduce((n,p)=>n+(paid[p.id]?totalPerPlayer:0),0);
@@ -496,22 +497,63 @@ function LeagueMoneyManager({state,setState,me,society}){
  const leaguePot=members.length*(+cfg.entryFee||0),weeklyCommitted=payouts.filter(x=>x.reason.includes('winner')).reduce((n,x)=>n+x.amount,0),finalPot=Math.max(0,leaguePot-weeklyCommitted),completed=weeks.length>0&&weeks.every(weekIsFinal);if(completed&&wl?.table?.length){const first=wl.table[0],second=wl.table[1],pct=Math.max(0,Math.min(100,+cfg.finalFirst||0));for(const [team,amount,label] of [[first,finalPot*pct/100,'League 1st'],[second,finalPot*(100-pct)/100,'League 2nd']])if(team&&amount>0)for(const id of team.memberIds||[]){const p=state.players.find(x=>x.id===id);if(p)payouts.push({key:'final-'+label+'-'+id,playerId:id,name:p.name,reason:label,amount:amount/Math.max(1,team.memberIds?.length||1)})}}
  const toPence=amount=>Math.round((Number(amount)||0)*100);
  const paidFor=x=>Object.prototype.hasOwnProperty.call(payments,x.key)?Math.max(0,Math.min(toPence(x.amount),toPence(payments[x.key]))):(settled[x.key]?toPence(x.amount):0);
- const balances=new Map();
+ const balances=new Map(members.map(player=>[player.id,{name:player.name,earned:0,paid:0,prizes:[],history:[]}]));
+ const sharingTeams=new Map((league.teams||[]).flatMap(team=>(team.memberIds||[]).map(id=>[id,team])));
  for(const payout of payouts){
-  if(!balances.has(payout.playerId))balances.set(payout.playerId,{name:payout.name,earned:0,paid:0,prizes:[]});
+  if(!balances.has(payout.playerId))balances.set(payout.playerId,{name:payout.name,earned:0,paid:0,prizes:[],history:[]});
   const balance=balances.get(payout.playerId);
   balance.earned+=toPence(payout.amount);
-  balance.paid+=paidFor(payout);
+  const legacyPaid=paidFor(payout);
+  if(legacyPaid>0)balance.history.push({id:payout.key,amountPence:legacyPaid,description:payout.reason});
+  balance.paid+=legacyPaid;
   balance.prizes.push(payout);
  }
+ for(const payment of Object.values(league.moneyPaymentsById||{})){
+  const balance=balances.get(payment.playerId);
+  if(!balance)continue;
+  balance.history.push(payment);
+  balance.paid+=payment.amountPence;
+ }
  const paidOut=[...balances.values()].reduce((total,balance)=>total+balance.paid,0)/100;
- const owed=[...balances.values()].reduce((total,balance)=>total+balance.earned-balance.paid,0)/100;
+ const owed=[...balances.values()].reduce((total,balance)=>total+Math.max(0,balance.earned-balance.paid),0)/100;
  const bankExpected=received-paidOut;
- const patch=changes=>setState(s=>({...s,leagues:(s.leagues||[]).map(l=>l.id===league.id?{...l,...changes}:l)})),setCfg=(k,v)=>patch({moneySettings:{...cfg,[k]:v}}),toggleIn=id=>patch({moneyPaidIn:{...paid,[id]:!paid[id]}}),setPayment=(key,value)=>patch({moneyPayoutPayments:{...payments,[key]:Math.max(0,+value||0)}});
- return <div className="leagueMoney"><div className="card"><h3>LEAGUE MONEY</h3><p className="muted">Admin calculator only. GGC does not connect to or move money in your bank account.</p><label>League<select value={league.id} onChange={e=>setLeagueId(e.target.value)}>{leagues.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><div className="grid"><label>League pot per player £<input type="number" min="0" step="0.5" value={cfg.entryFee} onChange={e=>setCfg('entryFee',+e.target.value||0)}/></label><label>2s contribution per player £<input type="number" min="0" step="0.5" value={cfg.twosFee} onChange={e=>setCfg('twosFee',+e.target.value||0)}/></label><label>Weekly winner per player £<input type="number" min="0" step="0.5" value={cfg.weeklyPrizePerPlayer} onChange={e=>setCfg('weeklyPrizePerPlayer',+e.target.value||0)}/></label><label>Final 1st / 2nd split<select value={cfg.finalFirst} onChange={e=>setCfg('finalFirst',+e.target.value)}><option value="70">70 / 30</option><option value="60">60 / 40</option><option value="50">50 / 50</option></select></label></div></div><div className="card"><h3>RECONCILIATION</h3><div className="leaderrow"><span><b>Expected when everyone has paid</b><small>{members.length} golfers × {money2(totalPerPlayer)}</small></span><em>{money2(expected)}</em></div><div className="leaderrow"><span><b>Received and ticked off</b><small>{members.filter(p=>paid[p.id]).length} of {members.length} paid</small></span><em>{money2(received)}</em></div><div className="leaderrow"><span><b>Paid out</b></span><em>{money2(paidOut)}</em></div><div className="leaderrow"><span><b>Total prize fund</b><small>Received minus payouts entered</small></span><em>{money2(bankExpected)}</em></div><div className="leaderrow"><span><b>Still owed to golfers</b></span><em>{money2(owed)}</em></div></div><div className="card"><h3>WHO HAS PAID IN?</h3>{members.map(p=><div className="memberRow" key={p.id}><span><b>{p.name}</b><small>{money2(totalPerPlayer)} · {money2(cfg.entryFee)} League + {money2(cfg.twosFee)} 2s</small></span><button className={paid[p.id]?'mini':'mini secondary'} onClick={()=>toggleIn(p.id)}>{paid[p.id]?'✓ PAID':'NOT PAID'}</button></div>)}</div><div className="card"><h3>PAYOUTS</h3>{balances.size?[...balances].sort(([,a],[,b])=>a.name.localeCompare(b.name)).map(([playerId,balance])=><details key={playerId}>
- <summary><b>{balance.name}</b> · Won {money2(balance.earned/100)} · Paid {money2(balance.paid/100)} · Owed {money2((balance.earned-balance.paid)/100)}</summary>
- {balance.prizes.map(x=>{const actual=paidFor(x)/100,earned=toPence(x.amount)/100,remaining=(toPence(x.amount)-paidFor(x))/100;return <div className="payoutEntry" key={x.key}><span><b>{x.reason}</b><small>Earned {money2(earned)} · {remaining?money2(remaining)+' still owed':'paid in full'}</small></span><label>Paid £<input type="number" min="0" max={earned} step="0.01" value={actual||''} placeholder="0.00" onChange={e=>setPayment(x.key,e.target.value)}/></label><button className="mini secondary" onClick={()=>setPayment(x.key,earned)}>PAY IN FULL</button></div>})}
- </details>):<p className="muted">Nothing is owed yet. Weekly winners and 2s will appear when results are final and released.</p>}<h4>2S CLUB · WEEK BY WEEK</h4><p className="muted">Every gross 2 earns one equal share. Teams marked “2s shared” divide all shares earned by either partner equally; other golfers keep their own shares.</p>{twosLedger.map(w=>{const detail=w.status==='won'?`${money2(w.share)} per 2 · payout confirmed`:'No gross 2s · pot carried forward';return <div className="twosLedgerWeek" key={`twos-week-${w.week}`}><div className="twosLedgerSummary"><span><b>Week {w.week} · {effectiveCompStatus(w.comp).toUpperCase()}</b><small>{w.hits.length} gross 2{w.hits.length===1?'':'s'} · {detail}</small></span><em>{money2(w.pot)}</em></div>{w.allocations.map(a=>{const p=state.players.find(x=>x.id===a.playerId);return <div className="twosPayoutRow" key={a.playerId}><span><b>{p?.name||'Unknown golfer'}</b><small>{a.reason}</small></span><em>{money2(a.amount)} earned</em></div>})}</div>})}{twosCarry>0&&<p className="muted"><b>2s rollover:</b> {money2(twosCarry)} currently carried forward.</p>}<p className="muted">League prize pot after weekly winner prizes: <b>{money2(finalPot)}</b>{completed?' · final split is now included above':' · final 1st/2nd payout appears when the League is complete'}.</p></div></div>
+ const updateLeague=update=>setState(s=>({...s,leagues:(s.leagues||[]).map(l=>l.id===league.id?update(l):l)}));
+ const setCfg=(key,value)=>updateLeague(l=>({...l,moneySettings:{...cfg,...l.moneySettings,[key]:value}}));
+ const toggleIn=id=>updateLeague(l=>({...l,moneyPaidIn:{...l.moneyPaidIn,[id]:!l.moneyPaidIn?.[id]}}));
+ const draftKey=playerId=>league.id+':'+playerId;
+ const recordPayment=(playerId,amountPence,owedPence)=>{
+  if(!Number.isSafeInteger(amountPence)||amountPence<=0||amountPence>owedPence)return;
+  const id=uid(),recordedAt=new Date().toISOString();
+  updateLeague(l=>({...l,moneyPaymentsById:{...l.moneyPaymentsById,[id]:{id,playerId,amountPence,recordedAt,recordedBy:me?.id||null}}}));
+  setPaymentDrafts(drafts=>({...drafts,[draftKey(playerId)]:''}));
+ };
+ const toggleSharing=team=>{
+  const shareTwos=!team.shareTwos;
+  updateLeague(l=>({...l,teams:(l.teams||[]).map(t=>t.id===team.id?{...t,shareTwos}:t),updatedAt:new Date().toISOString()}));
+ };
+ return <div className="leagueMoney"><div className="card"><h3>LEAGUE MONEY</h3><p className="muted">Admin calculator only. GGC does not connect to or move money in your bank account.</p><label>League<select value={league.id} onChange={e=>setLeagueId(e.target.value)}>{leagues.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><div className="grid"><label>League pot per player £<input type="number" min="0" step="0.5" value={cfg.entryFee} onChange={e=>setCfg('entryFee',+e.target.value||0)}/></label><label>2s contribution per player £<input type="number" min="0" step="0.5" value={cfg.twosFee} onChange={e=>setCfg('twosFee',+e.target.value||0)}/></label><label>Weekly winner per player £<input type="number" min="0" step="0.5" value={cfg.weeklyPrizePerPlayer} onChange={e=>setCfg('weeklyPrizePerPlayer',+e.target.value||0)}/></label><label>Final 1st / 2nd split<select value={cfg.finalFirst} onChange={e=>setCfg('finalFirst',+e.target.value)}><option value="70">70 / 30</option><option value="60">60 / 40</option><option value="50">50 / 50</option></select></label></div></div><div className="card"><h3>RECONCILIATION</h3><div className="leaderrow"><span><b>Expected when everyone has paid</b><small>{members.length} golfers × {money2(totalPerPlayer)}</small></span><em>{money2(expected)}</em></div><div className="leaderrow"><span><b>Received and ticked off</b><small>{members.filter(p=>paid[p.id]).length} of {members.length} paid</small></span><em>{money2(received)}</em></div><div className="leaderrow"><span><b>Paid out</b></span><em>{money2(paidOut)}</em></div><div className="leaderrow"><span><b>Total prize fund</b><small>Received minus payouts entered</small></span><em>{money2(bankExpected)}</em></div><div className="leaderrow"><span><b>Still owed to golfers</b></span><em>{money2(owed)}</em></div></div><div className="card"><h3>WHO HAS PAID IN?</h3>{members.map(p=><div className="memberRow" key={p.id}><span><b>{p.name}</b><small>{money2(totalPerPlayer)} · {money2(cfg.entryFee)} League + {money2(cfg.twosFee)} 2s</small></span><button className={paid[p.id]?'mini':'mini secondary'} onClick={()=>toggleIn(p.id)}>{paid[p.id]?'✓ PAID':'NOT PAID'}</button></div>)}</div><div className="card"><h3>PAYOUTS</h3>{balances.size?<div role="region" aria-label="Golfer payouts" tabIndex={0} style={{overflowX:'auto',marginBottom:16}}>
+ <table style={{width:'100%',minWidth:640,borderCollapse:'collapse',textAlign:'left'}}>
+  <thead><tr>{['Golfer','Winnings','Paid','Owed','New payment','Record payment','2s shared'].map(label=><th key={label} scope="col" style={{padding:'8px 6px',whiteSpace:'nowrap',borderBottom:'1px solid #aab4ad'}}>{label}</th>)}</tr></thead>
+  <tbody>{[...balances].sort(([,a],[,b])=>a.name.localeCompare(b.name)).map(([playerId,balance])=>{
+   const key=draftKey(playerId),draft=paymentDrafts[key]||'',amount=toPence(draft),owed=Math.max(0,balance.earned-balance.paid);
+   const team=sharingTeams.get(playerId),canShare=(team?.memberIds||[]).length===2,open=historyGolfer===key;
+   const cell={padding:'8px 6px',borderBottom:'1px solid #d9dfdc',whiteSpace:'nowrap'};
+   return <React.Fragment key={playerId}><tr>
+    <th scope="row" style={cell}><button type="button" className="mini secondary" aria-expanded={open} onClick={()=>setHistoryGolfer(open?null:key)}>{balance.name}</button></th>
+    <td style={cell}>{money2(balance.earned/100)}</td>
+    <td style={cell}>{money2(balance.paid/100)}</td>
+    <td style={cell}>{money2(owed/100)}</td>
+    <td style={cell}><input type="number" inputMode="decimal" aria-label={'New payment for '+balance.name} min="0.01" max={owed/100} step="0.01" placeholder="0.00" style={{width:88,margin:0}} value={draft} disabled={!owed} onChange={e=>setPaymentDrafts(current=>({...current,[key]:e.target.value}))}/></td>
+    <td style={cell}><button type="button" className="mini primary" disabled={amount<=0||amount>owed} onClick={()=>recordPayment(playerId,amount,owed)}>Record</button></td>
+    <td style={cell}>{canShare?<label style={{display:'inline-flex',margin:0}}><input type="checkbox" checked={!!team.shareTwos} aria-label={'Share 2s for '+team.name} onChange={()=>toggleSharing(team)}/></label>:'—'}</td>
+   </tr>{open&&<tr><td colSpan={7} style={{padding:12,borderBottom:'1px solid #d9dfdc'}}>
+    <b>Payment history</b>
+    {balance.history.length?<ul>{[...balance.history].sort((a,b)=>(b.recordedAt||'').localeCompare(a.recordedAt||'')).map(payment=><li key={payment.id}>{money2(payment.amountPence/100)} · {payment.recordedAt?new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/London'}).format(new Date(payment.recordedAt)):`Previously recorded · ${payment.description}`}</li>)}</ul>:<p className="muted">No payments recorded.</p>}
+    {balance.prizes.length>0&&<><b>Winnings breakdown</b><ul>{balance.prizes.map(prize=><li key={prize.key}>{prize.reason} · {money2(prize.amount)}</li>)}</ul></>}
+   </td></tr>}</React.Fragment>;
+  })}</tbody>
+ </table>
+ </div>:<p className="muted">No golfers in this League.</p>}<h4>2S CLUB · WEEK BY WEEK</h4><p className="muted">Every gross 2 earns one equal share. Teams marked “2s shared” divide all shares earned by either partner equally; other golfers keep their own shares.</p>{twosLedger.map(w=>{const detail=w.status==='won'?`${money2(w.share)} per 2 · payout confirmed`:'No gross 2s · pot carried forward';return <div className="twosLedgerWeek" key={`twos-week-${w.week}`}><div className="twosLedgerSummary"><span><b>Week {w.week} · {effectiveCompStatus(w.comp).toUpperCase()}</b><small>{w.hits.length} gross 2{w.hits.length===1?'':'s'} · {detail}</small></span><em>{money2(w.pot)}</em></div>{w.allocations.map(a=>{const p=state.players.find(x=>x.id===a.playerId);return <div className="twosPayoutRow" key={a.playerId}><span><b>{p?.name||'Unknown golfer'}</b><small>{a.reason}</small></span><em>{money2(a.amount)} earned</em></div>})}</div>})}{twosCarry>0&&<p className="muted"><b>2s rollover:</b> {money2(twosCarry)} currently carried forward.</p>}<p className="muted">League prize pot after weekly winner prizes: <b>{money2(finalPot)}</b>{completed?' · final split is now included above':' · final 1st/2nd payout appears when the League is complete'}.</p></div></div>
 }
 
 function SettingsHub({state,setState,me,society,setSocId,setTab,hiddenGroups,toggleGroupVisibility,setEditComp,setModal,auth,setCloud}){

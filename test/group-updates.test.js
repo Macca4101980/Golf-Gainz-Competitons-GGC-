@@ -21,3 +21,10 @@ test('unread updates drive both navigation and installed app badges',()=>{
  assert.match(app,/navigator\.clearAppBadge\(\)/);
  assert.match(main,/groupUpdates\.unread>0/);
 });
+
+test('hidden Groups stay out of the Groups page and Updates is labelled',()=>{
+ assert.match(main,/function GroupsPage\([^)]*hiddenGroups=\[\]/);
+ assert.match(main,/state\.societies\.filter\(s=>!hiddenGroups\.includes\(s\.id\)/);
+ const css=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
+ assert.match(css,/\.notificationIcon:after\{content:'UPDATES'/);
+});

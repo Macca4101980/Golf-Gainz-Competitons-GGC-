@@ -1102,4 +1102,4 @@ button.leaderboardShareBtn:active{
 .wlSectionSummary::after{content:'⌄';font-size:1.35rem;line-height:1;transform:rotate(-90deg);transition:transform .15s}
 .wlSection[open]>.wlSectionSummary::after{transform:none}
 .wlSection[open]>.wlSectionSummary{margin-bottom:14px}
-header>.headerActions{flex-direction:row;align-items:center;gap:12px}
+header>div.headerActions{flex-direction:row;align-items:center;gap:12px}

@@ -3,9 +3,25 @@ import{BarChart3,Check,ChevronRight,Megaphone,Pencil,Plus,Trash2,X}from'lucide-r
 
 const message=e=>String(e?.message||e||'').includes('ADMIN_REQUIRED')?'Only a Group Owner or Admin can publish updates.':String(e?.message||e||'').includes('POLL_CLOSED')?'This poll has closed.':'The update could not be saved. Please try again.';
 
-export function useGroupUpdates(client,enabled=true){
+async function syncPollNotifications(client,items,adminIds){
+ const now=Date.now(),day=86400000;
+ for(const item of items||[]){
+  if(item.kind!=='poll'||!item.closes_at||!adminIds.has(item.group_id))continue;
+  const closes=Date.parse(item.closes_at);if(!Number.isFinite(closes))continue;
+  if(closes>now&&closes-now<=day){
+   const{data}=await client.rpc('ggc_group_poll_responses',{p_update_id:item.id});
+   for(const row of data||[])if(!row.option_id)await client.rpc('ggc_publish_automatic_update',{p_group_id:item.group_id,p_event_key:`poll-reminder:${item.id}:${row.player_id}`,p_title:`Poll closes soon · ${item.title}`,p_body:'You have not voted yet.',p_audience:'member',p_target_player_id:row.player_id});
+  }else if(now>=closes&&now-closes<=2*day){
+   const counts=item.vote_counts||{},total=Object.values(counts).reduce((n,v)=>n+Number(v||0),0),body=(item.options||[]).map(option=>`${option.label}: ${Number(counts[option.id]||0)}`).join('\n');
+   await client.rpc('ggc_publish_automatic_update',{p_group_id:item.group_id,p_event_key:`poll-result:${item.id}:${item.closes_at}`,p_title:`Poll closed · ${item.title}`,p_body:`${body}\n${total} vote${total===1?'':'s'} in total`,p_audience:'group',p_target_player_id:null});
+  }
+ }
+}
+
+export function useGroupUpdates(client,enabled=true,adminGroupIds=[]){
  const[items,setItems]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState('');
- const refresh=useCallback(async()=>{if(!client||!enabled)return;setLoading(true);const{data,error}=await client.rpc('ggc_group_updates_feed');if(error){setError(error.message||'Updates unavailable');setLoading(false);return}setItems(data||[]);setError('');setLoading(false)},[client,enabled]);
+ const adminKey=[...adminGroupIds].sort().join('|');
+ const refresh=useCallback(async()=>{if(!client||!enabled)return;setLoading(true);const{data,error}=await client.rpc('ggc_group_updates_feed');if(error){setError(error.message||'Updates unavailable');setLoading(false);return}setItems(data||[]);setError('');setLoading(false);try{await syncPollNotifications(client,data,new Set(adminKey.split('|').filter(Boolean)))}catch{}},[client,enabled,adminKey]);
  useEffect(()=>{if(!enabled)return;void refresh();const timer=setInterval(refresh,30000);const wake=()=>document.visibilityState==='visible'&&refresh();document.addEventListener('visibilitychange',wake);return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',wake)}},[enabled,refresh]);
  const unread=useMemo(()=>items.filter(x=>!x.is_read).length,[items]);
  useEffect(()=>{if(!enabled)return;try{if(unread&&navigator.setAppBadge)void navigator.setAppBadge(unread);else if(!unread&&navigator.clearAppBadge)void navigator.clearAppBadge()}catch{}},[enabled,unread]);

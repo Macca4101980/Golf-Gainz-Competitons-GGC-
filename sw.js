@@ -1,5 +1,7 @@
-const CACHE='ggc-4.0.0-beta.9';const SHELL=['/','/manifest.webmanifest'];
+const CACHE='ggc-4.0.0-beta.12.4-push';const SHELL=['/','/manifest.webmanifest'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)))});
 self.addEventListener('message',e=>{if(e.data?.type==='SKIP_WAITING')self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;if(e.request.mode==='navigate'){e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put('/',copy));return r}).catch(()=>caches.match('/')));return}e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request)))});
+self.addEventListener('push',event=>{let data={};try{data=event.data?.json()||{}}catch{data={body:event.data?.text()||'Open GGC to view this update.'}}event.waitUntil(self.registration.showNotification(data.title||'GGC Update',{body:data.body||'Open GGC to view this update.',icon:data.icon||'/icons/icon-192.png',badge:data.badge||'/icons/icon-192.png',tag:data.tag||'ggc-update',data:{url:data.url||'/?tab=updates'},renotify:true}))});
+self.addEventListener('notificationclick',event=>{event.notification.close();const target=new URL(event.notification.data?.url||'/?tab=updates',self.location.origin).href;event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(windows=>{for(const client of windows)if('focus'in client){void client.navigate(target);return client.focus()}return clients.openWindow(target)}))});

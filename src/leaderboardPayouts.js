@@ -9,10 +9,10 @@ const list = values => values.length < 2 ? values.join('') : values.slice(0,-1).
 const names = (ids, state) => ids.map(id => state.players.find(p => p.id === id)?.name || 'Unknown golfer').join(' & ');
 const indexes = c => c.holesMode === 'front9' ? Array.from({length:9},(_,i)=>i) : c.holesMode === 'back9' ? Array.from({length:9},(_,i)=>i+9) : Array.from({length:18},(_,i)=>i);
 
-function twos(c, state, pot) {
+function twos(c, state, pot, visibleThrough = 18) {
  const ids = new Set(c.entries || []), hits = new Map();
  for (const card of state.cards || []) if (card.compId === c.id && ids.has(card.playerId)) {
-  const count = indexes(c).filter(i => +card.gross?.[i] === 2).length;
+  const count = indexes(c).filter(i => i < visibleThrough && +card.gross?.[i] === 2).length;
   if (count) hits.set(card.playerId, (hits.get(card.playerId) || 0) + count);
  }
  const count = [...hits.values()].reduce((a,b)=>a+b,0);
@@ -45,7 +45,7 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
   let carry = 0;
   for (const w of weeks) {
    carry += contribution;
-   const result = twos({...w.comp, entries:w.comp.entries || league.memberIds || []}, state, carry);
+   const result = twos({...w.comp, entries:w.comp.entries || league.memberIds || []}, state, carry, w.comp.id===c.id&&visibility.provisional?visibility.visibleThrough:18);
    if (w.comp.id === c.id) {twosResult = result; break;}
    if (completed(w.comp, now) && result.hits.size) carry = 0;
   }
@@ -70,7 +70,11 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
    const row=rows[i], prize=pot*(+pct||0)/100;
    if (winnersReady && row?.ids?.length && prize>0) lines.push(`${i===0?'Comp Winners':i===1?'Comp 2nd':'Comp 3rd'} ${amount(prize/row.ids.length)} each = ${names(row.ids,state)}`);
   });
-  if (c.twoClub) twosResult = twos(c,state,(c.entries || []).length*(+c.twoFee || 0));
+  if (c.twoClub) twosResult = twos(c,state,(c.entries || []).length*(+c.twoFee || 0),visibility.provisional?visibility.visibleThrough:18);
+ }
+ if (!winnersReady && twosResult?.hits.size) {
+  const provisional=[...twosResult.hits].map(([id,count])=>`${state.players.find(p=>p.id===id)?.name||'Unknown golfer'}${count>1?` (${count})`:''}`);
+  lines.push(`Provisional 2s · ${list(provisional)}`);
  }
  if (winnersReady && twosResult?.share > 0) {
   if (leagueForTwos) {

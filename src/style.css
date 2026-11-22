@@ -1091,3 +1091,11 @@ button.leaderboardShareBtn:active{
  .payoutTotals .payoutFigure small{display:block}
  .payoutTotalsBlank{display:none}
 }
+
+/* Results sections retain the existing card styling while allowing each table to collapse. */
+.wlSection{margin-bottom:12px}
+.wlSectionSummary{display:flex;align-items:center;justify-content:space-between;list-style:none;cursor:pointer;font-weight:800;letter-spacing:.08em;color:#112019;padding:4px 0}
+.wlSectionSummary::-webkit-details-marker{display:none}
+.wlSectionSummary::after{content:'⌄';font-size:1.35rem;line-height:1;transform:rotate(-90deg);transition:transform .15s}
+.wlSection[open]>.wlSectionSummary::after{transform:none}
+.wlSection[open]>.wlSectionSummary{margin-bottom:14px}

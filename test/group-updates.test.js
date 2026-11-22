@@ -2,6 +2,7 @@ import test from'node:test';import assert from'node:assert/strict';import{readFi
 const app=readFileSync(new URL('../src/GroupUpdates.jsx',import.meta.url),'utf8');
 const main=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 const sql=readFileSync(new URL('../supabase/migrations/20261122210000_group_updates_polls.sql',import.meta.url),'utf8');
+const managementSql=readFileSync(new URL('../supabase/migrations/20261122211558_manage_group_updates.sql',import.meta.url),'utf8');
 
 test('only Group owners and admins can publish updates',()=>{
  assert.match(sql,/m\.role in \('owner','admin'\)/);
@@ -27,4 +28,21 @@ test('hidden Groups stay out of the Groups page and Updates is labelled',()=>{
  assert.match(main,/state\.societies\.filter\(s=>!hiddenGroups\.includes\(s\.id\)/);
  const css=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
  assert.match(css,/\.notificationIcon:after\{content:'UPDATES'/);
+});
+
+test('Group owners and admins can edit and soft-delete updates',()=>{
+ assert.match(managementSql,/ggc_update_group_update/);
+ assert.match(managementSql,/ggc_delete_group_update/);
+ assert.match(managementSql,/private\.ggc_updates_group_admin\(item\.group_id\)/);
+ assert.match(managementSql,/set deleted_at=now\(\),updated_at=now\(\)/);
+ assert.match(app,/SAVE CHANGES/);
+ assert.match(app,/DELETE/);
+});
+
+test('named poll responses are restricted to Group admins',()=>{
+ assert.match(managementSql,/ggc_group_poll_responses/);
+ assert.match(managementSql,/not private\.ggc_updates_group_admin\(item\.group_id\)/);
+ assert.match(managementSql,/left join public\.ggc_group_update_votes/);
+ assert.match(app,/VIEW RESPONSES/);
+ assert.match(app,/Not voted/);
 });

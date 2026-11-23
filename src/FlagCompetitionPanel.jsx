@@ -10,11 +10,12 @@ export default function FlagCompetitionPanel({ players, cardFor, selectedIndexes
   function update(id, changes) { errorFor(id); onChange(id, changes); }
   function plant(player, card, progress) {
     try {
+      const exactFinish = progress.remainingBeforeCurrent === 0 && progress.currentShots === 0 && progress.completedHoles > 0;
       const result = createFlagResult({
         progress,
-        distanceToPin: card.flagDistanceToPin,
-        distanceUnit: card.flagDistanceUnit || 'yards',
-        location: card.flagLocation || '',
+        distanceToPin: exactFinish ? 0 : card.flagDistanceToPin,
+        distanceUnit: exactFinish ? 'feet' : (card.flagDistanceUnit || 'yards'),
+        location: exactFinish ? 'Green' : (card.flagLocation || ''),
       });
       errorFor(player.id);
       onPlant(player.id, result);
@@ -26,19 +27,21 @@ export default function FlagCompetitionPanel({ players, cardFor, selectedIndexes
       const card = cardFor(player.id) || {};
       const progress = flagProgress(card, selectedIndexes, holes, playingHandicapFor(player.id));
       const planted = card.flagResult?.planted;
+      const exactFinish = progress.remainingBeforeCurrent === 0 && progress.currentShots === 0 && progress.completedHoles > 0;
       const canFinish = progress.remaining === 0 && (progress.currentShots > 0 || progress.completedHoles > 0);
       return <div className={`flagPlayer ${planted ? 'flagPlanted' : ''}`} key={player.id}>
         <div className="flagPlayerStatus"><span><b>{player.name}</b><small>Allowance: par {progress.selectedPar} + PH {playingHandicapFor(player.id)} = {progress.budget} strokes</small></span><strong>{planted ? '⛳️ PLANTED' : `${Math.max(0, progress.remaining)} LEFT`}</strong></div>
         {planted ? <><div className="flagResultText">{formatFlagResult(card.flagResult)}</div><button className="mini secondary" onClick={() => update(player.id, { flagResult: null })}>CHANGE FLAG POSITION</button></> : <>
           {progress.invalid && <p className="autherror">N/R cannot be used in a Flag card. Correct the completed-hole score.</p>}
           {progress.remainingBeforeCurrent < 0 && <p className="autherror">The completed-hole scores exceed this golfer’s allowance. Remove the final completed score and plant the flag on that hole.</p>}
-          {progress.remainingBeforeCurrent >= 0 && <div className="flagCurrentHole">
+          {progress.remainingBeforeCurrent >= 0 && !exactFinish && <div className="flagCurrentHole">
             <div><b>{progress.absoluteHole > selectedIndexes.length ? `CONTINUATION HOLE ${progress.absoluteHole}` : `FINAL HOLE ${progress.absoluteHole}`}</b><small>Course hole {((progress.absoluteHole - 1) % 18) + 1} · {progress.usedBeforeCurrent} strokes already used</small></div>
             <div className="flagShotCounter"><button type="button" onClick={() => update(player.id, { flagCurrentHoleStrokes: Math.max(0, progress.currentShots - 1) })}>−</button><strong>{progress.currentShots}</strong><button type="button" disabled={progress.remaining <= 0} onClick={() => update(player.id, { flagCurrentHoleStrokes: progress.currentShots + 1 })}>+</button></div>
           </div>}
           {progress.currentShots > 0 && progress.remaining > 0 && progress.absoluteHole > selectedIndexes.length && <button className="secondary flagHoledButton" onClick={() => update(player.id, { flagContinuationGross: [...progress.continuationGross, progress.currentShots], flagCurrentHoleStrokes: 0 })}>HOLED OUT — CONTINUE TO NEXT HOLE</button>}
           {progress.currentShots > 0 && progress.remaining > 0 && progress.absoluteHole <= selectedIndexes.length && <p className="muted">If the ball is holed before the allowance runs out, reset this counter and enter the completed-hole score on the scorecard below.</p>}
-          {canFinish && <div className="flagFinishFields">
+          {canFinish && exactFinish && <div className="flagExactFinish"><b>ALLOWANCE USED EXACTLY ON HOLE {progress.completedHoles}</b><span>The final stroke was holed, so the flag distance is recorded as zero.</span><button className="primary" onClick={() => plant(player, card, progress)}><Flag/> PLANT FLAG IN HOLE</button></div>}
+          {canFinish && !exactFinish && <div className="flagFinishFields">
             <label>Ball finished<select value={card.flagLocation || ''} onChange={event => update(player.id, { flagLocation: event.target.value })}><option value="">Choose location…</option>{LOCATIONS.map(location => <option key={location}>{location}</option>)}</select></label>
             <label>Distance remaining<input inputMode="decimal" min="0" type="number" value={card.flagDistanceToPin ?? ''} onChange={event => update(player.id, { flagDistanceToPin: event.target.value })} placeholder="e.g. 65"/></label>
             <label>Measurement<select value={card.flagDistanceUnit || 'yards'} onChange={event => update(player.id, { flagDistanceUnit: event.target.value })}><option value="yards">Yards</option><option value="feet">Feet</option></select></label>

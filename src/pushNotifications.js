@@ -2,7 +2,7 @@ export const pushSupported=()=>typeof window!=='undefined'&&'serviceWorker'in na
 export const installedApp=()=>window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
 const decode=value=>{const padding='='.repeat((4-value.length%4)%4),base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))};
 const timeout=(promise,milliseconds,code)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error(code)),milliseconds);Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value)},reason=>{clearTimeout(timer);reject(reason)})});
-async function pushRegistration(){if(!pushSupported())throw Error('GGC_PUSH_UNSUPPORTED');const registration=await timeout(navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}),10000,'GGC_PUSH_SERVICE_WORKER_TIMEOUT');if(registration.active)return registration;return timeout(navigator.serviceWorker.ready,12000,'GGC_PUSH_SERVICE_WORKER_TIMEOUT')}
+async function pushRegistration(){if(!pushSupported())throw Error('GGC_PUSH_UNSUPPORTED');return timeout(navigator.serviceWorker.ready,12000,'GGC_PUSH_SERVICE_WORKER_TIMEOUT')}
 let preparedPush=null,preparePromise=null;
 export async function preparePushNotifications(client){
  if(preparedPush)return preparedPush;

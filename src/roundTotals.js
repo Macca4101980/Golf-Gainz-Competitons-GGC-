@@ -5,7 +5,7 @@ import {isNoReturnScore} from './scoreInput.js';
 
 const entered=value=>isNoReturnScore(value)||(value!==''&&value!=null&&Number(value)>0);
 const individualFormat=format=>['4bbb-stroke','aggregate-stroke','4bbb-match'].includes(format)?'stroke'
- :['4bbb-stableford','aggregate-stableford','blind-pairs'].includes(format)?'stableford':format;
+ :['4bbb-stableford','aggregate-stableford','multiplier-stableford','blind-pairs'].includes(format)?'stableford':format;
 
 // A read-only projection: never mask the saved cards or change their handicaps.
 export function buildRoundTotals(c,state,playerIds){
@@ -56,7 +56,7 @@ export function buildRoundTotals(c,state,playerIds){
   id:team.id||`pair-${i}`,name:team.name||`Team ${i+1}`,memberLine:(team.ids||[]).map(id=>state.players.find(p=>p.id===id)?.name||'Golfer').join(' & '),
   scores:resultsByWindow.map(({window,projected})=>{
    const ids=(team.ids||[]).filter(Boolean),cards=ids.map(id=>projected.cards.find(x=>x.compId===c.id&&x.playerId===id));
-   const aggregate=['aggregate-stableford','aggregate-stroke','blind-pairs'].includes(c.format)&&!league;
+   const aggregate=['aggregate-stableford','multiplier-stableford','aggregate-stroke','blind-pairs'].includes(c.format)&&!league;
    const count=window.indexes.filter(i=>aggregate?cards.every(card=>entered(card?.gross?.[i])):cards.some(card=>entered(card?.gross?.[i]))).length;
    const anyScores=cards.some(card=>window.indexes.some(i=>entered(card?.gross?.[i])));
    if(!anyScores)return {text:'—',entered:0,total:window.indexes.length};

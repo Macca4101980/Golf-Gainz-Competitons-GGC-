@@ -8,7 +8,7 @@ const wl=fs.readFileSync(new URL('../src/winterLeague.js',import.meta.url),'utf8
 const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 
 test('current build marker is V4 Beta 12',()=>{
-  assert.equal(pkg.version,'4.0.0-beta.12.5');
+  assert.equal(pkg.version,'4.0.0-beta.12.6');
   assert.match(main,/V4 Beta 12/);
   assert.match(leagues,/GGC V4 Beta 12/);
 });
@@ -21,10 +21,11 @@ test('CP1 team rename preserves team identity and updates linked pair display',(
 });
 
 test('CP1 competition can link or unlink a League',()=>{
-  assert.match(main,/const\[leagueId,setLeagueId\]/);
+  const compact=main.replace(/\s+/g,'');
+  assert.match(compact,/const\[leagueId,setLeagueId\]/);
   assert.match(main,/<option value="">None<\/option>/);
-  assert.match(main,/leagueId:leagueId\|\|null/);
-  assert.match(main,/leagueOomSettings:inheritedOom/);
+  assert.match(compact,/leagueId:leagueId\|\|null/);
+  assert.match(compact,/leagueOomSettings:inheritedOom/);
 });
 
 test('CP1 League length is initial setup quantity, not a hard cap',()=>{

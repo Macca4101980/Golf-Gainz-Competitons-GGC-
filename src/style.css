@@ -283,6 +283,7 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 @media(max-width:520px){.goLiveAt{margin-left:12px}.groupCompTwirl>summary{gap:8px}.groupCompTwirl>summary .groupCompName b{font-size:.95rem}}
 
 /* V4 Beta 12.5 — Results-style cards across the primary disclosure lists */
+.whsLookup{margin:18px 0;padding:18px;border:1px solid #d7ddd8;border-radius:18px;background:#f7faf7}.whsLookup h3{margin-top:0}.whsResult{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:14px;padding:14px;border-radius:14px;background:#0b1a10;color:#fff}.whsResult span{display:flex;flex-direction:column}.whsResult small{color:#aab5ae}.whsResult strong{font-size:1.35rem}.whsResult button{grid-column:1/-1}
 .groupList.card,
 .groupCompTwirl>summary{
  display:flex;

@@ -7,12 +7,12 @@ let preparedPush=null,preparePromise=null;
 export async function preparePushNotifications(client){
  if(preparedPush)return preparedPush;
  if(!client||!pushSupported())throw Error('GGC_PUSH_UNSUPPORTED');
- if(!preparePromise)preparePromise=Promise.all([pushRegistration(),timeout(client.rpc('ggc_push_public_key'),8000,'GGC_PUSH_SERVER_TIMEOUT')]).then(async([registration,keyResult])=>{const{data:key,error}=keyResult;if(error||!key)throw error||Error('GGC_PUSH_KEY_MISSING');const subscription=await timeout(registration.pushManager.getSubscription(),8000,'GGC_PUSH_SUBSCRIPTION_TIMEOUT');preparedPush={registration,key,subscription};return preparedPush}).catch(error=>{preparePromise=null;throw error});
+ if(!preparePromise)preparePromise=Promise.all([pushRegistration(),timeout(client.rpc('ggc_push_public_key'),8000,'GGC_PUSH_SERVER_TIMEOUT')]).then(([registration,keyResult])=>{const{data:key,error}=keyResult;if(error||!key)throw error||Error('GGC_PUSH_KEY_MISSING');preparedPush={registration,key,subscription:null};return preparedPush}).catch(error=>{preparePromise=null;throw error});
  return preparePromise;
 }
 
 export async function currentPushSubscription(){if(!pushSupported())return null;const registration=await pushRegistration();return timeout(registration.pushManager.getSubscription(),8000,'GGC_PUSH_SUBSCRIPTION_TIMEOUT')}
-export async function pushNotificationStatus(client){const subscription=await currentPushSubscription();if(!subscription||!client)return false;const{data,error}=await timeout(client.rpc('ggc_push_subscription_status'),8000,'GGC_PUSH_SERVER_TIMEOUT');if(error)throw error;return Number(data)>0}
+export async function pushNotificationStatus(client){if(!client)return false;const{data,error}=await timeout(client.rpc('ggc_push_subscription_status'),8000,'GGC_PUSH_SERVER_TIMEOUT');if(error)throw error;return Number(data)>0}
 export async function enablePushNotifications(client){
  if(!installedApp())throw Error('GGC_INSTALL_REQUIRED');
  if(!pushSupported())throw Error('GGC_PUSH_UNSUPPORTED');

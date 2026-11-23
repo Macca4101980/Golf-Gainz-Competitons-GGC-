@@ -18,3 +18,4 @@ test('iOS push preparation happens before the enable tap',()=>{
  assert.ok(enable.indexOf('pushManager.subscribe')<enable.indexOf('ggc_register_push_subscription'));
  assert.doesNotMatch(enable,/ggc_push_public_key/);
 });
+test('iOS preparation never asks PushManager for a subscription before the tap',()=>{const prepare=client.slice(client.indexOf('export async function preparePushNotifications'),client.indexOf('export async function currentPushSubscription'));assert.doesNotMatch(prepare,/getSubscription/);assert.match(prepare,/preparedPush=\{registration,key,subscription:null\}/);assert.doesNotMatch(ui,/Promise\.all\(\[pushNotificationStatus/);});

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
   eclecticBestGross,
   eclecticRoundComplete,
@@ -58,4 +59,11 @@ test('format information always exposes the same five information categories',()
 test('plain 4BBB remains supported as a legacy Stableford alias',()=>{
  assert.equal(FORMAT_RULES['4bbb'].verified,true);
  assert.equal(FORMAT_RULES['4bbb'].result,FORMAT_RULES['4bbb-stableford'].result);
+});
+
+test('legacy duplicate formats stay supported but are hidden from new competition setup',()=>{
+ const source=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+ for(const id of['4bbb','aggregate-pairs','4bbb-match','scramble-standard'])assert.match(source,new RegExp(`existing\\?\\.format === f\\[0\\]`));
+ assert.match(source,/new Set\(\["4bbb", "aggregate-pairs", "4bbb-match", "scramble-standard"\]\)/);
+ for(const [id,label] of [['aggregate-pairs','Aggregate Stableford'],['4bbb-match','Four-Ball Matchplay'],['scramble-standard','Texas Scramble']])assert.match(source,new RegExp(`\\['${id}','${label}'`));
 });

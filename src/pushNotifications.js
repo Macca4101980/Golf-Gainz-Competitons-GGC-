@@ -16,7 +16,7 @@ export async function pushNotificationStatus(client){if(!client)return false;con
 export async function enablePushNotifications(client){
  if(!installedApp())throw Error('GGC_INSTALL_REQUIRED');
  if(!pushSupported())throw Error('GGC_PUSH_UNSUPPORTED');
- const prepared=preparedPush||await preparePushNotifications(client);
+ const prepared=preparedPush;if(!prepared)throw Error('GGC_PUSH_NOT_READY');
  const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();if(permission!=='granted')throw Error('GGC_PUSH_PERMISSION_DENIED');
  let subscription=prepared.subscription;
  if(!subscription)subscription=await timeout(prepared.registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(prepared.key)}),20000,'GGC_PUSH_SUBSCRIPTION_TIMEOUT');

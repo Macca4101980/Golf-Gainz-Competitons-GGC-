@@ -10,12 +10,14 @@ test('push subscriptions are private and delivery is audience filtered',()=>{
 });
 test('push sender keeps VAPID private key server-side and expires dead devices',()=>{assert.match(edge,/ggc_push_server_config/);assert.match(edge,/SUPABASE_SERVICE_ROLE_KEY/);assert.match(edge,/status===404\|\|status===410/);assert.doesNotMatch(client,/privateKey|private_key/);});
 test('push delivery queue uses an unambiguous uniqueness constraint',()=>{assert.match(fix,/on conflict on constraint ggc_push_deliveries_update_id_subscription_id_key/);});
-test('iOS push preparation is attempted early but never blocks the enable tap',()=>{
+test('iOS push preparation finishes before a fresh enable tap',()=>{
  assert.match(ui,/preparePushNotifications\(client\)/);
  assert.match(ui,/disabled=\{busy\|\|\(!enabled&&!installedApp\(\)\)\}/);
- assert.doesNotMatch(ui,/PREPARING/);
+ assert.match(ui,/PREPARE NOTIFICATIONS/);
+ assert.match(ui,/else if\(!ready\)\{await preparePushNotifications\(client\);setReady\(true\)/);
  const enable=client.slice(client.indexOf('export async function enablePushNotifications'),client.indexOf('export async function disablePushNotifications'));
- assert.match(enable,/const prepared=preparedPush\|\|await preparePushNotifications\(client\)/);
+ assert.match(enable,/const prepared=preparedPush;if\(!prepared\)throw Error\('GGC_PUSH_NOT_READY'\)/);
+ assert.doesNotMatch(enable,/await preparePushNotifications/);
  assert.ok(enable.indexOf('pushManager.subscribe')<enable.indexOf('ggc_register_push_subscription'));
  assert.doesNotMatch(enable,/ggc_push_public_key/);
 });

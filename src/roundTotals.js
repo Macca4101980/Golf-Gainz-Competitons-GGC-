@@ -3,6 +3,7 @@ import {FORMAT_RULES,scoreCard,formatResult,pairScore,fourballMatchResult,fourba
 import {winterLeagueTable} from './winterLeague.js';
 import {isNoReturnScore} from './scoreInput.js';
 import {competitionPairs,pairDisplayName} from './pairing.js';
+import {eclecticBestGross} from './eclectic.js';
 
 const entered=value=>isNoReturnScore(value)||(value!==''&&value!=null&&Number(value)>0);
 const individualFormat=format=>['4bbb-stroke','aggregate-stroke','4bbb-match','fourball-match'].includes(format)?'stroke'
@@ -35,7 +36,7 @@ export function buildRoundTotals(c,state,playerIds){
    const card=cards.find(x=>x.compId===c.id&&x.playerId===id);
    if(!card)return {text:'—',entered:0,total:window.indexes.length};
    const result=scoreCard(card,{...c,format,handicapAllowance:c.handicapAllowance??FORMAT_RULES[c.format]?.defaultAllowance},projected);
-   const source=format==='eclectic'?holes.map((_,i)=>Math.min(...(card.eclecticRounds||[]).map(r=>Number(r.gross?.[i])).filter(g=>g>0))):card.gross;
+   const source=format==='eclectic'?eclecticBestGross(card,holes.length,true):card.gross;
  const count=window.indexes.filter(i=>entered(source?.[i])&&Number.isFinite(Number(source?.[i]))).length;
    // N/R is an entered hole worth zero Stableford points, or a loss against par.
    const nr=window.indexes.filter(i=>isNoReturnScore(source?.[i])).length;

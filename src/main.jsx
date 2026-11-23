@@ -27,6 +27,7 @@ import GroupScoreScreen from './GroupScoreScreen.jsx';
 import GroupUpdates,{useGroupUpdates}from'./GroupUpdates.jsx';
 import{automaticUpdateEvents,publishAutomaticUpdates}from'./automaticUpdates.js';
 import PushNotificationSettings from'./PushNotificationSettings.jsx';
+import EmailAddressSettings from'./EmailAddressSettings.jsx';
 import{flushPushNotifications}from'./pushNotifications.js';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
 import{winterLeagueTable,leagueHandicapSettings}from'./winterLeague.js';
@@ -35,6 +36,8 @@ import{matchPlayResult,skinsResult,nassauResult,quotaResult,splitSixesResult,sha
 import{competitionPairs,isPairCompetition,isSharedBallPairFormat,pairDisplayName,pairForPlayers}from'./pairing.js';
 import{buildCourseSnapshot,competitionCourse}from'./competitionCourse.js';
 import{buildRecordConflictMessage}from'./recordConflictNotice.js';
+import{formatInformation}from'./formatInformation.js';
+import{eclecticCompletedRounds,eclecticRoundComplete,eclecticRoundNumber,eclecticRoundsRemaining,submitEclecticRound}from'./eclectic.js';
 const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const K='ggc-build2';
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 const RECORD_STORE_ENABLED=CLOUD&&import.meta.env.VITE_GGC_RECORD_READ==='true'&&import.meta.env.VITE_GGC_RECORD_STORE==='true';
@@ -337,14 +340,14 @@ if(CLOUD&&auth&&!profileReady)return <WelcomeShell><p>Loading your GGC profile�
 if(CLOUD&&auth&&profileReady&&!currentMe){const claim=claimToken?state.players.find(p=>(p.unclaimed||p.placeholder||p.guest)&&p.claimToken===claimToken):null;return <WelcomeShell>{claim?<><div className="authcard"><div className="authbrand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><h2>Claim {claim.name}</h2><p>This golfer has already been added to their Groups, League and team. Confirm your Handicap Index to take over the profile.</p></div><PlayerModal embedded defaultName={claim.name} add={addPlayer}/></div></>:<PlayerModal embedded add={addPlayer}/>}</WelcomeShell>}
 if(tab==='score'){const c=state.comps.find(x=>x.id===activeComp);if(c)return <ScoreScreen c={c} state={state} setState={setState} me={currentMe} auth={auth} setCloud={setCloud} back={()=>setTab('home')}/>}
 const resumeComp=currentMe?state.comps.find(c=>effectiveCompStatus(c)==='live'&&state.cards.some(card=>card.compId===c.id&&card.playerId===currentMe.id&&!card.submitted)):null;const pendingInvites=currentMe?state.comps.filter(c=>effectiveCompStatus(c)==='live'&&hasPendingCompetitionInvite(c,currentMe.id)):[];const pendingGroupInvites=currentMe?[...serverGroupInvites,...(state.societyInvites||[]).filter(i=>i.playerId===currentMe.id&&i.status==='pending'&&!serverGroupInvites.some(server=>server.id===i.id))]:[];async function respondGroupInvite(inv,accept){if(inv._v2){try{await runGroupAction('ggc_group_respond_invitation',{p_invitation_id:inv.id,p_accept:accept},setCloud);location.reload()}catch(error){alert(groupActionMessage(error))}return}if(accept){const group=state.societies.find(q=>q.id===inv.societyId);if(!group?.code)return alert('This Group invite can no longer be used.');try{await runGroupAction('ggc_group_join_code',{p_code:group.code},setCloud)}catch(error){return alert(groupActionMessage(error))}}const next={...state,societyInvites:(state.societyInvites||[]).map(i=>i.id===inv.id?{...i,status:accept?'accepted':'declined',respondedAt:new Date().toISOString(),updatedAt:new Date().toISOString()}:i),societies:state.societies};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);location.reload()}
-return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicator" role="status" aria-label="Refreshing"><span aria-hidden="true"/></div>}<header><div className="brand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><span>V4 Beta 12.5 · {cloud}</span></div><div className="headerActions"><button className="icon notificationIcon" aria-label={`Updates${groupUpdates.unread?` · ${groupUpdates.unread} unread`:''}`} onClick={()=>setTab('updates')}><Bell/>{groupUpdates.unread>0&&<span className="navBadge">{groupUpdates.unread>99?'99+':groupUpdates.unread}</span>}</button><button className="icon profileIcon" aria-label="Me" onClick={()=>setTab('me')}><UserRound/></button></div></header><main>
+return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicator" role="status" aria-label="Refreshing"><span aria-hidden="true"/></div>}<header><div className="brand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><span>V4 Beta 12.6 · {cloud}</span></div><div className="headerActions"><button className="icon notificationIcon" aria-label={`Updates${groupUpdates.unread?` · ${groupUpdates.unread} unread`:''}`} onClick={()=>setTab('updates')}><Bell/>{groupUpdates.unread>0&&<span className="navBadge">{groupUpdates.unread>99?'99+':groupUpdates.unread}</span>}</button><button className="icon profileIcon" aria-label="Me" onClick={()=>setTab('me')}><UserRound/></button></div></header><main>
 {tab==='home'&&<><section className="hero"><p>GOLF GAIN COMPS</p><h1>Golf competitions.<br/><em>Made simple.</em></h1><button onClick={()=>setModal('howto')}>ⓘ HOW TO USE GGC</button></section>{pendingGroupInvites.length>0&&<><SectionTitle a="GROUP INVITATIONS" b={`${pendingGroupInvites.length} waiting`}/>{pendingGroupInvites.map(inv=>{const g=state.societies.find(x=>x.id===inv.societyId);return <div className="card inviteCard" key={inv.id}><b>{inv.fromName||'A golfer'} invited you to join {g?.name||'a Group'}.</b><div className="inviteActions"><button className="primary" onClick={()=>respondGroupInvite(inv,true)}>ACCEPT</button><button className="secondary" onClick={()=>respondGroupInvite(inv,false)}>DECLINE</button></div></div>})}</>}<div className="card"><SectionTitle a="MY GROUPS" b={`${visibleGroups.length} shown`}/>{orderedVisibleGroups.map(s=><div className="societyRow" key={s.id}><span><b>{s.name}</b><small>{s.code}</small></span><button type="button" className="leaderboardShareBtn secondary" aria-label={`Share ${s.name}`} title="Share group" onClick={()=>{setSocId(s.id);localStorage.setItem('ggc-society',s.id);setModal('share')}}><Share2 aria-hidden="true"/></button></div>)}</div>{pendingInvites.length>0&&<><SectionTitle a="INVITATIONS" b={`${pendingInvites.length} waiting`}/>{pendingInvites.map(c=><div className="card inviteCard" key={c.id}><b>{c.name}</b><span>{state.societies.find(q=>q.id===c.societyId)?.name||'GGC group'}</span><button className="primary" onClick={()=>{setSocId(c.societyId);localStorage.setItem('ggc-society',c.societyId);enter(c)}}>ACCEPT & ENTER <ChevronRight/></button><button className="secondary" onClick={()=>declineInvite(c)}>DECLINE</button></div>)}</>}{resumeComp&&<div className="resume card"><b>ROUND IN PROGRESS</b><span>{resumeComp.name} · live group card.</span><button className="primary" onClick={()=>{setActiveComp(resumeComp.id);localStorage.setItem('ggc-active-comp',resumeComp.id);setTab('score')}}>CONTINUE ROUND <ChevronRight/></button></div>}{!currentMe?<div className="callout" onClick={()=>setModal('player')}><UserRound/><div><b>Set up your player</b><span>Add your name + Handicap Index once.</span></div><ChevronRight/></div>:<div className="me"><span>PLAYING AS</span><b>{currentMe.name} · HI {formatHI(currentMe.hi)}</b></div>}<SectionTitle a="LIVE COMPETITIONS" b="all shown groups"/>{dashboardLive.length?dashboardLive.map(c=>{const owner=state.societies.find(s=>s.id===c.societyId);return <CompCard key={c.id} c={c} state={state} me={currentMe} society={owner} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>}):<Empty text="No live competitions in your shown groups."/>}</>}
 {tab==='comps'&&<><Title t="Competitions"/>{import.meta.env.VITE_GGC_CROSS_COURSE==='true'&&supabase&&currentMe&&<button onClick={()=>setModal('cross-course')}>Cross-course fixtures</button>}{canManageAny&&<div className="compCreateActions"><button className="primary" onClick={()=>setModal('comp')}><Plus/> CREATE COMPETITION</button><button className="primary" onClick={()=>setModal('newleague')}><Plus/> CREATE LEAGUE</button></div>}{orderedVisibleGroups.map(s=>{const cs=comps.filter(c=>c.societyId===s.id);const byDate=(a,b)=>(Date.parse(a.starts)||Infinity)-(Date.parse(b.starts)||Infinity)||String(a.name||'').localeCompare(String(b.name||''));const active=cs.filter(c=>effectiveCompStatus(c)!=='completed'&&effectiveCompStatus(c)!=='cancelled').sort(byDate);const done=cs.filter(c=>effectiveCompStatus(c)==='completed'||effectiveCompStatus(c)==='cancelled').sort(byDate);return <details className="groupCompTwirl" key={s.id} open={s.id===society?.id}><summary><span className="groupCompName"><b>{s.name.toUpperCase()}</b></span><span className="groupCompCount">{active.length}</span><strong>›</strong></summary>{active.length?active.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={s} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>):<Empty text="No live or upcoming competitions in this group."/>}{done.length>0&&<details className="completedTwirl"><summary>COMPLETED COMPETITIONS <span>{done.length}</span></summary>{done.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={s} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>)}</details>}</details>})}</>}
 {tab==='leaguecreate'&&society&&adminGroupIds.has(society.id)&&<><Title t="Create League"/><p className="muted">Set up the League and its competitions here. Advanced customisation stays in Settings.</p><Leagues state={state} setState={setState} me={currentMe} societyId={society.id} storageAuth={CLOUD&&auth?.access_token?{url:SUPA_URL,key:SUPA_KEY,token:auth.access_token}:null} onPersist={next=>setState(next)} onCreateCompetition={league=>{setEditComp({__newLeague:true,leagueId:league.id,societyId:society.id,entries:[...(league.memberIds||[])],handicapAllowance:league.handicapAllowance??90,batchPairs:league.batchPairs||[],batchBaseName:league.batchBaseName||'',batchDates:league.batchDates||[]});setModal('leaguecomp')}} onEditCompetition={c=>{setEditComp(c);setModal('editcomp')}}/></>}
 {tab==='groups'&&<><GroupsPage state={state} setState={setState} me={currentMe} setSocId={setSocId} setTab={setTab} setModal={setModal} setEditComp={setEditComp} auth={auth} setCloud={setCloud} hiddenGroups={hiddenGroups}/></>}
 {tab==='updates'&&<GroupUpdates groups={myGroups} adminGroups={updateAdminGroups} updates={groupUpdates}/>}
 {tab==='results'&&<><Title t="Results"/><p className="muted">Weekly results, league tables and handicaps.</p>{orderedVisibleGroups.map(s=>{const groupLeagues=(state.leagues||[]).filter(l=>l.societyId===s.id&&!(state.deletedLeagueIds||[]).includes(l.id)&&((l.teams||[]).length||(state.comps||[]).some(c=>c.leagueId===l.id)));if(!groupLeagues.length)return null;return <section key={s.id}><SectionTitle a={s.name.toUpperCase()} b={groupLeagues.length+(groupLeagues.length===1?" league":" leagues")}/>{groupLeagues.map((l,i)=><details className="wlSeasonTwirl" key={l.id} defaultOpen={(() => {try {const saved=sessionStorage.getItem(`ggc-results-league-${l.id}`);return saved===null?i===0:saved==='true'}catch{return i===0}})()} onToggle={e=>{try{sessionStorage.setItem(`ggc-results-league-${l.id}`,String(e.currentTarget.open))}catch{}}}><summary><span><b>{l.name}</b><small>League results</small></span><strong>›</strong></summary><HistoricalLeagueResults league={l} state={state} isAdmin={adminGroupIds.has(s.id)}/></details>)}</section>})}</>}
-{tab==='me'&&<><Title t="My Golf"/>{currentMe?<div className="card"><h3>{currentMe.name}</h3><div className="big">HI {formatHI(currentMe.hi)}</div><DisplayNameEditor me={currentMe} setState={setState} token={auth?.access_token}/><HandicapEditor me={currentMe} state={state} setState={setState} token={auth?.access_token}/><small>Signed in securely. Your email is used for account access only and is never shown to other golfers.</small><PushNotificationSettings client={supabase}/><PublicIdentityPreference client={supabase} playerId={currentMe.id}/><ChangePasswordSettings/><PasskeySetup me={currentMe} setState={setState} token={auth?.access_token}/><ShareGGC/><Contacts state={state} setState={setState} me={currentMe} auth={auth} setCloud={setCloud}/><TestAccountReset me={currentMe} setState={setState}/><button className="secondary" onClick={async()=>{try{await supabase?.auth.signOut()}catch{}clearAuth();setAuth(null);setMe('');localStorage.removeItem('ggc-me')}}><LogOut/> SIGN OUT</button></div>:<button className="primary" onClick={()=>setModal('player')}>SET UP MY PLAYER</button>}<h2>MY GROUPS</h2><p className="muted">Choose which Groups appear on Home, Competitions and OOM. Hiding a Group does not leave or delete it.</p>{myGroups.map(s=>{const shown=!hiddenGroups.includes(s.id);return <div className="societyRow" key={s.id}><span><b>{s.name}</b><small>{s.code}</small></span><button className={`mini ${shown?'':'secondary'}`} onClick={()=>toggleGroupVisibility(s.id)}>{shown?'SHOWING':'HIDDEN'}</button></div>})}</>}
+{tab==='me'&&<><Title t="My Golf"/>{currentMe?<div className="card"><h3>{currentMe.name}</h3><div className="big">HI {formatHI(currentMe.hi)}</div><DisplayNameEditor me={currentMe} setState={setState} token={auth?.access_token}/><HandicapEditor me={currentMe} state={state} setState={setState} token={auth?.access_token}/><small>Signed in securely. Your email is used for account access only and is never shown to other golfers.</small><EmailAddressSettings client={supabase} currentEmail={auth?.user?.email||''}/><PushNotificationSettings client={supabase}/><PublicIdentityPreference client={supabase} playerId={currentMe.id}/><ChangePasswordSettings/><PasskeySetup me={currentMe} setState={setState} token={auth?.access_token}/><ShareGGC/><Contacts state={state} setState={setState} me={currentMe} auth={auth} setCloud={setCloud}/><TestAccountReset me={currentMe} setState={setState}/><button className="secondary" onClick={async()=>{try{await supabase?.auth.signOut()}catch{}clearAuth();setAuth(null);setMe('');localStorage.removeItem('ggc-me')}}><LogOut/> SIGN OUT</button></div>:<button className="primary" onClick={()=>setModal('player')}>SET UP MY PLAYER</button>}<h2>MY GROUPS</h2><p className="muted">Choose which Groups appear on Home, Competitions and OOM. Hiding a Group does not leave or delete it.</p>{myGroups.map(s=>{const shown=!hiddenGroups.includes(s.id);return <div className="societyRow" key={s.id}><span><b>{s.name}</b><small>{s.code}</small></span><button className={`mini ${shown?'':'secondary'}`} onClick={()=>toggleGroupVisibility(s.id)}>{shown?'SHOWING':'HIDDEN'}</button></div>})}</>}
 {tab==='admin'&&<SettingsHub state={state} setState={setState} me={currentMe} society={society} setSocId={setSocId} setTab={setTab} hiddenGroups={hiddenGroups} toggleGroupVisibility={toggleGroupVisibility} setEditComp={setEditComp} setModal={setModal} auth={auth} setCloud={setCloud}/>}</main><nav>{[['home','⌂','Home'],['comps','⚑','Competitions'],['groups','♟','Groups'],['results','🏆︎','Results'],['admin','⚙︎','Settings']].map(x=><button className={tab===x[0]?'on':''} onClick={()=>{setTab(x[0]);window.scrollTo({top:0,left:0,behavior:'auto'})}} key={x[0]}><i>{x[0]==='home'?<Home/>:x[0]==='comps'?<Flag/>:x[0]==='groups'?<Users/>:x[0]==='results'?<Trophy/>:<Settings/>}{x[0]==='home'&&groupUpdates.unread>0&&<span className="navBadge">{groupUpdates.unread>99?'99+':groupUpdates.unread}</span>}</i>{x[2]}</button>)}</nav>
 {modal==='leaguecreated'&&leagueCreatedId&&<Modal close={()=>{setModal(null);setLeagueCreatedId(null);setTab('comps')}} title="League created"><div className="card"><CheckCircle2/><h3>LEAGUE CREATED</h3><p>Your League and weekly competitions are ready to use.</p><p className="muted">For further options and advanced customisation go to <b>Settings → Leagues</b>.</p></div><button className="primary" onClick={()=>{setModal(null);setLeagueCreatedId(null);setTab('comps')}}>DONE — VIEW COMPETITIONS</button><button className="secondary" onClick={()=>{const l=(state.leagues||[]).find(x=>x.id===leagueCreatedId);if(l){setSocId(l.societyId);localStorage.setItem('ggc-society',l.societyId);sessionStorage.setItem(`ggc-settings-section-${l.societyId}`,'leagues');sessionStorage.setItem(`ggc-league-setup-${l.societyId}`,JSON.stringify({selected:l.id,creating:false,editingLeague:true,name:'',target:l.targetCompetitions||10,weekDates:[]}))}setModal(null);setLeagueCreatedId(null);setTab('admin')}}>CUSTOMISE LEAGUE</button></Modal>}
 {modal==='shareleaderboard'&&editComp&&<Modal className="shareModal" close={()=>{setModal(null);setEditComp(null)}} title="SHARE LEADERBOARD"><PublicShareControls key={'share-'+editComp.id} c={state.comps.find(c=>c.id===editComp.id)||editComp} state={state} client={supabase} isAdmin={adminGroupIds.has(editComp.societyId)} publicEnabled={state.societies.find(s=>s.id===editComp.societyId)?.publicLeaderboardsEnabled!==false} onClose={()=>{setModal(null);setEditComp(null)}}/></Modal>}
@@ -399,19 +402,1450 @@ function CompCard({c,state,me,society,enter,edit,board,share=board}){
  return <div className="comp card"><div className={`pill ${status}`}>{status==='completed'?'COMPLETED':status==='cancelled'?'CANCELLED':status==='scheduled'?'SCHEDULED':status==='draft'?'DRAFT':'LIVE'}</div>{goLiveText&&<small className="goLiveAt">{goLiveText}</small>}<h3>{c.name}</h3><div className="compSociety"><Building2/> {owningSociety?.name||'No group'}</div><p>{f?.[1]} · {course?.name||'Course'} · {c.tee||''}</p>{f&&<details><summary aria-label={f[1]+' format information'}>ⓘ Format rules</summary><p>{FORMAT_RULES[c.format]?.description||f[2]}</p><p>{FORMAT_RULES[c.format]?.entry}</p><p>{FORMAT_RULES[c.format]?.result}</p></details>}<div className="meta"><span><Users/> {c.entries?.length||0}</span><span><Wallet/> £{c.fee||0}</span><span><Flag/> {c.holesMode==='front9'?'Front 9':c.holesMode==='back9'?'Back 9':'18 holes'}</span><span>{c.days} day{c.days>1?'s':''}</span></div>{(live||(admin&&status==='completed'))&&<button className="primary" onClick={enter}>{live?(invited?'ACCEPT INVITE & ENTER':'ENTER / CONTINUE ROUND'):'SCORECARD ADMIN'} <ChevronRight/></button>}{(!live||showLeaderboard)&&<div className="leaderboardActions"><button className="secondary leaderboardBtn" onClick={board}><Trophy/> {live?'LIVE LEADERBOARD':'RESULTS'}</button><button className="leaderboardShareBtn shareIconBtn" onClick={share} aria-label="Share leaderboard" title="Share leaderboard"><Share2 aria-hidden="true"/></button></div>}{canEdit&&<button className="secondary editBtn" onClick={edit}><Settings/> MANAGE COMPETITION</button>}</div>
 }
 function PlayerModal({close=()=>{},add,embedded=false,defaultName=''}){const[n,setN]=useState(defaultName);const[h,setH]=useState('');return embedded?<div className="authcard"><div className="authbrand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><p>Your sign-in is confirmed. Create your player profile.</p></div><label>Display name<input value={n} onChange={e=>setN(e.target.value)} placeholder="Your name"/></label><label>Handicap Index<input type="number" step="0.1" value={h} onChange={e=>setH(e.target.value)} placeholder="0.0"/></label><button className="primary" disabled={!n||h===''} onClick={()=>add({name:n.trim(),hi:+h})}><Save/>CREATE PLAYER</button></div>:<Modal close={close} title="Set up player"><label>Name<input value={n} onChange={e=>setN(e.target.value)} placeholder="Your name"/></label><label>Handicap Index<input type="number" step="0.1" value={h} onChange={e=>setH(e.target.value)} placeholder="0.0"/></label><button className="primary" disabled={!n||h===''} onClick={()=>add({name:n.trim(),hi:+h})}><Save/>SAVE & REMEMBER ME</button></Modal>}
-function CompModal({state,setState,society,me,auth,setCloud,close,existing=null,preset=null,onSaved=null}){const batchDates=!existing?(preset?.batchDates||[]):[];const batchMode=batchDates.length>0;const[name,setName]=useState(existing?.name||preset?.batchBaseName||'');const[compSocietyId,setCompSocietyId]=useState(existing?.societyId||preset?.societyId||society?.id||'');const[leagueId,setLeagueId]=useState(existing?.leagueId||preset?.leagueId||'');const[format,setFormat]=useState(existing?.format||'stableford');const[handicapAllowance,setHandicapAllowance]=useState(existing?.handicapAllowance??preset?.handicapAllowance??FORMAT_RULES[existing?.format||'stableford']?.defaultAllowance??95);const[maxScoreMode,setMaxScoreMode]=useState(existing?.maxScoreMode||'fixed');const[maxScore,setMaxScore]=useState(existing?.maxScore||8);const[modifiedPoints,setModifiedPoints]=useState(existing?.modifiedPoints||{albatross:8,eagle:5,birdie:2,par:0,bogey:-1,double:-3});const[eclecticRounds,setEclecticRounds]=useState(existing?.eclecticRounds||3);const[eclecticScoring,setEclecticScoring]=useState(existing?.eclecticScoring||'nett');const[course,setCourse]=useState(existing?.course||'');const[tee,setTee]=useState(existing?.tee||'');const[fee,setFee]=useState(existing?.fee??0);const[days,setDays]=useState(existing?.days||1);const[durationChoice,setDurationChoice]=useState([1,2,3,7].includes(+(existing?.days||1))?String(existing?.days||1):'custom');const[customDays,setCustomDays]=useState(existing?.days||1);const initialStatus=existing?.status||'live';const[startMode,setStartMode]=useState(initialStatus==='draft'?'draft':initialStatus==='scheduled'?'scheduled':'now');const[startAt,setStartAt]=useState(toLocalDateTime(existing?.starts||new Date()));const[holesMode,setHolesMode]=useState(existing?.holesMode||'18');const[separate,setSeparate]=useState(existing?!!existing.separateDailyPots:true);const[payoutMode,setPayoutMode]=useState(existing?.payoutMode||(existing?.payouts?.front9>0?'thirds':'winner'));const[splitMode,setSplitMode]=useState(existing?.splitMode||(existing?.overallSplit?.third>0?'top3':existing?.overallSplit?.second>0?'top2':'winner'));const[showFormatInfo,setShowFormatInfo]=useState(false);const[showLiveLeaderboard,setShowLiveLeaderboard]=useState(existing?.showLiveLeaderboard!==false);const[invite,setInvite]=useState('');const[pairs,setPairs]=useState(existing?.pairs||preset?.batchPairs||[]);const[pairingMode,setPairingMode]=useState(existing?.pairingMode||(existing?.pairs?.length?'preset':'on-day'));const[twoClub,setTwoClub]=useState(!!existing?.twoClub);const[twoFee,setTwoFee]=useState(existing?.twoFee??2);const[guestName,setGuestName]=useState('');const[guestHi,setGuestHi]=useState('');const[pairA,setPairA]=useState('');const[pairB,setPairB]=useState('');const[pairName,setPairName]=useState('');const payouts=payoutMode==='thirds'?{overall:33.34,front9:33.33,back9:33.33}:{overall:100,front9:0,back9:0};const overallSplit=splitMode==='top3'?{first:60,second:30,third:10}:splitMode==='top2'?{first:70,second:30,third:0}:{first:100,second:0,third:0};
-const draftKey=existing?null:`ggc-comp-draft-${me?.id||'anon'}`;const skipDraftWrite=useRef(true);
-useEffect(()=>{if(!draftKey)return;try{const d=JSON.parse(localStorage.getItem(draftKey)||'null');if(!d)return;setName(d.name??name);setCompSocietyId(d.compSocietyId??compSocietyId);setFormat(d.format??format);setHandicapAllowance(d.handicapAllowance??handicapAllowance);setMaxScoreMode(d.maxScoreMode??maxScoreMode);setMaxScore(d.maxScore??maxScore);setModifiedPoints(d.modifiedPoints??modifiedPoints);setEclecticRounds(d.eclecticRounds??eclecticRounds);setEclecticScoring(d.eclecticScoring??eclecticScoring);setCourse(d.course??course);setTee(d.tee??tee);setFee(d.fee??fee);setDurationChoice(d.durationChoice??durationChoice);setCustomDays(d.customDays??customDays);setStartMode(d.startMode??startMode);setStartAt(d.startAt??startAt);setHolesMode(d.holesMode??holesMode);setSeparate(d.separate??separate);setPayoutMode(d.payoutMode??payoutMode);setSplitMode(d.splitMode??splitMode);setTwoClub(d.twoClub??twoClub);setTwoFee(d.twoFee??twoFee);setShowLiveLeaderboard(d.showLiveLeaderboard??showLiveLeaderboard)}catch{}},[]);
-useEffect(()=>{if(!draftKey)return;if(skipDraftWrite.current){skipDraftWrite.current=false;return}const d={name,compSocietyId,format,handicapAllowance,maxScoreMode,maxScore,modifiedPoints,eclecticRounds,eclecticScoring,course,tee,fee,durationChoice,customDays,startMode,startAt,holesMode,separate,payoutMode,splitMode,twoClub,twoFee,showLiveLeaderboard};localStorage.setItem(draftKey,JSON.stringify(d))},[draftKey,name,compSocietyId,format,handicapAllowance,maxScoreMode,maxScore,modifiedPoints,eclecticRounds,eclecticScoring,course,tee,fee,durationChoice,customDays,startMode,startAt,holesMode,separate,payoutMode,splitMode,twoClub,twoFee,showLiveLeaderboard]);
-function closeDraft(){if(draftKey)localStorage.removeItem(draftKey);close()}
-const availableSocieties=state.societies.filter(s=>(s.members||[]).includes(me?.id)||s.ownerId===me?.id||(s.admins||[]).includes(me?.id));const chosenSociety=state.societies.find(s=>s.id===compSocietyId)||society;const availableLeagues=(state.leagues||[]).filter(l=>l.societyId===chosenSociety?.id&&!(state.deletedLeagueIds||[]).includes(l.id));const selectedLeague=availableLeagues.find(l=>l.id===leagueId)||null;const liveExisting=existing?state.comps.find(c=>c.id===existing.id)||existing:null;
-const totalPct=Object.values(payouts).reduce((a,v)=>a+(+v||0),0),splitPct=Object.values(overallSplit).reduce((a,v)=>a+(+v||0),0);
-function balanced(obj,k,v){v=Math.max(0,Math.min(100,+v||0));const keys=Object.keys(obj),others=keys.filter(x=>x!==k),remaining=100-v,old=others.reduce((a,x)=>a+(+obj[x]||0),0);let out={...obj,[k]:v};if(old===0){out[others[0]]=remaining;for(const x of others.slice(1))out[x]=0}else{let used=0;others.forEach((x,i)=>{const nv=i===others.length-1?remaining-used:Math.round((+obj[x]||0)/old*remaining*10)/10;out[x]=nv;used+=nv})}return out}
-async function save(){if(!chosenSociety)return alert('Choose a group.');if(leagueId&&!selectedLeague)return alert('Choose a valid League for this Group.');if(!FORMAT_RULES[format]?.verified)return alert('This format is listed in GGC, but its dedicated scoring workflow is not yet enabled. Choose a verified format for now.');if(!course)return alert('Choose a course.');if(!tee)return alert('Choose a tee.');const duration=durationChoice==='custom'?Math.max(1,+customDays||1):+durationChoice;const compCards=existing?state.cards.filter(card=>card.compId===existing.id):[];const hasScores=compCards.some(card=>(card.gross||[]).some(v=>+v>0));let status=existing?.status||'live',starts=existing?.starts?new Date(existing.starts):new Date();if(!existing||['draft','scheduled'].includes(effectiveCompStatus(existing))){if(startMode==='draft'){status='draft';starts=existing?.starts?new Date(existing.starts):new Date()}else if(startMode==='scheduled'){const chosen=new Date(startAt);if(Number.isNaN(chosen.getTime()))return alert('Choose a valid start date and time.');starts=chosen;status='scheduled'}else{starts=new Date();status='live'}}const ends=new Date(starts.getTime()+duration*24*60*60*1000);const inheritedOom=selectedLeague?{enabled:true,mode:'automatic',bestCount:0,teamAward:'split',positionPreset:'field',matchWin:3,matchHalf:1,matchLoss:0,...(selectedLeague.oomSettings||{})}:null;const joiningLeague=!!selectedLeague&&existing?.leagueId!==selectedLeague.id;const inheritedEntries=selectedLeague?[...new Set([...(liveExisting?.entries||preset?.entries||[]),...(selectedLeague.memberIds||[])])]:null;const inheritedPairs=selectedLeague&&(!existing||joiningLeague)?(selectedLeague.teams||[]).map(t=>({id:t.id,name:t.name,badge:t.badge,badgeImage:t.badgeImage||null,ids:[...(t.memberIds||[])]})):null;const selectedCourse=state.courses.find(x=>x.id===course),courseSnapshot=buildCourseSnapshot(selectedCourse,tee)||liveExisting?.courseSnapshot||null;if(!courseSnapshot)return alert('The selected course scorecard is incomplete. Re-import the course or choose another tee.');const comp={...(liveExisting||{}),id:existing?.id||uid(),societyId:chosenSociety.id,leagueId:leagueId||null,leagueOomSettings:inheritedOom,createdBy:existing?.createdBy||me?.id||null,name:name.trim()||'Competition',format,handicapAllowance:format==='gross-stroke'?0:Math.max(0,Math.min(100,+handicapAllowance||0)),maxScoreMode,maxScore:+maxScore||8,modifiedPoints,eclecticRounds:Math.max(2,+eclecticRounds||3),eclecticScoring,course,tee,courseSnapshot,fee:+fee,days:duration,holesMode,separateDailyPots:separate,payoutMode,splitMode,payouts,overallSplit,starts:starts.toISOString(),ends:ends.toISOString(),entries:selectedLeague?(inheritedEntries||[]):(liveExisting?.entries||preset?.entries||[]),invites:liveExisting?.invites||[],pairs:inheritedPairs||pairs,pairingMode:selectedLeague?'preset':pairingMode,twoClub,twoFee:twoClub?Math.max(0,+twoFee||0):0,showLiveLeaderboard,status,updatedAt:new Date().toISOString()};const holeSetChanged=!!existing&&existing.holesMode!==holesMode;const scoringChanged=!!existing&&(holeSetChanged||existing.format!==format||+(existing.handicapAllowance??FORMAT_RULES[existing.format]?.defaultAllowance??100)!==+(format==='gross-stroke'?0:handicapAllowance)||(format==='max-score'&&(existing.maxScoreMode!==maxScoreMode||+existing.maxScore!==+maxScore))||(format==='modified-stableford'&&JSON.stringify(existing.modifiedPoints||{})!==JSON.stringify(modifiedPoints))||(format==='eclectic'&&(+existing.eclecticRounds!==+eclecticRounds||existing.eclecticScoring!==eclecticScoring)));if(scoringChanged&&hasScores&&!confirm('Changing the format, handicap allowance or scoring setup after scoring has started will reset every scorecard for this competition. Continue?'))return;const removedCards=scoringChanged&&hasScores?compCards:[],keptCards=scoringChanged&&hasScores?state.cards.filter(card=>card.compId!==existing.id):state.cards;let createdComps=[comp];if(batchMode){createdComps=batchDates.map((d,i)=>{const st=new Date(d);if(Number.isNaN(st.getTime()))return null;const en=new Date(st.getTime()+duration*24*60*60*1000);return {...comp,id:uid(),name:`${name.trim()||'Competition'} (Week ${i+1})`,starts:st.toISOString(),ends:en.toISOString(),status:'scheduled',pairs:preset?.batchPairs||pairs||[],invites:[]}}).filter(Boolean);if(createdComps.length!==batchDates.length)return alert('One or more League week dates are invalid. Go back and check every week date.')}const next={...state,deletedCardIds:[...new Set([...(state.deletedCardIds||[]),...removedCards.map(card=>card.id)])],cards:keptCards,comps:existing?state.comps.map(q=>q.id===comp.id?comp:q):[...state.comps,...createdComps],audit:[...(state.audit||[]),...createdComps.map((cc,i)=>({id:uid(),societyId:chosenSociety.id,compId:cc.id,action:batchMode?`CREATE LEAGUE WEEK ${i+1}`:scoringChanged&&hasScores?'EDIT COMPETITION + RESET SCORECARDS':existing?'EDIT COMPETITION':'CREATE COMPETITION',editedById:me?.id,editedByName:me?.name||'Unknown',at:new Date().toISOString()}))]};setState(next);close();onSaved?.({createdComps,batchMode,leagueId:leagueId||null});if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}
-const knownIds=new Set([...(state.contacts?.[me?.id]||[]),...state.comps.filter(c=>(c.entries||[]).includes(me?.id)).flatMap(c=>c.entries||[])]);knownIds.delete(me?.id);const known=state.players.filter(p=>knownIds.has(p.id)&&!p.guest);async function sendInvite(){if(!existing||!invite)return;const next={...state,comps:state.comps.map(c=>c.id===existing.id?{...c,invites:[...new Set([...(c.invites||[]),invite])]}:c)};setState(next);setInvite('');if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}async function addGuest(){if(!existing)return;if(!guestName.trim())return alert('Enter the golfer’s name.');const hi=Number(guestHi);if(!Number.isFinite(hi)||hi<-10||hi>54)return alert('Enter a valid Handicap Index. Use a negative number for a plus handicap, e.g. -2.4 = +2.4.');const g={id:'unclaimed-'+uid(),name:guestName.trim(),hi,unclaimed:true,placeholder:true,guest:false,claimToken:null,authUserId:null,createdBy:me?.id||null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};const next={...state,players:[...state.players,g],societies:state.societies.map(s=>s.id===existing.societyId?{...s,members:[...new Set([...(s.members||[]),g.id])]}:s),comps:state.comps.map(c=>{const leagueId=existing.leagueId;return c.id===existing.id||leagueId&&c.leagueId===leagueId?{...c,entries:[...new Set([...(c.entries||[]),g.id])],updatedAt:new Date().toISOString()}:c}),leagues:(state.leagues||[]).map(l=>l.id===existing.leagueId?{...l,memberIds:[...new Set([...(l.memberIds||[]),g.id])],updatedAt:new Date().toISOString()}:l)};setState(next);setGuestName('');setGuestHi('');if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}
- async function shareUnclaimed(p){const url=`${location.origin}/?claim=${encodeURIComponent(p.claimToken)}`;const text=`Join Golf Gain Comps as ${p.name}. Claim the player profile already created for you: ${url}`;try{if(navigator.share)await navigator.share({title:'Golf Gain Comps',text,url});else{await navigator.clipboard.writeText(text);alert('Claim invite copied.')}}catch(e){if(e?.name!=='AbortError')prompt('Copy this invite:',text)}}
-return <Modal close={closeDraft} title={existing?'Edit competition':'Create competition'}><label>Group<select value={compSocietyId} onChange={e=>{setCompSocietyId(e.target.value);setLeagueId('')}} disabled={!!existing}><option value="">Choose a group</option>{availableSocieties.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><small>{existing?'A competition stays with the group it was created under.':'Choose which group this competition belongs to.'}</small></label><label>League<select value={leagueId} onChange={e=>setLeagueId(e.target.value)}><option value="">None</option>{availableLeagues.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select><small>{leagueId?'Linked to this League. Its OOM/counting rules are inherited automatically.':'Not scoring in a League.'}</small></label>{batchMode?<div className="card"><small>LEAGUE</small><h3>{name}</h3><p className="muted">GGC will use this League name automatically and add Week 1, Week 2 and so on when the competitions are created.</p></div>:<label>Competition name<input value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your competition name"/></label>}<label>Format<div className="inviteRow"><select value={format} onChange={e=>{const v=e.target.value;setFormat(v);setHandicapAllowance(FORMAT_RULES[v]?.defaultAllowance??100);setShowFormatInfo(false)}}>{['Individual','Pairs','Group'].map(cat=><optgroup key={cat} label={cat}>{formats.filter(f=>f[4]===cat).map(f=><option key={f[0]} value={f[0]}>{f[1]}</option>)}</optgroup>)}</select><button type="button" className="secondary" aria-label="Competition format information" onClick={()=>setShowFormatInfo(v=>!v)}>ⓘ</button></div><small>{formats.find(f=>f[0]===format)?.[2]} {FORMAT_RULES[format]?.verified?'Scoring enabled':'· Scoring workflow not yet enabled'}</small></label>{showFormatInfo&&<div className="card"><h3>{formats.find(f=>f[0]===format)?.[1]}</h3><p>{FORMAT_RULES[format]?.description||formats.find(f=>f[0]===format)?.[2]}</p><p className="muted"><b>Score entry:</b> {FORMAT_RULES[format]?.entry||'This format needs a dedicated workflow before it can be used safely.'}</p><p className="muted"><b>Result:</b> {FORMAT_RULES[format]?.result||'Not enabled in this build.'}</p></div>}{format!=='gross-stroke'&&<label>Handicap allowance %<input type="number" min="0" max="100" step="1" value={handicapAllowance} onChange={e=>setHandicapAllowance(e.target.value)}/><small>Default for {formats.find(f=>f[0]===format)?.[1]} is {FORMAT_RULES[format]?.defaultAllowance??100}%. You can override it for this Competition. Plus handicaps move towards zero when an allowance below 100% is applied.</small></label>}{format==='gross-stroke'&&<div className="card"><b>SCRATCH FORMAT</b><p className="muted">Gross Stroke Play uses no handicap allowance.</p></div>}{format==='max-score'&&<><label>Maximum score rule<select value={maxScoreMode} onChange={e=>setMaxScoreMode(e.target.value)}><option value="fixed">Fixed score per hole</option><option value="double-par">Double par</option><option value="net-double-bogey">Net double bogey</option></select></label>{maxScoreMode==='fixed'&&<label>Maximum strokes per hole<input type="number" min="4" max="20" value={maxScore} onChange={e=>setMaxScore(e.target.value)}/></label>}</>}{format==='modified-stableford'&&<div className="card"><h3>MODIFIED POINTS</h3><p className="muted">Set the points for each nett result. Double bogey also applies to anything worse.</p>{[['albatross','Albatross or better'],['eagle','Eagle'],['birdie','Birdie'],['par','Par'],['bogey','Bogey'],['double','Double bogey or worse']].map(([k,l])=><label key={k}>{l}<input type="number" value={modifiedPoints[k]} onChange={e=>setModifiedPoints(x=>({...x,[k]:+e.target.value}))}/></label>)}</div>}{format==='eclectic'&&<><label>Number of rounds<input type="number" min="2" max="20" value={eclecticRounds} onChange={e=>setEclecticRounds(e.target.value)}/></label><label>Eclectic result<select value={eclecticScoring} onChange={e=>setEclecticScoring(e.target.value)}><option value="nett">Nett best-hole aggregate</option><option value="gross">Gross best-hole aggregate</option></select></label></>}<label>Course<select value={course} onChange={e=>{setCourse(e.target.value);setTee('')}}><option value="">Choose a course</option>{state.courses.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Tees<select value={tee} disabled={!course} onChange={e=>setTee(e.target.value)}><option value="">Choose a tee</option>{state.courses.find(x=>x.id===course)?.tees.map(t=><option key={t.id}>{t.name}</option>)}</select></label><label>Holes<select value={holesMode} onChange={e=>{setHolesMode(e.target.value);if(e.target.value!=='18')setPayoutMode('winner')}}><option value="18">18 holes</option><option value="front9">9 holes — Front 9</option><option value="back9">9 holes — Back 9</option></select><small>For 9-hole comps GGC scores only the selected nine holes and allocates strokes using the tee's normal 18-hole stroke indexes.</small></label><div className="grid"><label>£ per player<input type="number" min="0" step="0.5" value={fee} onChange={e=>setFee(e.target.value)}/></label><label>Duration<select value={durationChoice} onChange={e=>setDurationChoice(e.target.value)}><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="7">1 week</option><option value="custom">Custom</option></select></label></div><div className="card"><label className="check"><input type="checkbox" checked={twoClub} onChange={e=>setTwoClub(e.target.checked)}/> 2s Club</label>{twoClub&&<label>£ per golfer for 2s<input type="number" min="0" step="0.5" value={twoFee} onChange={e=>setTwoFee(e.target.value)}/><small>The 2s pot is this amount × all competition entrants. Every gross 2 earns one equal share.</small></label>}</div>{durationChoice==='custom'&&<label>Custom duration (days)<input type="number" min="1" step="1" value={customDays} onChange={e=>setCustomDays(e.target.value)}/></label>}<div className="card liveLeaderboardSetting"><label className="check"><input type="checkbox" checked={showLiveLeaderboard} onChange={e=>setShowLiveLeaderboard(e.target.checked)}/> Show live leaderboard</label><small>Show the live leaderboard and share icon on the competition card. Existing competitions stay visible unless you turn this off.</small></div>{(!existing||['draft','scheduled'].includes(effectiveCompStatus(existing)))&&<><h3>COMPETITION LAUNCH</h3><label>Start competition<select value={startMode} onChange={e=>setStartMode(e.target.value)}><option value="draft">Save as Draft</option><option value="now">Start Now</option><option value="scheduled">Schedule</option></select><small>Drafts cannot be scored. Scheduled competitions go Live automatically at their start time and close when their duration ends.</small></label>{startMode==='scheduled'&&<label>Launch date & time<input type="datetime-local" value={startAt} onChange={e=>setStartAt(e.target.value)}/></label>}</>}<label className="check"><input type="checkbox" checked={separate} onChange={e=>setSeparate(e.target.checked)}/> Keep each day's money separate</label><h3>PRIZE POT WEIGHTING</h3><label>Prize pot option<select value={payoutMode} onChange={e=>setPayoutMode(e.target.value)}><option value="winner">Overall winner — 100%</option>{holesMode==='18'&&<option value="thirds">Overall / Front 9 / Back 9 — ⅓ each</option>}</select><small>{payoutMode==='thirds'?'Overall 33.34% · Front 9 33.33% · Back 9 33.33%':'Overall 100%'} — always totals exactly 100%.</small></label><h3>OVERALL PRIZE SPLIT</h3><label>Overall places paid<select value={splitMode} onChange={e=>setSplitMode(e.target.value)}><option value="winner">Winner takes all — 100%</option><option value="top2">Top 2 — 70% / 30%</option><option value="top3">Top 3 — 60% / 30% / 10%</option></select><small>{splitMode==='top3'?'1st 60% · 2nd 30% · 3rd 10%':splitMode==='top2'?'1st 70% · 2nd 30%':'1st 100%'}.</small></label>{existing&&isPairCompetition(format)&&format!=='blind-pairs'&&<div className="card"><h3>PAIRINGS</h3><label>Pairing setup<select value={pairingMode} onChange={e=>setPairingMode(e.target.value)}><option value="on-day">Pair on the day</option><option value="preset">Preset pairs</option></select></label><p className="muted">{pairingMode==='preset'?'Set partners before play. Pair names are optional — otherwise GGC uses Player A + Player B.':'Golfers can choose partners when starting their scorecard. You can still add any known pairs below.'}</p><input value={pairName} onChange={e=>setPairName(e.target.value)} placeholder="Pair name (optional)"/><div className="inviteRow"><select value={pairA} onChange={e=>setPairA(e.target.value)}><option value="">Golfer 1…</option>{(liveExisting?.entries||[]).filter(id=>!pairs.flatMap(p=>p.ids||[]).includes(id)).map(id=>{const p=state.players.find(x=>x.id===id);return p&&<option key={id} value={id}>{p.name}</option>})}</select><select value={pairB} onChange={e=>setPairB(e.target.value)}><option value="">Golfer 2…</option>{(liveExisting?.entries||[]).filter(id=>id!==pairA&&!pairs.flatMap(p=>p.ids||[]).includes(id)).map(id=>{const p=state.players.find(x=>x.id===id);return p&&<option key={id} value={id}>{p.name}</option>})}</select><button type="button" className="secondary" onClick={()=>{if(!pairA||!pairB)return;setPairs(x=>[...x,{id:uid(),name:pairName.trim(),ids:[pairA,pairB]}]);setPairA('');setPairB('');setPairName('')}}>ADD PAIR</button></div>{pairs.map((pr,i)=><div className="memberRow" key={pr.id||i}><span><b>{pairDisplayName(pr,state)}</b></span><button type="button" className="mini danger" onClick={()=>setPairs(x=>x.filter((_,j)=>j!==i))}>REMOVE</button></div>)}<small>Save Changes after editing pairings.</small></div>}{existing&&format==='blind-pairs'&&<div className="card"><h3>BLIND PAIRS</h3><p className="muted">The draw uses entered golfers. Pairings can be revealed from the leaderboard after everyone has played.</p></div>}{existing&&<div className="card"><h3>ADD GOLFER</h3><p className="muted">Add someone who does not have a GGC account yet. They can play now and claim this same profile later.</p><div className="grid"><label>Name<input value={guestName} onChange={e=>setGuestName(e.target.value)} placeholder="Name"/></label><label>Handicap Index<input type="number" step="0.1" value={guestHi} onChange={e=>setGuestHi(e.target.value)} placeholder="e.g. 14.2"/></label></div><button type="button" className="secondary" onClick={addGuest}><UserPlus/> ADD GOLFER</button>{(liveExisting?.entries||[]).map(id=>state.players.find(p=>p.id===id)).filter(p=>p&&(p.unclaimed||p.placeholder||p.guest)).map(p=><div className="memberRow" key={p.id}><span><b>{p.name}</b><small>HI {formatHI(p.hi)} · INVITE NOT CLAIMED</small></span><button type="button" className="mini secondary" onClick={()=>shareUnclaimed(p)}>SHARE INVITE</button><button type="button" className="mini danger" onClick={async()=>{const removedCards=state.cards.filter(x=>x.playerId===p.id);const next={...state,deletedCardIds:[...new Set([...(state.deletedCardIds||[]),...removedCards.map(card=>card.id)])],players:state.players.filter(x=>x.id!==p.id),cards:state.cards.filter(x=>x.playerId!==p.id),comps:state.comps.map(c=>c.id===existing.id?{...c,entries:(c.entries||[]).filter(id=>id!==p.id),pairs:(c.pairs||[]).map(pr=>({...pr,ids:(pr.ids||[]).filter(id=>id!==p.id)})).filter(pr=>(pr.ids||[]).length===2)}:c)};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}>REMOVE</button></div>)}</div>}{existing&&<><h3>INVITE PLAYERS</h3>{known.length?<div className="inviteRow"><select value={invite} onChange={e=>setInvite(e.target.value)}><option value="">Previously played with…</option>{known.filter(p=>!(liveExisting?.entries||[]).includes(p.id)&&!(liveExisting?.invites||[]).includes(p.id)).map(p=><option key={p.id} value={p.id}>{p.name}{p.guest?' (Guest)':''} · HI {formatHI(p.hi)}</option>)}</select><button className="secondary" onClick={sendInvite} disabled={!invite}><UserPlus/> INVITE</button></div>:<p className="muted">People you play with will appear here for future invitations.</p>}</>}<button className="primary" onClick={save}><Trophy/>{existing?'SAVE CHANGES':'CREATE COMPETITION'}</button>{existing&&<LifecycleControls c={existing} state={state} setState={setState} society={society} me={me} auth={auth} setCloud={setCloud} close={close}/>}</Modal>}
-function LifecycleControls({c,state,setState,society,me,auth,setCloud,close}){const admin=!!me&&(society?.ownerId===me.id||(society?.admins||[]).includes(me.id));const creator=c.createdBy===me?.id;const canManage=admin||creator;const status=effectiveCompStatus(c);async function act(next,label){if(!canManage)return;const deleting=next==='deleted';const warning=deleting?'Delete this competition permanently? Its scorecards, entries, leaderboard and money data will be removed. This cannot be undone.':next==='cancelled'?'Cancel this competition? It will award no results, OOM points or prize money.':next==='completed'?'End this competition and freeze normal scoring?':next==='live'?'Make this competition Live now? Its duration will start now.':'Change competition status?';if(!confirm(warning))return;const now=new Date();if(deleting){const removedCards=state.cards.filter(card=>card.compId===c.id);const audit={id:uid(),societyId:c.societyId,compId:c.id,action:label,editedById:me?.id,editedByName:me?.name||'Unknown',at:now.toISOString(),before:{status,name:c.name,cardIds:removedCards.map(card=>card.id)},after:{deleted:true}};const nextState={...state,deletedCompIds:[...new Set([...(state.deletedCompIds||[]),c.id])],deletedCardIds:[...new Set([...(state.deletedCardIds||[]),...removedCards.map(card=>card.id)])],comps:state.comps.filter(q=>q.id!==c.id),cards:state.cards.filter(card=>card.compId!==c.id),audit:[...(state.audit||[]),audit]};setState(nextState);if(localStorage.getItem('ggc-active-comp')===c.id)localStorage.removeItem('ggc-active-comp');close();if(CLOUD&&auth?.access_token){try{await saveCloud(nextState,setCloud,auth.access_token)}catch(e){alert('Competition was removed on this device, but the cloud save failed. Please try again.')}}return}const duration=Math.max(1,+c.days||1);const patch=next==='live'?{status:'live',starts:now.toISOString(),ends:new Date(now.getTime()+duration*86400000).toISOString(),statusChangedAt:now.toISOString(),statusChangedBy:me?.id}:{status:next,statusChangedAt:now.toISOString(),statusChangedBy:me?.id};const nextState={...state,comps:state.comps.map(q=>q.id===c.id?{...q,...patch}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:label,editedById:me?.id,editedByName:me?.name||'Unknown',at:now.toISOString(),before:{status},after:{status:next}}]};setState(nextState);close();if(CLOUD&&auth?.access_token)await saveCloud(nextState,setCloud,auth.access_token)}if(!canManage)return null;return <div className="lifecycle"><h3>COMPETITION STATUS</h3><p className="muted">Draft and Scheduled competitions can be launched early. Live competitions can be ended or cancelled. Group Admins can reopen completed competitions.</p>{status==='live'?<><button className="secondary" onClick={()=>act('completed','END COMPETITION')}><CheckCircle2/> END COMPETITION</button><button className="secondary" onClick={()=>act('cancelled','CANCEL COMPETITION')}><X/> CANCEL COMPETITION</button><button className="danger" onClick={()=>act('deleted','DELETE COMPETITION')}><Trash2/> DELETE COMPETITION</button></>:<>{(status==='draft'||status==='scheduled'||(status==='completed'&&admin))&&<button className="primary" onClick={()=>act('live',status==='completed'?'REOPEN COMPETITION':'GO LIVE NOW')}><Flag/> {status==='completed'?'REOPEN COMPETITION':'GO LIVE NOW'}</button>}{status!=='cancelled'&&status!=='completed'&&<button className="secondary" onClick={()=>act('cancelled','CANCEL COMPETITION')}><X/> CANCEL COMPETITION</button>}<button className="danger" onClick={()=>act('deleted','DELETE COMPETITION')}><Trash2/> DELETE COMPETITION</button></>}</div>}
+function CompModal({
+  state,
+  setState,
+  society,
+  me,
+  auth,
+  setCloud,
+  close,
+  existing = null,
+  preset = null,
+  onSaved = null,
+}) {
+  const batchDates = !existing ? preset?.batchDates || [] : [];
+  const batchMode = batchDates.length > 0;
+  const [name, setName] = useState(
+    existing?.name || preset?.batchBaseName || "",
+  );
+  const [compSocietyId, setCompSocietyId] = useState(
+    existing?.societyId || preset?.societyId || society?.id || "",
+  );
+  const [leagueId, setLeagueId] = useState(
+    existing?.leagueId || preset?.leagueId || "",
+  );
+  const [format, setFormat] = useState(existing?.format || "stableford");
+  const [handicapAllowance, setHandicapAllowance] = useState(
+    existing?.handicapAllowance ??
+      preset?.handicapAllowance ??
+      FORMAT_RULES[existing?.format || "stableford"]?.defaultAllowance ??
+      95,
+  );
+  const [maxScoreMode, setMaxScoreMode] = useState(
+    existing?.maxScoreMode || "fixed",
+  );
+  const [maxScore, setMaxScore] = useState(existing?.maxScore || 8);
+  const [modifiedPoints, setModifiedPoints] = useState(
+    existing?.modifiedPoints || {
+      albatross: 8,
+      eagle: 5,
+      birdie: 2,
+      par: 0,
+      bogey: -1,
+      double: -3,
+    },
+  );
+  const [eclecticRounds, setEclecticRounds] = useState(
+    existing?.eclecticRounds || 3,
+  );
+  const [eclecticScoring, setEclecticScoring] = useState(
+    existing?.eclecticScoring || "gross",
+  );
+  const [course, setCourse] = useState(existing?.course || "");
+  const [tee, setTee] = useState(existing?.tee || "");
+  const [fee, setFee] = useState(existing?.fee ?? 0);
+  const [days, setDays] = useState(existing?.days || 1);
+  const [durationChoice, setDurationChoice] = useState(
+    [1, 2, 3, 7].includes(+(existing?.days || 1))
+      ? String(existing?.days || 1)
+      : "custom",
+  );
+  const [customDays, setCustomDays] = useState(existing?.days || 1);
+  const initialStatus = existing?.status || "live";
+  const [startMode, setStartMode] = useState(
+    initialStatus === "draft"
+      ? "draft"
+      : initialStatus === "scheduled"
+        ? "scheduled"
+        : "now",
+  );
+  const [startAt, setStartAt] = useState(
+    toLocalDateTime(existing?.starts || new Date()),
+  );
+  const [holesMode, setHolesMode] = useState(existing?.holesMode || "18");
+  const [separate, setSeparate] = useState(
+    existing ? !!existing.separateDailyPots : true,
+  );
+  const [payoutMode, setPayoutMode] = useState(
+    existing?.payoutMode ||
+      (existing?.payouts?.front9 > 0 ? "thirds" : "winner"),
+  );
+  const [splitMode, setSplitMode] = useState(
+    existing?.splitMode ||
+      (existing?.overallSplit?.third > 0
+        ? "top3"
+        : existing?.overallSplit?.second > 0
+          ? "top2"
+          : "winner"),
+  );
+  const [showFormatInfo, setShowFormatInfo] = useState(false);
+  const [showLiveLeaderboard, setShowLiveLeaderboard] = useState(
+    existing?.showLiveLeaderboard !== false,
+  );
+  const [invite, setInvite] = useState("");
+  const [pairs, setPairs] = useState(
+    existing?.pairs || preset?.batchPairs || [],
+  );
+  const [pairingMode, setPairingMode] = useState(
+    existing?.pairingMode || (existing?.pairs?.length ? "preset" : "on-day"),
+  );
+  const [twoClub, setTwoClub] = useState(!!existing?.twoClub);
+  const [twoFee, setTwoFee] = useState(existing?.twoFee ?? 2);
+  const [guestName, setGuestName] = useState("");
+  const [guestHi, setGuestHi] = useState("");
+  const [pairA, setPairA] = useState("");
+  const [pairB, setPairB] = useState("");
+  const [pairName, setPairName] = useState("");
+  const payouts =
+    payoutMode === "thirds"
+      ? { overall: 33.34, front9: 33.33, back9: 33.33 }
+      : { overall: 100, front9: 0, back9: 0 };
+  const overallSplit =
+    splitMode === "top3"
+      ? { first: 60, second: 30, third: 10 }
+      : splitMode === "top2"
+        ? { first: 70, second: 30, third: 0 }
+        : { first: 100, second: 0, third: 0 };
+  const draftKey = existing ? null : `ggc-comp-draft-${me?.id || "anon"}`;
+  const skipDraftWrite = useRef(true);
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const d = JSON.parse(localStorage.getItem(draftKey) || "null");
+      if (!d) return;
+      setName(d.name ?? name);
+      setCompSocietyId(d.compSocietyId ?? compSocietyId);
+      setFormat(d.format ?? format);
+      setHandicapAllowance(d.handicapAllowance ?? handicapAllowance);
+      setMaxScoreMode(d.maxScoreMode ?? maxScoreMode);
+      setMaxScore(d.maxScore ?? maxScore);
+      setModifiedPoints(d.modifiedPoints ?? modifiedPoints);
+      setEclecticRounds(d.eclecticRounds ?? eclecticRounds);
+      setEclecticScoring(d.eclecticScoring ?? eclecticScoring);
+      setCourse(d.course ?? course);
+      setTee(d.tee ?? tee);
+      setFee(d.fee ?? fee);
+      setDurationChoice(d.durationChoice ?? durationChoice);
+      setCustomDays(d.customDays ?? customDays);
+      setStartMode(d.startMode ?? startMode);
+      setStartAt(d.startAt ?? startAt);
+      setHolesMode(d.holesMode ?? holesMode);
+      setSeparate(d.separate ?? separate);
+      setPayoutMode(d.payoutMode ?? payoutMode);
+      setSplitMode(d.splitMode ?? splitMode);
+      setTwoClub(d.twoClub ?? twoClub);
+      setTwoFee(d.twoFee ?? twoFee);
+      setShowLiveLeaderboard(d.showLiveLeaderboard ?? showLiveLeaderboard);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!draftKey) return;
+    if (skipDraftWrite.current) {
+      skipDraftWrite.current = false;
+      return;
+    }
+    const d = {
+      name,
+      compSocietyId,
+      format,
+      handicapAllowance,
+      maxScoreMode,
+      maxScore,
+      modifiedPoints,
+      eclecticRounds,
+      eclecticScoring,
+      course,
+      tee,
+      fee,
+      durationChoice,
+      customDays,
+      startMode,
+      startAt,
+      holesMode,
+      separate,
+      payoutMode,
+      splitMode,
+      twoClub,
+      twoFee,
+      showLiveLeaderboard,
+    };
+    localStorage.setItem(draftKey, JSON.stringify(d));
+  }, [
+    draftKey,
+    name,
+    compSocietyId,
+    format,
+    handicapAllowance,
+    maxScoreMode,
+    maxScore,
+    modifiedPoints,
+    eclecticRounds,
+    eclecticScoring,
+    course,
+    tee,
+    fee,
+    durationChoice,
+    customDays,
+    startMode,
+    startAt,
+    holesMode,
+    separate,
+    payoutMode,
+    splitMode,
+    twoClub,
+    twoFee,
+    showLiveLeaderboard,
+  ]);
+  function closeDraft() {
+    if (draftKey) localStorage.removeItem(draftKey);
+    close();
+  }
+  const availableSocieties = state.societies.filter(
+    (s) =>
+      (s.members || []).includes(me?.id) ||
+      s.ownerId === me?.id ||
+      (s.admins || []).includes(me?.id),
+  );
+  const chosenSociety =
+    state.societies.find((s) => s.id === compSocietyId) || society;
+  const availableLeagues = (state.leagues || []).filter(
+    (l) =>
+      l.societyId === chosenSociety?.id &&
+      !(state.deletedLeagueIds || []).includes(l.id),
+  );
+  const selectedLeague =
+    availableLeagues.find((l) => l.id === leagueId) || null;
+  const liveExisting = existing
+    ? state.comps.find((c) => c.id === existing.id) || existing
+    : null;
+  const totalPct = Object.values(payouts).reduce((a, v) => a + (+v || 0), 0),
+    splitPct = Object.values(overallSplit).reduce((a, v) => a + (+v || 0), 0);
+  function balanced(obj, k, v) {
+    v = Math.max(0, Math.min(100, +v || 0));
+    const keys = Object.keys(obj),
+      others = keys.filter((x) => x !== k),
+      remaining = 100 - v,
+      old = others.reduce((a, x) => a + (+obj[x] || 0), 0);
+    let out = { ...obj, [k]: v };
+    if (old === 0) {
+      out[others[0]] = remaining;
+      for (const x of others.slice(1)) out[x] = 0;
+    } else {
+      let used = 0;
+      others.forEach((x, i) => {
+        const nv =
+          i === others.length - 1
+            ? remaining - used
+            : Math.round(((+obj[x] || 0) / old) * remaining * 10) / 10;
+        out[x] = nv;
+        used += nv;
+      });
+    }
+    return out;
+  }
+  async function save() {
+    if (!chosenSociety) return alert("Choose a group.");
+    if (leagueId && !selectedLeague)
+      return alert("Choose a valid League for this Group.");
+    if (!FORMAT_RULES[format]?.verified)
+      return alert(
+        "This format is listed in GGC, but its dedicated scoring workflow is not yet enabled. Choose a verified format for now.",
+      );
+    if (!course) return alert("Choose a course.");
+    if (!tee) return alert("Choose a tee.");
+    const duration =
+      durationChoice === "custom"
+        ? Math.max(1, +customDays || 1)
+        : +durationChoice;
+    const compCards = existing
+      ? state.cards.filter((card) => card.compId === existing.id)
+      : [];
+    const hasScores = compCards.some(
+      (card) =>
+        (card.gross || []).some((v) => +v > 0) ||
+        (card.eclecticRounds || []).some((round) =>
+          (round.gross || []).some((v) => +v > 0),
+        ),
+    );
+    let status = existing?.status || "live",
+      starts = existing?.starts ? new Date(existing.starts) : new Date();
+    if (
+      !existing ||
+      ["draft", "scheduled"].includes(effectiveCompStatus(existing))
+    ) {
+      if (startMode === "draft") {
+        status = "draft";
+        starts = existing?.starts ? new Date(existing.starts) : new Date();
+      } else if (startMode === "scheduled") {
+        const chosen = new Date(startAt);
+        if (Number.isNaN(chosen.getTime()))
+          return alert("Choose a valid start date and time.");
+        starts = chosen;
+        status = "scheduled";
+      } else {
+        starts = new Date();
+        status = "live";
+      }
+    }
+    const ends = new Date(starts.getTime() + duration * 24 * 60 * 60 * 1000);
+    const inheritedOom = selectedLeague
+      ? {
+          enabled: true,
+          mode: "automatic",
+          bestCount: 0,
+          teamAward: "split",
+          positionPreset: "field",
+          matchWin: 3,
+          matchHalf: 1,
+          matchLoss: 0,
+          ...(selectedLeague.oomSettings || {}),
+        }
+      : null;
+    const joiningLeague =
+      !!selectedLeague && existing?.leagueId !== selectedLeague.id;
+    const inheritedEntries = selectedLeague
+      ? [
+          ...new Set([
+            ...(liveExisting?.entries || preset?.entries || []),
+            ...(selectedLeague.memberIds || []),
+          ]),
+        ]
+      : null;
+    const inheritedPairs =
+      selectedLeague && (!existing || joiningLeague)
+        ? (selectedLeague.teams || []).map((t) => ({
+            id: t.id,
+            name: t.name,
+            badge: t.badge,
+            badgeImage: t.badgeImage || null,
+            ids: [...(t.memberIds || [])],
+          }))
+        : null;
+    const selectedCourse = state.courses.find((x) => x.id === course),
+      courseSnapshot =
+        buildCourseSnapshot(selectedCourse, tee) ||
+        liveExisting?.courseSnapshot ||
+        null;
+    if (!courseSnapshot)
+      return alert(
+        "The selected course scorecard is incomplete. Re-import the course or choose another tee.",
+      );
+    const comp = {
+      ...(liveExisting || {}),
+      id: existing?.id || uid(),
+      societyId: chosenSociety.id,
+      leagueId: leagueId || null,
+      leagueOomSettings: inheritedOom,
+      createdBy: existing?.createdBy || me?.id || null,
+      name: name.trim() || "Competition",
+      format,
+      handicapAllowance:
+        format === "gross-stroke"
+          ? 0
+          : Math.max(0, Math.min(100, +handicapAllowance || 0)),
+      maxScoreMode,
+      maxScore: +maxScore || 8,
+      modifiedPoints,
+      eclecticRounds: Math.max(2, +eclecticRounds || 3),
+      eclecticScoring,
+      course,
+      tee,
+      courseSnapshot,
+      fee: +fee,
+      days: duration,
+      holesMode,
+      separateDailyPots: separate,
+      payoutMode,
+      splitMode,
+      payouts,
+      overallSplit,
+      starts: starts.toISOString(),
+      ends: ends.toISOString(),
+      entries: selectedLeague
+        ? inheritedEntries || []
+        : liveExisting?.entries || preset?.entries || [],
+      invites: liveExisting?.invites || [],
+      pairs: inheritedPairs || pairs,
+      pairingMode: selectedLeague ? "preset" : pairingMode,
+      twoClub,
+      twoFee: twoClub ? Math.max(0, +twoFee || 0) : 0,
+      showLiveLeaderboard,
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+    const holeSetChanged = !!existing && existing.holesMode !== holesMode;
+    const scoringChanged =
+      !!existing &&
+      (holeSetChanged ||
+        existing.format !== format ||
+        +(
+          existing.handicapAllowance ??
+          FORMAT_RULES[existing.format]?.defaultAllowance ??
+          100
+        ) !== +(format === "gross-stroke" ? 0 : handicapAllowance) ||
+        (format === "max-score" &&
+          (existing.maxScoreMode !== maxScoreMode ||
+            +existing.maxScore !== +maxScore)) ||
+        (format === "modified-stableford" &&
+          JSON.stringify(existing.modifiedPoints || {}) !==
+            JSON.stringify(modifiedPoints)) ||
+        (format === "eclectic" &&
+          (+existing.eclecticRounds !== +eclecticRounds ||
+            existing.eclecticScoring !== eclecticScoring)));
+    if (
+      scoringChanged &&
+      hasScores &&
+      !confirm(
+        "Changing the format, handicap allowance or scoring setup after scoring has started will reset every scorecard for this competition. Continue?",
+      )
+    )
+      return;
+    const removedCards = scoringChanged && hasScores ? compCards : [],
+      keptCards =
+        scoringChanged && hasScores
+          ? state.cards.filter((card) => card.compId !== existing.id)
+          : state.cards;
+    let createdComps = [comp];
+    if (batchMode) {
+      createdComps = batchDates
+        .map((d, i) => {
+          const st = new Date(d);
+          if (Number.isNaN(st.getTime())) return null;
+          const en = new Date(st.getTime() + duration * 24 * 60 * 60 * 1000);
+          return {
+            ...comp,
+            id: uid(),
+            name: `${name.trim() || "Competition"} (Week ${i + 1})`,
+            starts: st.toISOString(),
+            ends: en.toISOString(),
+            status: "scheduled",
+            pairs: preset?.batchPairs || pairs || [],
+            invites: [],
+          };
+        })
+        .filter(Boolean);
+      if (createdComps.length !== batchDates.length)
+        return alert(
+          "One or more League week dates are invalid. Go back and check every week date.",
+        );
+    }
+    const next = {
+      ...state,
+      deletedCardIds: [
+        ...new Set([
+          ...(state.deletedCardIds || []),
+          ...removedCards.map((card) => card.id),
+        ]),
+      ],
+      cards: keptCards,
+      comps: existing
+        ? state.comps.map((q) => (q.id === comp.id ? comp : q))
+        : [...state.comps, ...createdComps],
+      audit: [
+        ...(state.audit || []),
+        ...createdComps.map((cc, i) => ({
+          id: uid(),
+          societyId: chosenSociety.id,
+          compId: cc.id,
+          action: batchMode
+            ? `CREATE LEAGUE WEEK ${i + 1}`
+            : scoringChanged && hasScores
+              ? "EDIT COMPETITION + RESET SCORECARDS"
+              : existing
+                ? "EDIT COMPETITION"
+                : "CREATE COMPETITION",
+          editedById: me?.id,
+          editedByName: me?.name || "Unknown",
+          at: new Date().toISOString(),
+        })),
+      ],
+    };
+    setState(next);
+    close();
+    onSaved?.({ createdComps, batchMode, leagueId: leagueId || null });
+    if (CLOUD && auth?.access_token)
+      await saveCloud(next, setCloud, auth.access_token);
+  }
+  const knownIds = new Set([
+    ...(state.contacts?.[me?.id] || []),
+    ...state.comps
+      .filter((c) => (c.entries || []).includes(me?.id))
+      .flatMap((c) => c.entries || []),
+  ]);
+  knownIds.delete(me?.id);
+  const known = state.players.filter((p) => knownIds.has(p.id) && !p.guest);
+  async function sendInvite() {
+    if (!existing || !invite) return;
+    const next = {
+      ...state,
+      comps: state.comps.map((c) =>
+        c.id === existing.id
+          ? { ...c, invites: [...new Set([...(c.invites || []), invite])] }
+          : c,
+      ),
+    };
+    setState(next);
+    setInvite("");
+    if (CLOUD && auth?.access_token)
+      await saveCloud(next, setCloud, auth.access_token);
+  }
+  async function addGuest() {
+    if (!existing) return;
+    if (!guestName.trim()) return alert("Enter the golfer’s name.");
+    const hi = Number(guestHi);
+    if (!Number.isFinite(hi) || hi < -10 || hi > 54)
+      return alert(
+        "Enter a valid Handicap Index. Use a negative number for a plus handicap, e.g. -2.4 = +2.4.",
+      );
+    const g = {
+      id: "unclaimed-" + uid(),
+      name: guestName.trim(),
+      hi,
+      unclaimed: true,
+      placeholder: true,
+      guest: false,
+      claimToken: null,
+      authUserId: null,
+      createdBy: me?.id || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const next = {
+      ...state,
+      players: [...state.players, g],
+      societies: state.societies.map((s) =>
+        s.id === existing.societyId
+          ? { ...s, members: [...new Set([...(s.members || []), g.id])] }
+          : s,
+      ),
+      comps: state.comps.map((c) => {
+        const leagueId = existing.leagueId;
+        return c.id === existing.id || (leagueId && c.leagueId === leagueId)
+          ? {
+              ...c,
+              entries: [...new Set([...(c.entries || []), g.id])],
+              updatedAt: new Date().toISOString(),
+            }
+          : c;
+      }),
+      leagues: (state.leagues || []).map((l) =>
+        l.id === existing.leagueId
+          ? {
+              ...l,
+              memberIds: [...new Set([...(l.memberIds || []), g.id])],
+              updatedAt: new Date().toISOString(),
+            }
+          : l,
+      ),
+    };
+    setState(next);
+    setGuestName("");
+    setGuestHi("");
+    if (CLOUD && auth?.access_token)
+      await saveCloud(next, setCloud, auth.access_token);
+  }
+  async function shareUnclaimed(p) {
+    const url = `${location.origin}/?claim=${encodeURIComponent(p.claimToken)}`;
+    const text = `Join Golf Gain Comps as ${p.name}. Claim the player profile already created for you: ${url}`;
+    try {
+      if (navigator.share)
+        await navigator.share({ title: "Golf Gain Comps", text, url });
+      else {
+        await navigator.clipboard.writeText(text);
+        alert("Claim invite copied.");
+      }
+    } catch (e) {
+      if (e?.name !== "AbortError") prompt("Copy this invite:", text);
+    }
+  }
+  const selectedFormat = formats.find((f) => f[0] === format);
+  const selectedFormatInfo = formatInformation(
+    format,
+    FORMAT_RULES[format],
+    selectedFormat?.[1],
+    handicapAllowance,
+  );
+  return (
+    <Modal
+      close={closeDraft}
+      title={existing ? "Edit competition" : "Create competition"}
+    >
+      <label>
+        Group
+        <select
+          value={compSocietyId}
+          onChange={(e) => {
+            setCompSocietyId(e.target.value);
+            setLeagueId("");
+          }}
+          disabled={!!existing}
+        >
+          <option value="">Choose a group</option>
+          {availableSocieties.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <small>
+          {existing
+            ? "A competition stays with the group it was created under."
+            : "Choose which group this competition belongs to."}
+        </small>
+      </label>
+      <label>
+        League
+        <select value={leagueId} onChange={(e) => setLeagueId(e.target.value)}>
+          <option value="">None</option>
+          {availableLeagues.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+        <small>
+          {leagueId
+            ? "Linked to this League. Its OOM/counting rules are inherited automatically."
+            : "Not scoring in a League."}
+        </small>
+      </label>
+      {batchMode ? (
+        <div className="card">
+          <small>LEAGUE</small>
+          <h3>{name}</h3>
+          <p className="muted">
+            GGC will use this League name automatically and add Week 1, Week 2
+            and so on when the competitions are created.
+          </p>
+        </div>
+      ) : (
+        <label>
+          Competition name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your competition name"
+          />
+        </label>
+      )}
+      <label>
+        Format
+        <div className="inviteRow">
+          <select
+            value={format}
+            onChange={(e) => {
+              const v = e.target.value;
+              setFormat(v);
+              setHandicapAllowance(FORMAT_RULES[v]?.defaultAllowance ?? 100);
+              setShowFormatInfo(false);
+            }}
+          >
+            {["Individual", "Pairs", "Group"].map((cat) => (
+              <optgroup key={cat} label={cat}>
+                {formats
+                  .filter(
+                    (f) =>
+                      f[4] === cat &&
+                      (f[0] !== "4bbb" || existing?.format === "4bbb"),
+                  )
+                  .map((f) => (
+                    <option key={f[0]} value={f[0]}>
+                      {f[1]}
+                    </option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="secondary"
+            aria-label="Competition format information"
+            onClick={() => setShowFormatInfo((v) => !v)}
+          >
+            ⓘ
+          </button>
+        </div>
+        <small>
+          {formats.find((f) => f[0] === format)?.[2]}{" "}
+          {FORMAT_RULES[format]?.verified
+            ? "Scoring enabled"
+            : "· Scoring workflow not yet enabled"}
+        </small>
+      </label>
+      {showFormatInfo && (
+        <div className="card formatInformationCard">
+          <h3>{selectedFormatInfo.title}</h3>
+          <dl>
+            <div><dt>PLAYERS</dt><dd>{selectedFormatInfo.participants}</dd></div>
+            <div><dt>HOW IT WORKS</dt><dd>{selectedFormatInfo.howItWorks}</dd></div>
+            <div><dt>SCORE ENTRY</dt><dd>{selectedFormatInfo.scoreEntry}</dd></div>
+            <div><dt>HANDICAP</dt><dd>{selectedFormatInfo.handicap}</dd></div>
+            <div><dt>WINNER</dt><dd>{selectedFormatInfo.winner}</dd></div>
+          </dl>
+          {selectedFormatInfo.note && <p className="formatInformationNote">{selectedFormatInfo.note}</p>}
+        </div>
+      )}
+      {format !== "gross-stroke" &&
+        !(format === "eclectic" && eclecticScoring === "gross") &&
+        !["scramble","scramble-standard","pairs-scramble","florida","foursomes","greensomes","gruesomes","pinehurst","foursomes-match"].includes(format) && (
+        <label>
+          Handicap allowance %
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            value={handicapAllowance}
+            onChange={(e) => setHandicapAllowance(e.target.value)}
+          />
+          <small>
+            Default for {formats.find((f) => f[0] === format)?.[1]} is{" "}
+            {FORMAT_RULES[format]?.defaultAllowance ?? 100}%. You can override
+            it for this Competition. Plus handicaps move towards zero when an
+            allowance below 100% is applied.
+          </small>
+        </label>
+      )}
+      {["scramble","scramble-standard","pairs-scramble","florida","foursomes","greensomes","gruesomes","pinehurst","foursomes-match"].includes(format) && (
+        <div className="card"><b>AUTOMATIC TEAM HANDICAP</b><p className="muted">{selectedFormatInfo.handicap}</p></div>
+      )}
+      {format === "eclectic" && eclecticScoring === "gross" && (
+        <div className="card"><b>GROSS ECLECTIC</b><p className="muted">The final card uses the lowest gross score achieved on each hole, so no handicap allowance is deducted.</p></div>
+      )}
+      {format === "gross-stroke" && (
+        <div className="card">
+          <b>SCRATCH FORMAT</b>
+          <p className="muted">Gross Stroke Play uses no handicap allowance.</p>
+        </div>
+      )}
+      {format === "max-score" && (
+        <>
+          <label>
+            Maximum score rule
+            <select
+              value={maxScoreMode}
+              onChange={(e) => setMaxScoreMode(e.target.value)}
+            >
+              <option value="fixed">Fixed score per hole</option>
+              <option value="double-par">Double par</option>
+              <option value="net-double-bogey">Net double bogey</option>
+            </select>
+          </label>
+          {maxScoreMode === "fixed" && (
+            <label>
+              Maximum strokes per hole
+              <input
+                type="number"
+                min="4"
+                max="20"
+                value={maxScore}
+                onChange={(e) => setMaxScore(e.target.value)}
+              />
+            </label>
+          )}
+        </>
+      )}
+      {format === "modified-stableford" && (
+        <div className="card">
+          <h3>MODIFIED POINTS</h3>
+          <p className="muted">
+            Set the points for each nett result. Double bogey also applies to
+            anything worse.
+          </p>
+          {[
+            ["albatross", "Albatross or better"],
+            ["eagle", "Eagle"],
+            ["birdie", "Birdie"],
+            ["par", "Par"],
+            ["bogey", "Bogey"],
+            ["double", "Double bogey or worse"],
+          ].map(([k, l]) => (
+            <label key={k}>
+              {l}
+              <input
+                type="number"
+                value={modifiedPoints[k]}
+                onChange={(e) =>
+                  setModifiedPoints((x) => ({ ...x, [k]: +e.target.value }))
+                }
+              />
+            </label>
+          ))}
+        </div>
+      )}
+      {format === "eclectic" && (
+        <>
+          <label>
+            Number of rounds
+            <input
+              type="number"
+              min="2"
+              max="20"
+              value={eclecticRounds}
+              onChange={(e) => setEclecticRounds(e.target.value)}
+            />
+          </label>
+          <label>
+            Eclectic result
+            <select
+              value={eclecticScoring}
+              onChange={(e) => setEclecticScoring(e.target.value)}
+            >
+              <option value="gross">Gross best-hole aggregate</option>
+              <option value="nett">Nett best-hole aggregate</option>
+            </select>
+            <small>Gross is recommended. GGC preserves every submitted round and builds one card from each golfer&apos;s best score on every hole.</small>
+          </label>
+        </>
+      )}
+      <label>
+        Course
+        <select
+          value={course}
+          onChange={(e) => {
+            setCourse(e.target.value);
+            setTee("");
+          }}
+        >
+          <option value="">Choose a course</option>
+          {state.courses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Tees
+        <select
+          value={tee}
+          disabled={!course}
+          onChange={(e) => setTee(e.target.value)}
+        >
+          <option value="">Choose a tee</option>
+          {state.courses
+            .find((x) => x.id === course)
+            ?.tees.map((t) => (
+              <option key={t.id}>{t.name}</option>
+            ))}
+        </select>
+      </label>
+      <label>
+        Holes
+        <select
+          value={holesMode}
+          onChange={(e) => {
+            setHolesMode(e.target.value);
+            if (e.target.value !== "18") setPayoutMode("winner");
+          }}
+        >
+          <option value="18">18 holes</option>
+          <option value="front9">9 holes — Front 9</option>
+          <option value="back9">9 holes — Back 9</option>
+        </select>
+        <small>
+          For 9-hole comps GGC scores only the selected nine holes and allocates
+          strokes using the tee's normal 18-hole stroke indexes.
+        </small>
+      </label>
+      <div className="grid">
+        <label>
+          £ per player
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            value={fee}
+            onChange={(e) => setFee(e.target.value)}
+          />
+        </label>
+        <label>
+          Duration
+          <select
+            value={durationChoice}
+            onChange={(e) => setDurationChoice(e.target.value)}
+          >
+            <option value="1">1 day</option>
+            <option value="2">2 days</option>
+            <option value="3">3 days</option>
+            <option value="7">1 week</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+      </div>
+      <div className="card">
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={twoClub}
+            onChange={(e) => setTwoClub(e.target.checked)}
+          />{" "}
+          2s Club
+        </label>
+        {twoClub && (
+          <label>
+            £ per golfer for 2s
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={twoFee}
+              onChange={(e) => setTwoFee(e.target.value)}
+            />
+            <small>
+              The 2s pot is this amount × all competition entrants. Every gross
+              2 earns one equal share.
+            </small>
+          </label>
+        )}
+      </div>
+      {durationChoice === "custom" && (
+        <label>
+          Custom duration (days)
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={customDays}
+            onChange={(e) => setCustomDays(e.target.value)}
+          />
+        </label>
+      )}
+      <div className="card liveLeaderboardSetting">
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={showLiveLeaderboard}
+            onChange={(e) => setShowLiveLeaderboard(e.target.checked)}
+          />{" "}
+          Show live leaderboard
+        </label>
+        <small>
+          Show the live leaderboard and share icon on the competition card.
+          Existing competitions stay visible unless you turn this off.
+        </small>
+      </div>
+      {(!existing ||
+        ["draft", "scheduled"].includes(effectiveCompStatus(existing))) && (
+        <>
+          <h3>COMPETITION LAUNCH</h3>
+          <label>
+            Start competition
+            <select
+              value={startMode}
+              onChange={(e) => setStartMode(e.target.value)}
+            >
+              <option value="draft">Save as Draft</option>
+              <option value="now">Start Now</option>
+              <option value="scheduled">Schedule</option>
+            </select>
+            <small>
+              Drafts cannot be scored. Scheduled competitions go Live
+              automatically at their start time and close when their duration
+              ends.
+            </small>
+          </label>
+          {startMode === "scheduled" && (
+            <label>
+              Launch date & time
+              <input
+                type="datetime-local"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+              />
+            </label>
+          )}
+        </>
+      )}
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={separate}
+          onChange={(e) => setSeparate(e.target.checked)}
+        />{" "}
+        Keep each day's money separate
+      </label>
+      <h3>PRIZE POT WEIGHTING</h3>
+      <label>
+        Prize pot option
+        <select
+          value={payoutMode}
+          onChange={(e) => setPayoutMode(e.target.value)}
+        >
+          <option value="winner">Overall winner — 100%</option>
+          {holesMode === "18" && (
+            <option value="thirds">Overall / Front 9 / Back 9 — ⅓ each</option>
+          )}
+        </select>
+        <small>
+          {payoutMode === "thirds"
+            ? "Overall 33.34% · Front 9 33.33% · Back 9 33.33%"
+            : "Overall 100%"}{" "}
+          — always totals exactly 100%.
+        </small>
+      </label>
+      <h3>OVERALL PRIZE SPLIT</h3>
+      <label>
+        Overall places paid
+        <select
+          value={splitMode}
+          onChange={(e) => setSplitMode(e.target.value)}
+        >
+          <option value="winner">Winner takes all — 100%</option>
+          <option value="top2">Top 2 — 70% / 30%</option>
+          <option value="top3">Top 3 — 60% / 30% / 10%</option>
+        </select>
+        <small>
+          {splitMode === "top3"
+            ? "1st 60% · 2nd 30% · 3rd 10%"
+            : splitMode === "top2"
+              ? "1st 70% · 2nd 30%"
+              : "1st 100%"}
+          .
+        </small>
+      </label>
+      {existing && isPairCompetition(format) && format !== "blind-pairs" && (
+        <div className="card">
+          <h3>PAIRINGS</h3>
+          <label>
+            Pairing setup
+            <select
+              value={pairingMode}
+              onChange={(e) => setPairingMode(e.target.value)}
+            >
+              <option value="on-day">Pair on the day</option>
+              <option value="preset">Preset pairs</option>
+            </select>
+          </label>
+          <p className="muted">
+            {pairingMode === "preset"
+              ? "Set partners before play. Pair names are optional — otherwise GGC uses Player A + Player B."
+              : "Golfers can choose partners when starting their scorecard. You can still add any known pairs below."}
+          </p>
+          <input
+            value={pairName}
+            onChange={(e) => setPairName(e.target.value)}
+            placeholder="Pair name (optional)"
+          />
+          <div className="inviteRow">
+            <select value={pairA} onChange={(e) => setPairA(e.target.value)}>
+              <option value="">Golfer 1…</option>
+              {(liveExisting?.entries || [])
+                .filter((id) => !pairs.flatMap((p) => p.ids || []).includes(id))
+                .map((id) => {
+                  const p = state.players.find((x) => x.id === id);
+                  return (
+                    p && (
+                      <option key={id} value={id}>
+                        {p.name}
+                      </option>
+                    )
+                  );
+                })}
+            </select>
+            <select value={pairB} onChange={(e) => setPairB(e.target.value)}>
+              <option value="">Golfer 2…</option>
+              {(liveExisting?.entries || [])
+                .filter(
+                  (id) =>
+                    id !== pairA &&
+                    !pairs.flatMap((p) => p.ids || []).includes(id),
+                )
+                .map((id) => {
+                  const p = state.players.find((x) => x.id === id);
+                  return (
+                    p && (
+                      <option key={id} value={id}>
+                        {p.name}
+                      </option>
+                    )
+                  );
+                })}
+            </select>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                if (!pairA || !pairB) return;
+                setPairs((x) => [
+                  ...x,
+                  { id: uid(), name: pairName.trim(), ids: [pairA, pairB] },
+                ]);
+                setPairA("");
+                setPairB("");
+                setPairName("");
+              }}
+            >
+              ADD PAIR
+            </button>
+          </div>
+          {pairs.map((pr, i) => (
+            <div className="memberRow" key={pr.id || i}>
+              <span>
+                <b>{pairDisplayName(pr, state)}</b>
+              </span>
+              <button
+                type="button"
+                className="mini danger"
+                onClick={() => setPairs((x) => x.filter((_, j) => j !== i))}
+              >
+                REMOVE
+              </button>
+            </div>
+          ))}
+          <small>Save Changes after editing pairings.</small>
+        </div>
+      )}
+      {existing && format === "blind-pairs" && (
+        <div className="card">
+          <h3>BLIND PAIRS</h3>
+          <p className="muted">
+            The draw uses entered golfers. Pairings can be revealed from the
+            leaderboard after everyone has played.
+          </p>
+        </div>
+      )}
+      {existing && (
+        <div className="card">
+          <h3>ADD GOLFER</h3>
+          <p className="muted">
+            Add someone who does not have a GGC account yet. They can play now
+            and claim this same profile later.
+          </p>
+          <div className="grid">
+            <label>
+              Name
+              <input
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Name"
+              />
+            </label>
+            <label>
+              Handicap Index
+              <input
+                type="number"
+                step="0.1"
+                value={guestHi}
+                onChange={(e) => setGuestHi(e.target.value)}
+                placeholder="e.g. 14.2"
+              />
+            </label>
+          </div>
+          <button type="button" className="secondary" onClick={addGuest}>
+            <UserPlus /> ADD GOLFER
+          </button>
+          {(liveExisting?.entries || [])
+            .map((id) => state.players.find((p) => p.id === id))
+            .filter((p) => p && (p.unclaimed || p.placeholder || p.guest))
+            .map((p) => (
+              <div className="memberRow" key={p.id}>
+                <span>
+                  <b>{p.name}</b>
+                  <small>HI {formatHI(p.hi)} · INVITE NOT CLAIMED</small>
+                </span>
+                <button
+                  type="button"
+                  className="mini secondary"
+                  onClick={() => shareUnclaimed(p)}
+                >
+                  SHARE INVITE
+                </button>
+                <button
+                  type="button"
+                  className="mini danger"
+                  onClick={async () => {
+                    const removedCards = state.cards.filter(
+                      (x) => x.playerId === p.id,
+                    );
+                    const next = {
+                      ...state,
+                      deletedCardIds: [
+                        ...new Set([
+                          ...(state.deletedCardIds || []),
+                          ...removedCards.map((card) => card.id),
+                        ]),
+                      ],
+                      players: state.players.filter((x) => x.id !== p.id),
+                      cards: state.cards.filter((x) => x.playerId !== p.id),
+                      comps: state.comps.map((c) =>
+                        c.id === existing.id
+                          ? {
+                              ...c,
+                              entries: (c.entries || []).filter(
+                                (id) => id !== p.id,
+                              ),
+                              pairs: (c.pairs || [])
+                                .map((pr) => ({
+                                  ...pr,
+                                  ids: (pr.ids || []).filter(
+                                    (id) => id !== p.id,
+                                  ),
+                                }))
+                                .filter((pr) => (pr.ids || []).length === 2),
+                            }
+                          : c,
+                      ),
+                    };
+                    setState(next);
+                    if (CLOUD && auth?.access_token)
+                      await saveCloud(next, setCloud, auth.access_token);
+                  }}
+                >
+                  REMOVE
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+      {existing && (
+        <>
+          <h3>INVITE PLAYERS</h3>
+          {known.length ? (
+            <div className="inviteRow">
+              <select
+                value={invite}
+                onChange={(e) => setInvite(e.target.value)}
+              >
+                <option value="">Previously played with…</option>
+                {known
+                  .filter(
+                    (p) =>
+                      !(liveExisting?.entries || []).includes(p.id) &&
+                      !(liveExisting?.invites || []).includes(p.id),
+                  )
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.guest ? " (Guest)" : ""} · HI {formatHI(p.hi)}
+                    </option>
+                  ))}
+              </select>
+              <button
+                className="secondary"
+                onClick={sendInvite}
+                disabled={!invite}
+              >
+                <UserPlus /> INVITE
+              </button>
+            </div>
+          ) : (
+            <p className="muted">
+              People you play with will appear here for future invitations.
+            </p>
+          )}
+        </>
+      )}
+      <button className="primary" onClick={save}>
+        <Trophy />
+        {existing ? "SAVE CHANGES" : "CREATE COMPETITION"}
+      </button>
+      {existing && (
+        <LifecycleControls
+          c={existing}
+          state={state}
+          setState={setState}
+          society={society}
+          me={me}
+          auth={auth}
+          setCloud={setCloud}
+          close={close}
+        />
+      )}
+    </Modal>
+  );
+}
+function LifecycleControls({
+  c,
+  state,
+  setState,
+  society,
+  me,
+  auth,
+  setCloud,
+  close,
+}) {
+  const admin =
+    !!me &&
+    (society?.ownerId === me.id || (society?.admins || []).includes(me.id));
+  const creator = c.createdBy === me?.id;
+  const canManage = admin || creator;
+  const status = effectiveCompStatus(c);
+  async function act(next, label) {
+    if (!canManage) return;
+    const deleting = next === "deleted";
+    const warning = deleting
+      ? "Delete this competition permanently? Its scorecards, entries, leaderboard and money data will be removed. This cannot be undone."
+      : next === "cancelled"
+        ? "Cancel this competition? It will award no results, OOM points or prize money."
+        : next === "completed"
+          ? "End this competition and freeze normal scoring?"
+          : next === "live"
+            ? "Make this competition Live now? Its duration will start now."
+            : "Change competition status?";
+    if (!confirm(warning)) return;
+    const now = new Date();
+    if (deleting) {
+      const removedCards = state.cards.filter((card) => card.compId === c.id);
+      const audit = {
+        id: uid(),
+        societyId: c.societyId,
+        compId: c.id,
+        action: label,
+        editedById: me?.id,
+        editedByName: me?.name || "Unknown",
+        at: now.toISOString(),
+        before: {
+          status,
+          name: c.name,
+          cardIds: removedCards.map((card) => card.id),
+        },
+        after: { deleted: true },
+      };
+      const nextState = {
+        ...state,
+        deletedCompIds: [...new Set([...(state.deletedCompIds || []), c.id])],
+        deletedCardIds: [
+          ...new Set([
+            ...(state.deletedCardIds || []),
+            ...removedCards.map((card) => card.id),
+          ]),
+        ],
+        comps: state.comps.filter((q) => q.id !== c.id),
+        cards: state.cards.filter((card) => card.compId !== c.id),
+        audit: [...(state.audit || []), audit],
+      };
+      setState(nextState);
+      if (localStorage.getItem("ggc-active-comp") === c.id)
+        localStorage.removeItem("ggc-active-comp");
+      close();
+      if (CLOUD && auth?.access_token) {
+        try {
+          await saveCloud(nextState, setCloud, auth.access_token);
+        } catch (e) {
+          alert(
+            "Competition was removed on this device, but the cloud save failed. Please try again.",
+          );
+        }
+      }
+      return;
+    }
+    const duration = Math.max(1, +c.days || 1);
+    const patch =
+      next === "live"
+        ? {
+            status: "live",
+            starts: now.toISOString(),
+            ends: new Date(now.getTime() + duration * 86400000).toISOString(),
+            statusChangedAt: now.toISOString(),
+            statusChangedBy: me?.id,
+          }
+        : {
+            status: next,
+            statusChangedAt: now.toISOString(),
+            statusChangedBy: me?.id,
+          };
+    const nextState = {
+      ...state,
+      comps: state.comps.map((q) => (q.id === c.id ? { ...q, ...patch } : q)),
+      audit: [
+        ...(state.audit || []),
+        {
+          id: uid(),
+          societyId: c.societyId,
+          compId: c.id,
+          action: label,
+          editedById: me?.id,
+          editedByName: me?.name || "Unknown",
+          at: now.toISOString(),
+          before: { status },
+          after: { status: next },
+        },
+      ],
+    };
+    setState(nextState);
+    close();
+    if (CLOUD && auth?.access_token)
+      await saveCloud(nextState, setCloud, auth.access_token);
+  }
+  if (!canManage) return null;
+  return (
+    <div className="lifecycle">
+      <h3>COMPETITION STATUS</h3>
+      <p className="muted">
+        Draft and Scheduled competitions can be launched early. Live
+        competitions can be ended or cancelled. Group Admins can reopen
+        completed competitions.
+      </p>
+      {status === "live" ? (
+        <>
+          <button
+            className="secondary"
+            onClick={() => act("completed", "END COMPETITION")}
+          >
+            <CheckCircle2 /> END COMPETITION
+          </button>
+          <button
+            className="secondary"
+            onClick={() => act("cancelled", "CANCEL COMPETITION")}
+          >
+            <X /> CANCEL COMPETITION
+          </button>
+          <button
+            className="danger"
+            onClick={() => act("deleted", "DELETE COMPETITION")}
+          >
+            <Trash2 /> DELETE COMPETITION
+          </button>
+        </>
+      ) : (
+        <>
+          {(status === "draft" ||
+            status === "scheduled" ||
+            (status === "completed" && admin)) && (
+            <button
+              className="primary"
+              onClick={() =>
+                act(
+                  "live",
+                  status === "completed" ? "REOPEN COMPETITION" : "GO LIVE NOW",
+                )
+              }
+            >
+              <Flag />{" "}
+              {status === "completed" ? "REOPEN COMPETITION" : "GO LIVE NOW"}
+            </button>
+          )}
+          {status !== "cancelled" && status !== "completed" && (
+            <button
+              className="secondary"
+              onClick={() => act("cancelled", "CANCEL COMPETITION")}
+            >
+              <X /> CANCEL COMPETITION
+            </button>
+          )}
+          <button
+            className="danger"
+            onClick={() => act("deleted", "DELETE COMPETITION")}
+          >
+            <Trash2 /> DELETE COMPETITION
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
 function GroupsPage({state,setState,me,setSocId,setTab,setModal,setEditComp,auth,setCloud,hiddenGroups=[]}){
  const mine=state.societies.filter(s=>!hiddenGroups.includes(s.id)&&((s.members||[]).includes(me?.id)||s.ownerId===me?.id||(s.admins||[]).includes(me?.id)));
  const groupDraftKey='ggc-groups-selected';const golferDraftKey='ggc-add-golfer-draft';const[selected,setSelectedRaw]=useState(()=>sessionStorage.getItem(groupDraftKey)||null);const setSelected=v=>{setSelectedRaw(v);if(v)sessionStorage.setItem(groupDraftKey,v);else sessionStorage.removeItem(groupDraftKey)};const[manageMember,setManageMember]=useState(null);const[addingGolfer,setAddingGolfer]=useState(()=>!!sessionStorage.getItem(golferDraftKey));const[newGolfer,setNewGolfer]=useState(()=>{try{return JSON.parse(sessionStorage.getItem(golferDraftKey)||'null')||{name:'',hi:'',email:''}}catch{return{name:'',hi:'',email:''}}});useEffect(()=>{if(addingGolfer)sessionStorage.setItem(golferDraftKey,JSON.stringify(newGolfer));else sessionStorage.removeItem(golferDraftKey)},[addingGolfer,newGolfer]);const s=state.societies.find(x=>x.id===selected);
@@ -464,130 +1898,1603 @@ function LeaderboardResults({c,state,setState,auth,setCloud}){const activeEmbarg
   const pairs=(draw?.pairs||[]).map((pair,i)=>{const ids=normaliseBlindPairIds(pair);const a=rows.find(r=>r.player.id===ids[0]),b=rows.find(r=>r.player.id===ids[1]);return a&&b?{key:i,names:a.player.name+' & '+b.player.name,points:a.points+b.points}:null}).filter(Boolean).sort((a,b)=>b.points-a.points);
   return <div className="leader card"><h3>BLIND PAIRS</h3>{!draw&&<><p className="muted">Players complete individual Stableford cards first. When every card is complete, make the one-time draw.</p><button className="primary" disabled={!complete} onClick={drawPairs}><Users/> DRAW BLIND PAIRS</button></>}{draw&&<p className="muted">Draw made {new Date(draw.at).toLocaleString()}. It will not change when the app is reopened.</p>}{pairs.length?pairs.map((r,i)=><div className="leaderrow" key={r.key}><strong>{i+1}</strong><span><b>{r.names}</b></span><em>{r.points} pts{overallPrize(c,i)>0&&<small> · {money2(overallPrize(c,i))} prize ({money2(overallPrize(c,i)/2)} each)</small>}</em></div>):draw?<p>No pair results available.</p>:<p>Waiting for the draw.</p>}<TwosResults c={c} state={state}/></div>}
  return <div className="leader card"><h3>LIVE LEADERBOARD</h3>{!rule.verified&&<p className="autherror">This format does not yet have a verified scoring engine.</p>}{rows.length?rows.map((r,i)=><div className="leaderrow" key={r.player.id}><strong>{i+1}</strong><span><b>{r.player.name}{r.player.guest?' (Guest)':''}</b><small>{r.complete}/{c.holesMode==='18'||!c.holesMode?18:9} holes</small></span><em>{formatResult(r,c.format)}{overallPrize(c,i)>0&&<small> · {money2(overallPrize(c,i))}</small>}</em></div>):<p>No scores entered yet.</p>}<SidePotResults c={c} state={state}/><TwosResults c={c} state={state}/></div>}
-function ScoreScreen({c,state,setState,me,auth,setCloud,back}){
- if(c&&isGroupFormat(c.format))return <GroupScoreScreen c={c} state={state} setState={setState} me={me} back={back} onPersist={async next=>{if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}/>;
- if(!c)return <div className="app"><main><Empty text="Competition not found."/></main></div>;
- const {course,tee,holes:hs}=competitionCourse(c,state);const holeIdx=c.holesMode==='front9'?[0,1,2,3,4,5,6,7,8]:c.holesMode==='back9'?[9,10,11,12,13,14,15,16,17]:hs.map((_,i)=>i);
- const society=state.societies.find(x=>x.id===c.societyId);const pairFormat=isPairCompetition(c.format)&&c.format!=='blind-pairs';const admin=!!me&&(society?.ownerId===me.id||(society?.admins||[]).includes(me.id));
- const ownSavedGroup=(c.roundGroups||[]).find(g=>(g.playerIds||[]).includes(me.id));const[selectedGroupId,setSelectedGroupId]=useState('');const savedGroup=admin?(selectedGroupId&&selectedGroupId!=='__new__'?(c.roundGroups||[]).find(g=>g.id===selectedGroupId):null):ownSavedGroup;
- const defaultIds=savedGroup?.playerIds?.length?savedGroup.playerIds:[me.id];
- const groupDraftKey=`ggc-score-group-${c.id}-${me.id}`;const savedDraft=(()=>{try{return JSON.parse(sessionStorage.getItem(groupDraftKey)||'null')}catch{return null}})();
- const[groupIds,setGroupIds]=useState(ownSavedGroup?.playerIds?.length?ownSavedGroup.playerIds:(savedDraft?.length?savedDraft:defaultIds));const[setup,setSetup]=useState(!ownSavedGroup);const[roundManager,setRoundManager]=useState(admin);const[showBoard,setShowBoard]=useState(false);
- useEffect(()=>{if(setup)sessionStorage.setItem(groupDraftKey,JSON.stringify(groupIds))},[groupDraftKey,setup,groupIds]);
- const candidateIds=[...new Set([me.id,...(society?.members||[]),...(society?.admins||[]),society?.ownerId,...(c.entries||[])].filter(Boolean))];const candidates=state.players.filter(p=>candidateIds.includes(p.id));const compCards=(state.cards||[]).filter(card=>card.compId===c.id);const groupedPlayerIds=new Set((c.roundGroups||[]).flatMap(g=>g.playerIds||[]));const roundRows=[...(c.roundGroups||[]).map(g=>({...g,synthetic:false})),...compCards.filter(card=>!groupedPlayerIds.has(card.playerId)).map(card=>({id:`card-${card.id}`,playerIds:[card.playerId],synthetic:true,cardId:card.id,startedBy:card.lastEditedBy}))];
- const par=hs.reduce((a,h)=>a+h.par,0)||72;const allowance=c.format==='gross-stroke'?0:(c.handicapAllowance??FORMAT_RULES[c.format]?.defaultAllowance??100);
- function cardFor(id){return state.cards.find(x=>x.compId===c.id&&x.playerId===id)}
- function hcap(id){const p=state.players.find(x=>x.id===id);const old=cardFor(id);const wl=winterLeagueCardHandicap(c,state,id);return {hi:wl?.handicapIndex??old?.handicapIndexUsed??p?.hi??0,ch:old?.courseHandicap??courseHandicap(p?.hi,tee,par),ph:wl?.playingHandicap??old?.playingHandicap??playingHandicap(p?.hi,tee,par,allowance)}}
- function normalShots(ph,si){const base=Math.trunc(ph/18),rem=Math.abs(ph%18);return ph>=0?base+(si<=rem?1:0):base-(rem>0&&si>18-rem?1:0)}
- const scorePairs=competitionPairs(c);const matchRel=['4bbb-match','fourball-match'].includes(c.format)&&scorePairs.length===2?fourballMatchHandicaps(scorePairs[0],scorePairs[1],c,state):{};
- function shots(id,si){return ['4bbb-match','fourball-match'].includes(c.format)?(matchRel[id]===undefined?0:normalShots(matchRel[id],si)):normalShots(hcap(id).ph,si)}
- function dots(n){return n>0?'•'.repeat(Math.min(n,4)):n<0?'◦'.repeat(Math.min(Math.abs(n),4)):''}
- function setSlot(slot,id){setGroupIds(prev=>{const a=[...prev];if(!id){a.splice(slot,1);return a}const old=a.indexOf(id);if(old>=0&&old!==slot)a[old]='';a[slot]=id;return a.filter(Boolean).slice(0,4)})}
- async function startGroup(){const ids=[...new Set(groupIds.filter(Boolean))];const existingGroup=(state.comps.find(x=>x.id===c.id)?.roundGroups||[]).find(g=>g.id===savedGroup?.id);const locked=existingGroup&&(state.cards||[]).some(card=>card.compId===c.id&&(existingGroup.playerIds||[]).includes(card.playerId)&&(card.gross||[]).some(v=>v!==''&&v!==null&&v!==undefined));if(locked&&JSON.stringify([...(existingGroup.playerIds||[])].sort())!==JSON.stringify([...ids].sort()))return alert('This playing group is locked because scoring has started. Use RESTART ROUND if you need to change the golfers.');if(!ids.length)return alert('Choose at least one golfer.');if(['matchplay','nassau'].includes(c.format)&&ids.length!==2)return alert('This head-to-head format needs exactly two golfers.');if(c.format==='sixes'&&ids.length!==3)return alert('Split Sixes needs exactly three golfers.');if(c.format==='skins'&&ids.length<2)return alert('Skins needs at least two golfers.');if(['4bbb-match','fourball-match'].includes(c.format)&&ids.length!==4)return alert('Pairs Matchplay needs four golfers.');const fixedLeagueTeams=(state.leagues||[]).some(l=>l.id===c.leagueId&&(l.teams||[]).length>0);if(pairFormat&&!fixedLeagueTeams){const error=scoreGroupStartError(c.format,ids);if(error)return alert(error);if(c.pairingMode==='preset')for(let i=0;i<ids.length;i+=2)if(!pairForPlayers(c,ids.slice(i,i+2)))return alert('Choose golfers in their preset pairs.')}const now=new Date().toISOString();let next={...state};const cards=[...state.cards];for(const id of ids){if(!cards.some(x=>x.compId===c.id&&x.playerId===id)){const p=state.players.find(x=>x.id===id),hc=hcap(id);cards.push({id:uid(),societyId:c.societyId,compId:c.id,playerId:id,gross:Array(hs.length).fill(''),courseId:c.course,tee:c.tee,handicapIndexUsed:hc.hi,courseHandicap:hc.ch,playingHandicap:hc.ph,submitted:false,updatedAt:now,lastEditedBy:me.id})}}
- let pairs=c.pairs||[];if(admin&&pairFormat&&!fixedLeagueTeams&&ids.length>=2){const selected=new Set(ids);pairs=(c.pairs||[]).filter(pair=>!(pair.ids||[]).some(id=>selected.has(id)));for(let i=0;i<ids.length;i+=2)pairs.push({id:uid(),ids:[ids[i],ids[i+1]]})}
- const groups=[...(c.roundGroups||[]).filter(g=>!(g.playerIds||[]).some(id=>ids.includes(id))),{id:savedGroup?.id||uid(),playerIds:ids,startedAt:savedGroup?.startedAt||now,startedBy:me.id}];next={...state,cards,comps:state.comps.map(q=>q.id===c.id?{...q,entries:[...new Set([...(q.entries||[]),...ids])],pairs,roundGroups:groups}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'START GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,after:{playerIds:ids}}]};setState(next);setGroupIds(ids);sessionStorage.removeItem(groupDraftKey);setSetup(false);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}
- function roundScoreText(row){return (row.playerIds||[]).map(id=>{const p=state.players.find(x=>x.id===id),card=compCards.find(x=>x.playerId===id);if(!card)return `${p?.name||'Unknown golfer'} · no card`;const displayFormat=['4bbb-stroke','aggregate-stroke'].includes(c.format)?'stroke':c.format;const result=calcCard(card,{...c,format:displayFormat,handicapAllowance:c.handicapAllowance??FORMAT_RULES[c.format]?.defaultAllowance},state);return `${p?.name||'Unknown golfer'} · ${result.complete}/${holeIdx.length} holes · ${formatResult(result,displayFormat)}`}).join(' | ')}
- function openAdminRound(row){if(!admin)return;setSelectedGroupId(row.synthetic?'__orphan__':row.id);setGroupIds([...(row.playerIds||[])]);setSetup(false);setRoundManager(false)}
- function newAdminRound(){if(!admin)return;setSelectedGroupId('__new__');setGroupIds([me.id]);setSetup(true);setRoundManager(false)}
- async function deleteAdminRound(row){if(!admin)return;const names=(row.playerIds||[]).map(id=>state.players.find(p=>p.id===id)?.name||'Unknown golfer').join(', ');if(!confirm(`Delete the scorecard for ${names}?\n\nAll scores on this card will be permanently removed. This cannot be undone.`))return;const ids=new Set(row.playerIds||[]),now=new Date().toISOString(),removedCards=state.cards.filter(card=>card.compId===c.id&&ids.has(card.playerId));const next={...state,deletedCardIds:[...new Set([...(state.deletedCardIds||[]),...removedCards.map(card=>card.id)])],cards:state.cards.filter(card=>!(card.compId===c.id&&ids.has(card.playerId))),comps:state.comps.map(q=>q.id===c.id?{...q,roundGroups:(q.roundGroups||[]).filter(g=>g.id!==row.id)}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'ADMIN DELETE SCORECARD',editedById:me.id,editedByName:me.name,at:now,before:{groupId:row.synthetic?null:row.id,playerIds:[...ids],cardIds:removedCards.map(card=>card.id)},after:{deleted:true}}]};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}
- function leaveCard(){if(admin){setRoundManager(true);setSelectedGroupId('');setGroupIds([me.id]);setSetup(false)}else back()}
- function changeScore(id,i,fn){if(effectiveCompStatus(c)!=='live'&&!admin)return;const now=new Date().toISOString();setState(prev=>{let cards=[...prev.cards];let old=cards.find(x=>x.compId===c.id&&x.playerId===id);if(!old)return prev;const gross=[...(old.gross||Array(hs.length).fill(''))];gross[i]=fn(gross[i]);const card={...old,gross,submitted:false,submittedAt:null,updatedAt:now,lastEditedBy:me.id};cards=cards.map(x=>x.id===old.id?card:x);return {...prev,cards,audit:[...(prev.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,cardId:card.id,playerId:id,playerName:state.players.find(p=>p.id===id)?.name,editedById:me.id,editedByName:me.name,action:admin?'ADMIN EDIT SCORECARD':'EDIT LIVE GROUP SCORE',at:now,before:{hole:i+1,score:old.gross?.[i]??''},after:{hole:i+1,score:gross[i]}}]}})}
- async function submitGroup(){const now=new Date().toISOString();const ids=groupIds.filter(Boolean);const next={...state,cards:state.cards.map(x=>x.compId===c.id&&ids.includes(x.playerId)?{...x,submitted:true,submittedAt:x.submittedAt||now,updatedAt:now,lastEditedBy:me.id}:x),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'SUBMIT GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,after:{playerIds:ids}}]};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);localStorage.removeItem('ggc-active-comp');sessionStorage.removeItem(groupDraftKey);alert('Round submitted. It has been removed from the dashboard and remains available in Competitions.');if(admin){setRoundManager(true);setSelectedGroupId('');setSetup(false)}else back()}
- const currentComp=state.comps.find(x=>x.id===c.id)||c;const activePairs=currentComp.pairs||[];
- if(roundManager&&admin)return <div className="app score adminRoundManager"><header><button className="icon" onClick={back}><ArrowLeft/></button><div><b>{c.name}</b><small>V4 Beta 12.5 · Scorecard Admin</small></div></header><main><div className="card"><h3>SCORECARD ADMIN</h3><p className="muted">Open a scorecard to enter or correct scores, or remove a card created in error. Every admin action is recorded.</p>{roundRows.length?roundRows.map(row=><div className="adminRoundRow" key={row.id}><span><b>{(row.playerIds||[]).map(id=>state.players.find(p=>p.id===id)?.name||'Unknown golfer').join(' · ')}</b><small>{roundScoreText(row)}</small><small>{(row.playerIds||[]).some(id=>compCards.find(card=>card.playerId===id)?.submitted)?'SUBMITTED':'IN PROGRESS'} · created by {state.players.find(p=>p.id===row.startedBy)?.name||'Unknown'}</small></span><div><button className="mini secondary" onClick={()=>openAdminRound(row)}>OPEN</button><button className="mini danger" onClick={()=>deleteAdminRound(row)}>DELETE</button></div></div>):<p className="muted">No scorecards have been created for this competition yet.</p>}<button className="primary adminNewCard" onClick={newAdminRound}><Plus/> CREATE NEW SCORECARD</button></div></main></div>;
- if(setup)return <div className="app score"><header><button className="icon" onClick={leaveCard}><ArrowLeft/></button><div><b>{c.name}</b><small>V4 Beta 12.5 · Start group</small></div></header><main><div className="card"><h3>WHO ARE YOU SCORING FOR?</h3><p className="muted">Choose 1–4 golfers. Anyone in this group can later open the same live round and score for the group.</p>{[0,1,2,3].map(i=><label key={i}>Golfer {i+1}<select value={groupIds[i]||''} onChange={e=>setSlot(i,e.target.value)}><option value="">{i===0?'Choose golfer…':'No golfer'}</option>{candidates.filter(p=>!groupIds.includes(p.id)||groupIds[i]===p.id).map(p=><option key={p.id} value={p.id}>{p.name} · HI {formatHI(p.hi)}</option>)}</select></label>)}{pairFormat&&groupIds.length>=2&&<div className="pairPreview"><b>PAIR 1</b><span>{pairDisplayName(pairForPlayers(c,groupIds.slice(0,2))||{ids:groupIds.slice(0,2)},state)}</span>{groupIds.length>=4&&<><b>PAIR 2</b><span>{pairDisplayName(pairForPlayers(c,groupIds.slice(2,4))||{ids:groupIds.slice(2,4)},state)}</span></>}</div>}<button className="primary" onClick={startGroup}>START GROUP SCORECARD</button></div></main></div>;
- const players=groupIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean);const cols=players.length;const bands=teamBandLayout(cols);const liveMatch=['4bbb-match','fourball-match'].includes(c.format)&&activePairs.length===2?fourballMatchResult(activePairs[0],activePairs[1],currentComp,state):null;const pairName=pr=>pairDisplayName(pr,state);const liveMatchText=!liveMatch?'':liveMatch.up===0?liveMatch.text:`${pairName(activePairs[liveMatch.up>0?0:1])} ${liveMatch.decided?'won ':''}${liveMatch.text}`;
- const roundTotals=buildRoundTotals(currentComp,state,players.map(p=>p.id));
- return <div className="app score groupScore"><header><button className="icon" onClick={leaveCard}><ArrowLeft/></button><div><b>{c.name}</b><small>{course?.name} · {c.tee} · V4 Beta 12.5</small></div></header><main>
- <button className="secondary" onClick={()=>setShowBoard(v=>!v)}><Trophy/> {showBoard?'HIDE':'VIEW'} LIVE LEADERBOARD</button>{showBoard&&<Leaderboard c={currentComp} state={state} setState={setState} auth={auth} setCloud={setCloud}/>} {liveMatch&&<div className="liveMatchStrip" role="status"><b>{liveMatchText}</b><span>{liveMatch.played?`THRU ${liveMatch.played}`:'MATCH READY'}</span></div>}<div className="groupCardWrap"><div className={`groupGrid ${pairFormat?'pairedGrid':''}`} style={{'--players':cols}}>{pairFormat&&<><div className="teamBandCorner"></div><div className="teamBand teamA" style={{gridColumn:bands.teamA}}>TEAM A · {players.slice(0,2).map(p=>p.name.split(' ')[0]).join(' & ')}</div>{bands.teamB&&<div className="teamBand teamB" style={{gridColumn:bands.teamB}}>TEAM B · {players.slice(2,4).map(p=>p.name.split(' ')[0]).join(' & ')}</div>}</>}<div className="gHead holeHead">HOLE</div>{players.map((p,idx)=><div key={p.id} className={`gHead playerHead ${pairFormat?(idx<2?'teamA':'teamB'):''}`}><b>{p.name.split(' ')[0]}</b><small>HI {formatHI(hcap(p.id).hi)}{['4bbb-match','fourball-match'].includes(c.format)?` · M${matchRel[p.id]??0}`:` · PH ${hcap(p.id).ph}`}</small></div>)}
- {holeIdx.flatMap(i=>{const h=hs[i];if(!h)return[];return [<div className="holeMeta" key={`h-${i}`}><b>{h.n}</b><small>P{h.par}<br/>SI {h.si}</small></div>,...players.map((p,pi)=>{const card=cardFor(p.id),v=card?.gross?.[i]??'',sh=shots(p.id,h.si),entered=v!==''&&v!==null&&v!==undefined,nr=isNoReturnScore(v),g=entered&&!nr?(+v||0):0,net=entered&&!nr?g-sh:null,pts=entered?(nr?0:Math.max(0,2+(h.par+sh-g))):null,rel=entered&&!nr?g-h.par:null,shape=!entered||nr?'':rel<=-2?'eagle':rel===-1?'birdie':rel===1?'bogey':rel>=2?'doubleBogey':'';return <div className={`groupCell ${entered?'scoreEntered ':'scoreEmpty '}${nr?'noReturn ':''}${pairFormat?(pi<2?'teamA':'teamB'):''}`} key={`${p.id}-${i}`}><span className="shotDots" title={`${sh} handicap shot${sh===1?'':'s'}`}>{dots(sh)}</span><div className={`grossMark ${shape}`}><input inputMode="numeric" aria-label={`${p.name} hole ${h.n} gross score`} value={displayHoleScore(v)} placeholder={h.par} onChange={e=>{const value=normaliseHoleScoreInput(e.target.value);changeScore(p.id,i,()=>value)}}/></div><div className="holeCalc">{entered&&<>{nr?<span>N/R</span>:<span>({net})</span>}{(c.format==='stableford'||c.format==='4bbb-stableford'||c.format==='aggregate-stableford'||c.format==='multiplier-stableford')&&<b>{pts} pts</b>}</>}</div><div className="scoreButtons"><button onClick={()=>changeScore(p.id,i,x=>decrementHoleScore(x,h.par))}>−</button><button onClick={()=>changeScore(p.id,i,x=>incrementHoleScore(x,h.par))}>+</button></div></div>})]})}<IndividualTotalRows totals={roundTotals}/></div></div><TeamRoundTotals totals={roundTotals}/>
- <div className="card groupStatus"><b>LIVE GROUP ROUND</b><span>{players.map(p=>p.name).join(' · ')}</span><small>Scores save to each golfer's own card. Any golfer in this group can continue the same round.</small></div><div className="scoreactions">{admin&&<button className="secondary" onClick={()=>setRoundManager(true)}>SCORECARD LIST</button>}<button className="secondary" onClick={()=>{const scored=(state.cards||[]).some(card=>card.compId===c.id&&groupIds.includes(card.playerId)&&(card.gross||[]).some(v=>v!==''&&v!==null&&v!==undefined));if(scored)return alert('This playing group is locked because scoring has started. Use RESTART ROUND if you need to change the golfers.');setSetup(true)}}>CHANGE GROUP</button><button className="secondary danger" onClick={async()=>{if(!confirm('Restart this round? This will erase all scores entered for this playing group and allow the golfers to be selected again. This cannot be undone.'))return;const ids=[...groupIds];const gid=savedGroup?.id;const now=new Date().toISOString();const removedCards=state.cards.filter(card=>card.compId===c.id&&ids.includes(card.playerId));const next={...state,deletedCardIds:[...new Set([...(state.deletedCardIds||[]),...removedCards.map(card=>card.id)])],cards:state.cards.filter(card=>!(card.compId===c.id&&ids.includes(card.playerId))),comps:state.comps.map(q=>q.id===c.id?{...q,roundGroups:(q.roundGroups||[]).filter(g=>g.id!==gid)}:q),audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:'RESTART GROUP ROUND',editedById:me.id,editedByName:me.name,at:now,before:{playerIds:ids,cardIds:removedCards.map(card=>card.id)},after:{cleared:true}}]};setState(next);setGroupIds([me.id]);setSetup(true);sessionStorage.removeItem(groupDraftKey);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}>RESTART ROUND</button><button className="primary" onClick={submitGroup}><CheckCircle2/> SUBMIT ROUND</button></div>
- </main></div>}
+function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
+  if (c && isGroupFormat(c.format))
+    return (
+      <GroupScoreScreen
+        c={c}
+        state={state}
+        setState={setState}
+        me={me}
+        back={back}
+        onPersist={async (next) => {
+          if (CLOUD && auth?.access_token)
+            await saveCloud(next, setCloud, auth.access_token);
+        }}
+      />
+    );
+  if (!c)
+    return (
+      <div className="app">
+        <main>
+          <Empty text="Competition not found." />
+        </main>
+      </div>
+    );
+  const { course, tee, holes: hs } = competitionCourse(c, state);
+  const holeIdx =
+    c.holesMode === "front9"
+      ? [0, 1, 2, 3, 4, 5, 6, 7, 8]
+      : c.holesMode === "back9"
+        ? [9, 10, 11, 12, 13, 14, 15, 16, 17]
+        : hs.map((_, i) => i);
+  const society = state.societies.find((x) => x.id === c.societyId);
+  const pairFormat = isPairCompetition(c.format) && c.format !== "blind-pairs";
+  const admin =
+    !!me &&
+    (society?.ownerId === me.id || (society?.admins || []).includes(me.id));
+  const ownSavedGroup = (c.roundGroups || []).find((g) =>
+    (g.playerIds || []).includes(me.id),
+  );
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const savedGroup = admin
+    ? selectedGroupId && selectedGroupId !== "__new__"
+      ? (c.roundGroups || []).find((g) => g.id === selectedGroupId)
+      : null
+    : ownSavedGroup;
+  const defaultIds = savedGroup?.playerIds?.length
+    ? savedGroup.playerIds
+    : [me.id];
+  const groupDraftKey = `ggc-score-group-${c.id}-${me.id}`;
+  const savedDraft = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(groupDraftKey) || "null");
+    } catch {
+      return null;
+    }
+  })();
+  const [groupIds, setGroupIds] = useState(
+    ownSavedGroup?.playerIds?.length
+      ? ownSavedGroup.playerIds
+      : savedDraft?.length
+        ? savedDraft
+        : defaultIds,
+  );
+  const [setup, setSetup] = useState(!ownSavedGroup);
+  const [roundManager, setRoundManager] = useState(admin);
+  const [showBoard, setShowBoard] = useState(false);
+  useEffect(() => {
+    if (setup) sessionStorage.setItem(groupDraftKey, JSON.stringify(groupIds));
+  }, [groupDraftKey, setup, groupIds]);
+  const candidateIds = [
+    ...new Set(
+      [
+        me.id,
+        ...(society?.members || []),
+        ...(society?.admins || []),
+        society?.ownerId,
+        ...(c.entries || []),
+      ].filter(Boolean),
+    ),
+  ];
+  const candidates = state.players.filter((p) => candidateIds.includes(p.id));
+  const compCards = (state.cards || []).filter((card) => card.compId === c.id);
+  const groupedPlayerIds = new Set(
+    (c.roundGroups || []).flatMap((g) => g.playerIds || []),
+  );
+  const roundRows = [
+    ...(c.roundGroups || []).map((g) => ({ ...g, synthetic: false })),
+    ...compCards
+      .filter((card) => !groupedPlayerIds.has(card.playerId))
+      .map((card) => ({
+        id: `card-${card.id}`,
+        playerIds: [card.playerId],
+        synthetic: true,
+        cardId: card.id,
+        startedBy: card.lastEditedBy,
+      })),
+  ];
+  const par = hs.reduce((a, h) => a + h.par, 0) || 72;
+  const allowance =
+    c.format === "gross-stroke"
+      ? 0
+      : (c.handicapAllowance ??
+        FORMAT_RULES[c.format]?.defaultAllowance ??
+        100);
+  function cardFor(id) {
+    return state.cards.find((x) => x.compId === c.id && x.playerId === id);
+  }
+  function hcap(id) {
+    const p = state.players.find((x) => x.id === id);
+    const old = cardFor(id);
+    const wl = winterLeagueCardHandicap(c, state, id);
+    return {
+      hi: wl?.handicapIndex ?? old?.handicapIndexUsed ?? p?.hi ?? 0,
+      ch: old?.courseHandicap ?? courseHandicap(p?.hi, tee, par),
+      ph:
+        wl?.playingHandicap ??
+        old?.playingHandicap ??
+        playingHandicap(p?.hi, tee, par, allowance),
+    };
+  }
+  function normalShots(ph, si) {
+    const base = Math.trunc(ph / 18),
+      rem = Math.abs(ph % 18);
+    return ph >= 0
+      ? base + (si <= rem ? 1 : 0)
+      : base - (rem > 0 && si > 18 - rem ? 1 : 0);
+  }
+  const scorePairs = competitionPairs(c);
+  const matchRel =
+    ["4bbb-match", "fourball-match"].includes(c.format) &&
+    scorePairs.length === 2
+      ? fourballMatchHandicaps(scorePairs[0], scorePairs[1], c, state)
+      : {};
+  function shots(id, si) {
+    return ["4bbb-match", "fourball-match"].includes(c.format)
+      ? matchRel[id] === undefined
+        ? 0
+        : normalShots(matchRel[id], si)
+      : normalShots(hcap(id).ph, si);
+  }
+  function dots(n) {
+    return n > 0
+      ? "•".repeat(Math.min(n, 4))
+      : n < 0
+        ? "◦".repeat(Math.min(Math.abs(n), 4))
+        : "";
+  }
+  function setSlot(slot, id) {
+    setGroupIds((prev) => {
+      const a = [...prev];
+      if (!id) {
+        a.splice(slot, 1);
+        return a;
+      }
+      const old = a.indexOf(id);
+      if (old >= 0 && old !== slot) a[old] = "";
+      a[slot] = id;
+      return a.filter(Boolean).slice(0, 4);
+    });
+  }
+  async function startGroup() {
+    const ids = [...new Set(groupIds.filter(Boolean))];
+    const existingGroup = (
+      state.comps.find((x) => x.id === c.id)?.roundGroups || []
+    ).find((g) => g.id === savedGroup?.id);
+    const locked =
+      existingGroup &&
+      (state.cards || []).some(
+        (card) =>
+          card.compId === c.id &&
+          (existingGroup.playerIds || []).includes(card.playerId) &&
+          (card.gross || []).some(
+            (v) => v !== "" && v !== null && v !== undefined,
+          ),
+      );
+    if (
+      locked &&
+      JSON.stringify([...(existingGroup.playerIds || [])].sort()) !==
+        JSON.stringify([...ids].sort())
+    )
+      return alert(
+        "This playing group is locked because scoring has started. Use RESTART ROUND if you need to change the golfers.",
+      );
+    if (!ids.length) return alert("Choose at least one golfer.");
+    if (["matchplay", "nassau"].includes(c.format) && ids.length !== 2)
+      return alert("This head-to-head format needs exactly two golfers.");
+    if (c.format === "sixes" && ids.length !== 3)
+      return alert("Split Sixes needs exactly three golfers.");
+    if (c.format === "skins" && ids.length < 2)
+      return alert("Skins needs at least two golfers.");
+    if (["4bbb-match", "fourball-match"].includes(c.format) && ids.length !== 4)
+      return alert("Pairs Matchplay needs four golfers.");
+    const fixedLeagueTeams = (state.leagues || []).some(
+      (l) => l.id === c.leagueId && (l.teams || []).length > 0,
+    );
+    if (pairFormat && !fixedLeagueTeams) {
+      const error = scoreGroupStartError(c.format, ids);
+      if (error) return alert(error);
+      if (c.pairingMode === "preset")
+        for (let i = 0; i < ids.length; i += 2)
+          if (!pairForPlayers(c, ids.slice(i, i + 2)))
+            return alert("Choose golfers in their preset pairs.");
+    }
+    const now = new Date().toISOString();
+    let next = { ...state };
+    const cards = [...state.cards];
+    for (const id of ids) {
+      if (!cards.some((x) => x.compId === c.id && x.playerId === id)) {
+        const p = state.players.find((x) => x.id === id),
+          hc = hcap(id);
+        cards.push({
+          id: uid(),
+          societyId: c.societyId,
+          compId: c.id,
+          playerId: id,
+          gross: Array(hs.length).fill(""),
+          courseId: c.course,
+          tee: c.tee,
+          handicapIndexUsed: hc.hi,
+          courseHandicap: hc.ch,
+          playingHandicap: hc.ph,
+          submitted: false,
+          updatedAt: now,
+          lastEditedBy: me.id,
+        });
+      }
+    }
+    let pairs = c.pairs || [];
+    if (admin && pairFormat && !fixedLeagueTeams && ids.length >= 2) {
+      const selected = new Set(ids);
+      pairs = (c.pairs || []).filter(
+        (pair) => !(pair.ids || []).some((id) => selected.has(id)),
+      );
+      for (let i = 0; i < ids.length; i += 2)
+        pairs.push({ id: uid(), ids: [ids[i], ids[i + 1]] });
+    }
+    const groups = [
+      ...(c.roundGroups || []).filter(
+        (g) => !(g.playerIds || []).some((id) => ids.includes(id)),
+      ),
+      {
+        id: savedGroup?.id || uid(),
+        playerIds: ids,
+        startedAt: savedGroup?.startedAt || now,
+        startedBy: me.id,
+      },
+    ];
+    next = {
+      ...state,
+      cards,
+      comps: state.comps.map((q) =>
+        q.id === c.id
+          ? {
+              ...q,
+              entries: [...new Set([...(q.entries || []), ...ids])],
+              pairs,
+              roundGroups: groups,
+            }
+          : q,
+      ),
+      audit: [
+        ...(state.audit || []),
+        {
+          id: uid(),
+          societyId: c.societyId,
+          compId: c.id,
+          action: "START GROUP ROUND",
+          editedById: me.id,
+          editedByName: me.name,
+          at: now,
+          after: { playerIds: ids },
+        },
+      ],
+    };
+    setState(next);
+    setGroupIds(ids);
+    sessionStorage.removeItem(groupDraftKey);
+    setSetup(false);
+    if (CLOUD && auth?.access_token)
+      await saveCloud(next, setCloud, auth.access_token);
+  }
+  function roundScoreText(row) {
+    return (row.playerIds || [])
+      .map((id) => {
+        const p = state.players.find((x) => x.id === id),
+          card = compCards.find((x) => x.playerId === id);
+        if (!card) return `${p?.name || "Unknown golfer"} · no card`;
+        const displayFormat = ["4bbb-stroke", "aggregate-stroke"].includes(
+          c.format,
+        )
+          ? "stroke"
+          : c.format;
+        const result = calcCard(
+          card,
+          {
+            ...c,
+            format: displayFormat,
+            handicapAllowance:
+              c.handicapAllowance ?? FORMAT_RULES[c.format]?.defaultAllowance,
+          },
+          state,
+        );
+        return `${p?.name || "Unknown golfer"} · ${result.complete}/${holeIdx.length} holes · ${formatResult(result, displayFormat)}`;
+      })
+      .join(" | ");
+  }
+  function openAdminRound(row) {
+    if (!admin) return;
+    setSelectedGroupId(row.synthetic ? "__orphan__" : row.id);
+    setGroupIds([...(row.playerIds || [])]);
+    setSetup(false);
+    setRoundManager(false);
+  }
+  function newAdminRound() {
+    if (!admin) return;
+    setSelectedGroupId("__new__");
+    setGroupIds([me.id]);
+    setSetup(true);
+    setRoundManager(false);
+  }
+  async function deleteAdminRound(row) {
+    if (!admin) return;
+    const names = (row.playerIds || [])
+      .map(
+        (id) =>
+          state.players.find((p) => p.id === id)?.name || "Unknown golfer",
+      )
+      .join(", ");
+    if (
+      !confirm(
+        `Delete the scorecard for ${names}?\n\nAll scores on this card will be permanently removed. This cannot be undone.`,
+      )
+    )
+      return;
+    const ids = new Set(row.playerIds || []),
+      now = new Date().toISOString(),
+      removedCards = state.cards.filter(
+        (card) => card.compId === c.id && ids.has(card.playerId),
+      );
+    const next = {
+      ...state,
+      deletedCardIds: [
+        ...new Set([
+          ...(state.deletedCardIds || []),
+          ...removedCards.map((card) => card.id),
+        ]),
+      ],
+      cards: state.cards.filter(
+        (card) => !(card.compId === c.id && ids.has(card.playerId)),
+      ),
+      comps: state.comps.map((q) =>
+        q.id === c.id
+          ? {
+              ...q,
+              roundGroups: (q.roundGroups || []).filter((g) => g.id !== row.id),
+            }
+          : q,
+      ),
+      audit: [
+        ...(state.audit || []),
+        {
+          id: uid(),
+          societyId: c.societyId,
+          compId: c.id,
+          action: "ADMIN DELETE SCORECARD",
+          editedById: me.id,
+          editedByName: me.name,
+          at: now,
+          before: {
+            groupId: row.synthetic ? null : row.id,
+            playerIds: [...ids],
+            cardIds: removedCards.map((card) => card.id),
+          },
+          after: { deleted: true },
+        },
+      ],
+    };
+    setState(next);
+    if (CLOUD && auth?.access_token)
+      await saveCloud(next, setCloud, auth.access_token);
+  }
+  function leaveCard() {
+    if (admin) {
+      setRoundManager(true);
+      setSelectedGroupId("");
+      setGroupIds([me.id]);
+      setSetup(false);
+    } else back();
+  }
+  function changeScore(id, i, fn) {
+    if (effectiveCompStatus(c) !== "live" && !admin) return;
+    const now = new Date().toISOString();
+    setState((prev) => {
+      let cards = [...prev.cards];
+      let old = cards.find((x) => x.compId === c.id && x.playerId === id);
+      if (!old) return prev;
+      const gross = [...(old.gross || Array(hs.length).fill(""))];
+      gross[i] = fn(gross[i]);
+      const card = {
+        ...old,
+        gross,
+        submitted: false,
+        submittedAt: null,
+        updatedAt: now,
+        lastEditedBy: me.id,
+      };
+      cards = cards.map((x) => (x.id === old.id ? card : x));
+      return {
+        ...prev,
+        cards,
+        audit: [
+          ...(prev.audit || []),
+          {
+            id: uid(),
+            societyId: c.societyId,
+            compId: c.id,
+            cardId: card.id,
+            playerId: id,
+            playerName: state.players.find((p) => p.id === id)?.name,
+            editedById: me.id,
+            editedByName: me.name,
+            action: admin ? "ADMIN EDIT SCORECARD" : "EDIT LIVE GROUP SCORE",
+            at: now,
+            before: { hole: i + 1, score: old.gross?.[i] ?? "" },
+            after: { hole: i + 1, score: gross[i] },
+          },
+        ],
+      };
+    });
+  }
+  async function submitGroup() {
+    const now = new Date().toISOString();
+    const ids = groupIds.filter(Boolean);
+    if (c.format === "eclectic") {
+      const cards = ids.map((id) => cardFor(id)).filter(Boolean);
+      const finished = cards.filter((card) => !eclecticRoundsRemaining(card, c));
+      if (finished.length) return alert(`${finished.map((card) => state.players.find((p) => p.id === card.playerId)?.name || "This golfer").join(", ")} has already completed every Eclectic round.`);
+      const incomplete = cards.filter((card) => !eclecticRoundComplete(card, holeIdx));
+      if (incomplete.length) return alert(`Complete every selected hole for ${incomplete.map((card) => state.players.find((p) => p.id === card.playerId)?.name || "this golfer").join(", ")} before submitting this Eclectic round. Use N/R for a hole without a returned score.`);
+      const submittedRounds = Object.fromEntries(cards.map((card) => [card.playerId, eclecticRoundNumber(card)]));
+      const next = {
+        ...state,
+        cards: state.cards.map((card) => card.compId === c.id && ids.includes(card.playerId) ? submitEclecticRound(card, c, holeIdx, {submittedAt: now, submittedBy: me.id}) : card),
+        audit: [...(state.audit || []), {id: uid(), societyId: c.societyId, compId: c.id, action: "SUBMIT ECLECTIC ROUND", editedById: me.id, editedByName: me.name, at: now, after: {playerIds: ids, rounds: submittedRounds}}],
+      };
+      setState(next);
+      if (CLOUD && auth?.access_token) await saveCloud(next, setCloud, auth.access_token);
+      const remaining = Math.max(0, ...next.cards.filter((card) => card.compId === c.id && ids.includes(card.playerId)).map((card) => eclecticRoundsRemaining(card, c)));
+      alert(remaining ? `Eclectic round submitted. ${remaining} round${remaining === 1 ? "" : "s"} remaining.` : "Final Eclectic round submitted. The completed best-hole card is now on the leaderboard.");
+      if (admin) {setRoundManager(true);setSelectedGroupId("");setSetup(false);} else back();
+      return;
+    }
+    const next = {
+      ...state,
+      cards: state.cards.map((x) =>
+        x.compId === c.id && ids.includes(x.playerId)
+          ? {
+              ...x,
+              submitted: true,
+              submittedAt: x.submittedAt || now,
+              updatedAt: now,
+              lastEditedBy: me.id,
+            }
+          : x,
+      ),
+      audit: [
+        ...(state.audit || []),
+        {
+          id: uid(),
+          societyId: c.societyId,
+          compId: c.id,
+          action: "SUBMIT GROUP ROUND",
+          editedById: me.id,
+          editedByName: me.name,
+          at: now,
+          after: { playerIds: ids },
+        },
+      ],
+    };
+    setState(next);
+    if (CLOUD && auth?.access_token)
+      await saveCloud(next, setCloud, auth.access_token);
+    localStorage.removeItem("ggc-active-comp");
+    sessionStorage.removeItem(groupDraftKey);
+    alert(
+      "Round submitted. It has been removed from the dashboard and remains available in Competitions.",
+    );
+    if (admin) {
+      setRoundManager(true);
+      setSelectedGroupId("");
+      setSetup(false);
+    } else back();
+  }
+  const currentComp = state.comps.find((x) => x.id === c.id) || c;
+  const activePairs = currentComp.pairs || [];
+  if (roundManager && admin)
+    return (
+      <div className="app score adminRoundManager">
+        <header>
+          <button className="icon" onClick={back}>
+            <ArrowLeft />
+          </button>
+          <div>
+            <b>{c.name}</b>
+            <small>V4 Beta 12.6 · Scorecard Admin</small>
+          </div>
+        </header>
+        <main>
+          <div className="card">
+            <h3>SCORECARD ADMIN</h3>
+            <p className="muted">
+              Open a scorecard to enter or correct scores, or remove a card
+              created in error. Every admin action is recorded.
+            </p>
+            {roundRows.length ? (
+              roundRows.map((row) => (
+                <div className="adminRoundRow" key={row.id}>
+                  <span>
+                    <b>
+                      {(row.playerIds || [])
+                        .map(
+                          (id) =>
+                            state.players.find((p) => p.id === id)?.name ||
+                            "Unknown golfer",
+                        )
+                        .join(" · ")}
+                    </b>
+                    <small>{roundScoreText(row)}</small>
+                    <small>
+                      {(row.playerIds || []).some(
+                        (id) =>
+                          compCards.find((card) => card.playerId === id)
+                            ?.submitted,
+                      )
+                        ? "SUBMITTED"
+                        : "IN PROGRESS"}{" "}
+                      · created by{" "}
+                      {state.players.find((p) => p.id === row.startedBy)
+                        ?.name || "Unknown"}
+                    </small>
+                  </span>
+                  <div>
+                    <button
+                      className="mini secondary"
+                      onClick={() => openAdminRound(row)}
+                    >
+                      OPEN
+                    </button>
+                    <button
+                      className="mini danger"
+                      onClick={() => deleteAdminRound(row)}
+                    >
+                      DELETE
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="muted">
+                No scorecards have been created for this competition yet.
+              </p>
+            )}
+            <button className="primary adminNewCard" onClick={newAdminRound}>
+              <Plus /> CREATE NEW SCORECARD
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  if (setup)
+    return (
+      <div className="app score">
+        <header>
+          <button className="icon" onClick={leaveCard}>
+            <ArrowLeft />
+          </button>
+          <div>
+            <b>{c.name}</b>
+            <small>V4 Beta 12.6 · Start group</small>
+          </div>
+        </header>
+        <main>
+          <div className="card">
+            <h3>WHO ARE YOU SCORING FOR?</h3>
+            <p className="muted">
+              Choose 1–4 golfers. Anyone in this group can later open the same
+              live round and score for the group.
+            </p>
+            {[0, 1, 2, 3].map((i) => (
+              <label key={i}>
+                Golfer {i + 1}
+                <select
+                  value={groupIds[i] || ""}
+                  onChange={(e) => setSlot(i, e.target.value)}
+                >
+                  <option value="">
+                    {i === 0 ? "Choose golfer…" : "No golfer"}
+                  </option>
+                  {candidates
+                    .filter(
+                      (p) => !groupIds.includes(p.id) || groupIds[i] === p.id,
+                    )
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} · HI {formatHI(p.hi)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            ))}
+            {pairFormat && groupIds.length >= 2 && (
+              <div className="pairPreview">
+                <b>PAIR 1</b>
+                <span>
+                  {pairDisplayName(
+                    pairForPlayers(c, groupIds.slice(0, 2)) || {
+                      ids: groupIds.slice(0, 2),
+                    },
+                    state,
+                  )}
+                </span>
+                {groupIds.length >= 4 && (
+                  <>
+                    <b>PAIR 2</b>
+                    <span>
+                      {pairDisplayName(
+                        pairForPlayers(c, groupIds.slice(2, 4)) || {
+                          ids: groupIds.slice(2, 4),
+                        },
+                        state,
+                      )}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+            <button className="primary" onClick={startGroup}>
+              START GROUP SCORECARD
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  const players = groupIds
+    .map((id) => state.players.find((p) => p.id === id))
+    .filter(Boolean);
+  const cols = players.length;
+  const bands = teamBandLayout(cols);
+  const liveMatch =
+    ["4bbb-match", "fourball-match"].includes(c.format) &&
+    activePairs.length === 2
+      ? fourballMatchResult(activePairs[0], activePairs[1], currentComp, state)
+      : null;
+  const pairName = (pr) => pairDisplayName(pr, state);
+  const liveMatchText = !liveMatch
+    ? ""
+    : liveMatch.up === 0
+      ? liveMatch.text
+      : `${pairName(activePairs[liveMatch.up > 0 ? 0 : 1])} ${liveMatch.decided ? "won " : ""}${liveMatch.text}`;
+  const roundTotals = buildRoundTotals(
+    currentComp,
+    state,
+    players.map((p) => p.id),
+  );
+  return (
+    <div className="app score groupScore">
+      <header>
+        <button className="icon" onClick={leaveCard}>
+          <ArrowLeft />
+        </button>
+        <div>
+          <b>{c.name}</b>
+          <small>
+            {course?.name} · {c.tee} · V4 Beta 12.6
+          </small>
+        </div>
+      </header>
+      <main>
+        <button className="secondary" onClick={() => setShowBoard((v) => !v)}>
+          <Trophy /> {showBoard ? "HIDE" : "VIEW"} LIVE LEADERBOARD
+        </button>
+        {showBoard && (
+          <Leaderboard
+            c={currentComp}
+            state={state}
+            setState={setState}
+            auth={auth}
+            setCloud={setCloud}
+          />
+        )}{" "}
+        {liveMatch && (
+          <div className="liveMatchStrip" role="status">
+            <b>{liveMatchText}</b>
+            <span>
+              {liveMatch.played ? `THRU ${liveMatch.played}` : "MATCH READY"}
+            </span>
+          </div>
+        )}
+        {c.format === "eclectic" && (
+          <div className="card eclecticRoundBanner">
+            <b>ECLECTIC SERIES</b>
+            <span>{players.map((player) => {const card=cardFor(player.id),completed=eclecticCompletedRounds(card).length,nextRound=Math.min(Number(c.eclecticRounds)||3,completed+1);return `${player.name}: Round ${nextRound} of ${c.eclecticRounds||3}`;}).join(" · ")}</span>
+            <small>Enter this round normally. When submitted, GGC preserves it and updates the best score achieved on every hole.</small>
+          </div>
+        )}
+        <div className="groupCardWrap">
+          <div
+            className={`groupGrid ${pairFormat ? "pairedGrid" : ""}`}
+            style={{ "--players": cols }}
+          >
+            {pairFormat && (
+              <>
+                <div className="teamBandCorner"></div>
+                <div
+                  className="teamBand teamA"
+                  style={{ gridColumn: bands.teamA }}
+                >
+                  TEAM A ·{" "}
+                  {players
+                    .slice(0, 2)
+                    .map((p) => p.name.split(" ")[0])
+                    .join(" & ")}
+                </div>
+                {bands.teamB && (
+                  <div
+                    className="teamBand teamB"
+                    style={{ gridColumn: bands.teamB }}
+                  >
+                    TEAM B ·{" "}
+                    {players
+                      .slice(2, 4)
+                      .map((p) => p.name.split(" ")[0])
+                      .join(" & ")}
+                  </div>
+                )}
+              </>
+            )}
+            <div className="gHead holeHead">HOLE</div>
+            {players.map((p, idx) => (
+              <div
+                key={p.id}
+                className={`gHead playerHead ${pairFormat ? (idx < 2 ? "teamA" : "teamB") : ""}`}
+              >
+                <b>{p.name.split(" ")[0]}</b>
+                <small>
+                  HI {formatHI(hcap(p.id).hi)}
+                  {["4bbb-match", "fourball-match"].includes(c.format)
+                    ? ` · M${matchRel[p.id] ?? 0}`
+                    : ` · PH ${hcap(p.id).ph}`}
+                </small>
+              </div>
+            ))}
+            {holeIdx.flatMap((i) => {
+              const h = hs[i];
+              if (!h) return [];
+              return [
+                <div className="holeMeta" key={`h-${i}`}>
+                  <b>{h.n}</b>
+                  <small>
+                    P{h.par}
+                    <br />
+                    SI {h.si}
+                  </small>
+                </div>,
+                ...players.map((p, pi) => {
+                  const card = cardFor(p.id),
+                    v = card?.gross?.[i] ?? "",
+                    sh = shots(p.id, h.si),
+                    entered = v !== "" && v !== null && v !== undefined,
+                    nr = isNoReturnScore(v),
+                    g = entered && !nr ? +v || 0 : 0,
+                    net = entered && !nr ? g - sh : null,
+                    pts = entered
+                      ? nr
+                        ? 0
+                        : Math.max(0, 2 + (h.par + sh - g))
+                      : null,
+                    rel = entered && !nr ? g - h.par : null,
+                    shape =
+                      !entered || nr
+                        ? ""
+                        : rel <= -2
+                          ? "eagle"
+                          : rel === -1
+                            ? "birdie"
+                            : rel === 1
+                              ? "bogey"
+                              : rel >= 2
+                                ? "doubleBogey"
+                                : "";
+                  return (
+                    <div
+                      className={`groupCell ${entered ? "scoreEntered " : "scoreEmpty "}${nr ? "noReturn " : ""}${pairFormat ? (pi < 2 ? "teamA" : "teamB") : ""}`}
+                      key={`${p.id}-${i}`}
+                    >
+                      <span
+                        className="shotDots"
+                        title={`${sh} handicap shot${sh === 1 ? "" : "s"}`}
+                      >
+                        {dots(sh)}
+                      </span>
+                      <div className={`grossMark ${shape}`}>
+                        <input
+                          inputMode="numeric"
+                          aria-label={`${p.name} hole ${h.n} gross score`}
+                          value={displayHoleScore(v)}
+                          placeholder={h.par}
+                          onChange={(e) => {
+                            const value = normaliseHoleScoreInput(
+                              e.target.value,
+                            );
+                            changeScore(p.id, i, () => value);
+                          }}
+                        />
+                      </div>
+                      <div className="holeCalc">
+                        {entered && (
+                          <>
+                            {nr ? <span>N/R</span> : <span>({net})</span>}
+                            {(c.format === "stableford" ||
+                              c.format === "4bbb-stableford" ||
+                              c.format === "aggregate-stableford" ||
+                              c.format === "multiplier-stableford") && (
+                              <b>{pts} pts</b>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <div className="scoreButtons">
+                        <button
+                          onClick={() =>
+                            changeScore(p.id, i, (x) =>
+                              decrementHoleScore(x, h.par),
+                            )
+                          }
+                        >
+                          −
+                        </button>
+                        <button
+                          onClick={() =>
+                            changeScore(p.id, i, (x) =>
+                              incrementHoleScore(x, h.par),
+                            )
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }),
+              ];
+            })}
+            <IndividualTotalRows totals={roundTotals} />
+          </div>
+        </div>
+        <TeamRoundTotals totals={roundTotals} />
+        <div className="card groupStatus">
+          <b>LIVE GROUP ROUND</b>
+          <span>{players.map((p) => p.name).join(" · ")}</span>
+          <small>
+            Scores save to each golfer's own card. Any golfer in this group can
+            continue the same round.
+          </small>
+        </div>
+        <div className="scoreactions">
+          {admin && (
+            <button className="secondary" onClick={() => setRoundManager(true)}>
+              SCORECARD LIST
+            </button>
+          )}
+          <button
+            className="secondary"
+            onClick={() => {
+              const scored = (state.cards || []).some(
+                (card) =>
+                  card.compId === c.id &&
+                  groupIds.includes(card.playerId) &&
+                  (card.gross || []).some(
+                    (v) => v !== "" && v !== null && v !== undefined,
+                  ),
+              );
+              if (scored)
+                return alert(
+                  "This playing group is locked because scoring has started. Use RESTART ROUND if you need to change the golfers.",
+                );
+              setSetup(true);
+            }}
+          >
+            CHANGE GROUP
+          </button>
+          <button
+            className="secondary danger"
+            onClick={async () => {
+              if (
+                !confirm(
+                  c.format === "eclectic" ? "Restart the current Eclectic round? This clears only the unsubmitted scores from this round. Earlier submitted rounds remain safe." : "Restart this round? This will erase all scores entered for this playing group and allow the golfers to be selected again. This cannot be undone.",
+                )
+              )
+                return;
+              const ids = [...groupIds];
+              const gid = savedGroup?.id;
+              const now = new Date().toISOString();
+              if (c.format === "eclectic") {
+                const next = {...state, cards: state.cards.map((card) => card.compId === c.id && ids.includes(card.playerId) ? {...card,gross:Array.from({length:card.gross?.length||hs.length},()=>""),updatedAt:now,lastEditedBy:me.id} : card), audit:[...(state.audit||[]),{id:uid(),societyId:c.societyId,compId:c.id,action:"RESTART CURRENT ECLECTIC ROUND",editedById:me.id,editedByName:me.name,at:now,before:{playerIds:ids},after:{currentRoundCleared:true}}]};
+                setState(next);setSetup(true);
+                if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);
+                return;
+              }
+              const removedCards = state.cards.filter(
+                (card) => card.compId === c.id && ids.includes(card.playerId),
+              );
+              const next = {
+                ...state,
+                deletedCardIds: [
+                  ...new Set([
+                    ...(state.deletedCardIds || []),
+                    ...removedCards.map((card) => card.id),
+                  ]),
+                ],
+                cards: state.cards.filter(
+                  (card) =>
+                    !(card.compId === c.id && ids.includes(card.playerId)),
+                ),
+                comps: state.comps.map((q) =>
+                  q.id === c.id
+                    ? {
+                        ...q,
+                        roundGroups: (q.roundGroups || []).filter(
+                          (g) => g.id !== gid,
+                        ),
+                      }
+                    : q,
+                ),
+                audit: [
+                  ...(state.audit || []),
+                  {
+                    id: uid(),
+                    societyId: c.societyId,
+                    compId: c.id,
+                    action: "RESTART GROUP ROUND",
+                    editedById: me.id,
+                    editedByName: me.name,
+                    at: now,
+                    before: {
+                      playerIds: ids,
+                      cardIds: removedCards.map((card) => card.id),
+                    },
+                    after: { cleared: true },
+                  },
+                ],
+              };
+              setState(next);
+              setGroupIds([me.id]);
+              setSetup(true);
+              sessionStorage.removeItem(groupDraftKey);
+              if (CLOUD && auth?.access_token)
+                await saveCloud(next, setCloud, auth.access_token);
+            }}
+          >
+            RESTART ROUND
+          </button>
+          <button className="primary" onClick={submitGroup}>
+            <CheckCircle2 /> {c.format === "eclectic" ? "SUBMIT ECLECTIC ROUND" : "SUBMIT ROUND"}
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
 
-
-function LeagueMoneyManager({state,setState,me,society}){
- const leagues=(state.leagues||[]).filter(l=>l.societyId===society?.id&&(l.memberIds||[]).length),[leagueId,setLeagueId]=useState(leagues[0]?.id||'');
- useEffect(()=>{if(!leagues.some(l=>l.id===leagueId))setLeagueId(leagues[0]?.id||'')},[society?.id,state.leagues?.length]);
- const [paymentDrafts,setPaymentDrafts]=useState({}),[historyGolfer,setHistoryGolfer]=useState(null);
- const league=leagues.find(l=>l.id===leagueId);if(!league)return <div className="card"><h3>LEAGUE MONEY</h3><p className="muted">No League with players in this Group.</p></div>;
- const cfg={entryFee:12,twosFee:8,weeklyPrizePerPlayer:10,finalFirst:60,...(league.moneySettings||{})},paid=league.moneyPaidIn||{},settled=league.moneyPaidOut||{},payments=league.moneyPayoutPayments||{};
- const members=(league.memberIds||[]).map(id=>state.players.find(p=>p.id===id)).filter(Boolean),totalPerPlayer=(+cfg.entryFee||0)+(+cfg.twosFee||0),expected=members.length*totalPerPlayer,received=members.reduce((n,p)=>n+(paid[p.id]?totalPerPlayer:0),0);
- let wl=null;try{wl=winterLeagueTable(league,state)}catch{}const weeks=wl?.weekly||[],payouts=[],twosLedger=[];let twosCarry=0;const twosPerWeek=members.length*(+cfg.twosFee||0)/Math.max(1,weeks.length||league.targetCompetitions||1);
- const weekIsFinal=w=>effectiveCompStatus(w.comp)==='completed'&&!resultsEmbargoActive(w.comp);
- weeks.forEach(w=>{if(!weekIsFinal(w))return;const winner=w.rows?.find(r=>r.position===1&&Number.isFinite(r.points));if(winner){const team=(league.teams||[]).find(t=>t.id===winner.teamId);for(const id of team?.memberIds||[]){const p=state.players.find(x=>x.id===id);if(p)payouts.push({key:'week-'+w.comp.id+'-'+id,playerId:id,name:p.name,reason:'Week '+w.weekNumber+' winner',amount:+cfg.weeklyPrizePerPlayer||0})}}
-  const c=w.comp;twosCarry+=twosPerWeek;const pot=twosCarry,ids=new Set(c?.entries||league.memberIds||[]),hits=[];(state.cards||[]).filter(card=>card.compId===c?.id&&ids.has(card.playerId)).forEach(card=>(card.gross||[]).forEach((g,h)=>{if(+g===2)hits.push({playerId:card.playerId,hole:h+1})}));
-  const won=hits.length>0,share=hits.length?pot/hits.length:0,allocations=[];
-  const allocated=new Set();for(const team of league.teams||[]){const memberIds=(team.memberIds||[]).filter(id=>state.players.some(p=>p.id===id)),teamHits=hits.filter(h=>memberIds.includes(h.playerId));if(!teamHits.length)continue;memberIds.forEach(id=>allocated.add(id));if(team.shareTwos){const each=share*teamHits.length/Math.max(1,memberIds.length);for(const id of memberIds)allocations.push({playerId:id,amount:each,reason:`Week ${w.weekNumber} 2s · ${team.name} shared`})}else for(const id of memberIds){const count=teamHits.filter(h=>h.playerId===id).length;if(count)allocations.push({playerId:id,amount:share*count,reason:`Week ${w.weekNumber} 2s`})}}
-  for(const id of new Set(hits.map(h=>h.playerId)))if(!allocated.has(id)){const count=hits.filter(h=>h.playerId===id).length;allocations.push({playerId:id,amount:share*count,reason:`Week ${w.weekNumber} 2s`})}
-  twosLedger.push({week:w.weekNumber,comp:c,pot,hits,status:won?'won':'rolled',share,allocations});if(won){for(const a of allocations){const p=state.players.find(x=>x.id===a.playerId);if(p)payouts.push({key:'twos-'+c.id+'-'+a.playerId,playerId:a.playerId,name:p.name,reason:a.reason,amount:a.amount})}twosCarry=0}});
- const leaguePot=members.length*(+cfg.entryFee||0),weeklyCommitted=payouts.filter(x=>x.reason.includes('winner')).reduce((n,x)=>n+x.amount,0),finalPot=Math.max(0,leaguePot-weeklyCommitted),completed=weeks.length>0&&weeks.every(weekIsFinal);if(completed&&wl?.table?.length){const first=wl.table[0],second=wl.table[1],pct=Math.max(0,Math.min(100,+cfg.finalFirst||0));for(const [team,amount,label] of [[first,finalPot*pct/100,'League 1st'],[second,finalPot*(100-pct)/100,'League 2nd']])if(team&&amount>0)for(const id of team.memberIds||[]){const p=state.players.find(x=>x.id===id);if(p)payouts.push({key:'final-'+label+'-'+id,playerId:id,name:p.name,reason:label,amount:amount/Math.max(1,team.memberIds?.length||1)})}}
- const toPence=amount=>Math.round((Number(amount)||0)*100);
- const paidFor=x=>Object.prototype.hasOwnProperty.call(payments,x.key)?Math.max(0,Math.min(toPence(x.amount),toPence(payments[x.key]))):(settled[x.key]?toPence(x.amount):0);
- const balances=new Map(members.map(player=>[player.id,{name:player.name,earned:0,paid:0,prizes:[],history:[]}]));
- const sharingTeams=new Map((league.teams||[]).flatMap(team=>(team.memberIds||[]).map(id=>[id,team])));
- for(const payout of payouts){
-  if(!balances.has(payout.playerId))balances.set(payout.playerId,{name:payout.name,earned:0,paid:0,prizes:[],history:[]});
-  const balance=balances.get(payout.playerId);
-  balance.earned+=toPence(payout.amount);
-  const legacyPaid=paidFor(payout);
-  if(legacyPaid>0)balance.history.push({id:payout.key,amountPence:legacyPaid,description:payout.reason});
-  balance.paid+=legacyPaid;
-  balance.prizes.push(payout);
- }
- for(const payment of Object.values(league.moneyPaymentsById||{})){
-  const balance=balances.get(payment.playerId);
-  if(!balance)continue;
-  balance.history.push(payment);
-  balance.paid+=payment.amountPence;
- }
- const totalWinnings=[...balances.values()].reduce((total,balance)=>total+balance.earned,0)/100;
- const paidOut=[...balances.values()].reduce((total,balance)=>total+balance.paid,0)/100;
- const owed=[...balances.values()].reduce((total,balance)=>total+Math.max(0,balance.earned-balance.paid),0)/100;
- const bankExpected=received-paidOut;
- const updateLeague=update=>setState(s=>({...s,leagues:(s.leagues||[]).map(l=>l.id===league.id?update(l):l)}));
- const setCfg=(key,value)=>updateLeague(l=>({...l,moneySettings:{...cfg,...l.moneySettings,[key]:value}}));
- const toggleIn=id=>updateLeague(l=>({...l,moneyPaidIn:{...l.moneyPaidIn,[id]:!l.moneyPaidIn?.[id]}}));
- const draftKey=playerId=>league.id+':'+playerId;
- const recordPayment=(playerId,amountPence,owedPence)=>{
-  if(!Number.isSafeInteger(amountPence)||amountPence<=0||amountPence>owedPence)return;
-  const id=uid(),recordedAt=new Date().toISOString();
-  updateLeague(l=>({...l,moneyPaymentsById:{...l.moneyPaymentsById,[id]:{id,playerId,amountPence,recordedAt,recordedBy:me?.id||null}}}));
-  setPaymentDrafts(drafts=>({...drafts,[draftKey(playerId)]:''}));
- };
- const toggleSharing=team=>{
-  const shareTwos=!team.shareTwos;
-  updateLeague(l=>({...l,teams:(l.teams||[]).map(t=>t.id===team.id?{...t,shareTwos}:t),updatedAt:new Date().toISOString()}));
- };
- return <div className="leagueMoney"><div className="card"><h3>LEAGUE MONEY</h3><p className="muted">Admin calculator only. GGC does not connect to or move money in your bank account.</p><label>League<select value={league.id} onChange={e=>setLeagueId(e.target.value)}>{leagues.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><div className="grid"><label>League pot per player £<input type="number" min="0" step="0.5" value={cfg.entryFee} onChange={e=>setCfg('entryFee',+e.target.value||0)}/></label><label>2s contribution per player £<input type="number" min="0" step="0.5" value={cfg.twosFee} onChange={e=>setCfg('twosFee',+e.target.value||0)}/></label><label>Weekly winner per player £<input type="number" min="0" step="0.5" value={cfg.weeklyPrizePerPlayer} onChange={e=>setCfg('weeklyPrizePerPlayer',+e.target.value||0)}/></label><label>Final 1st / 2nd split<select value={cfg.finalFirst} onChange={e=>setCfg('finalFirst',+e.target.value)}><option value="70">70 / 30</option><option value="60">60 / 40</option><option value="50">50 / 50</option></select></label></div></div><div className="card"><h3>RECONCILIATION</h3><div className="leaderrow"><span><b>Expected when everyone has paid</b><small>{members.length} golfers × {money2(totalPerPlayer)}</small></span><em>{money2(expected)}</em></div><div className="leaderrow"><span><b>Received and ticked off</b><small>{members.filter(p=>paid[p.id]).length} of {members.length} paid</small></span><em>{money2(received)}</em></div><div className="leaderrow"><span><b>Paid out</b></span><em>{money2(paidOut)}</em></div><div className="leaderrow"><span><b>Total prize fund</b><small>Received minus payouts entered</small></span><em>{money2(bankExpected)}</em></div><div className="leaderrow"><span><b>Still owed to golfers</b></span><em>{money2(owed)}</em></div></div><div className="card"><h3>WHO HAS PAID IN?</h3>{members.map(p=><div className="memberRow" key={p.id}><span><b>{p.name}</b><small>{money2(totalPerPlayer)} · {money2(cfg.entryFee)} League + {money2(cfg.twosFee)} 2s</small></span><button className={paid[p.id]?'mini':'mini secondary'} onClick={()=>toggleIn(p.id)}>{paid[p.id]?'✓ PAID':'NOT PAID'}</button></div>)}</div><div className="card"><h3>PAYOUTS</h3>{balances.size?<div className="payoutRoster" role="region" aria-label="Golfer payouts">
- <div className="payoutRosterHead" aria-hidden="true"><span>Golfer</span><span>Winnings</span><span>Paid</span><span>Owed</span><span>New payment</span><span>Record</span><span>2s shared</span></div>
- {[...balances].sort(([,a],[,b])=>a.name.localeCompare(b.name)).map(([playerId,balance])=>{
-  const key=draftKey(playerId),draft=paymentDrafts[key]||'',amount=toPence(draft),owed=Math.max(0,balance.earned-balance.paid);
-  const team=sharingTeams.get(playerId),canShare=(team?.memberIds||[]).length===2,open=historyGolfer===key;
-  return <div className="payoutGolfer" key={playerId}>
-   <button type="button" className="payoutGolferName" aria-expanded={open} onClick={()=>setHistoryGolfer(open?null:key)}><span>{balance.name}</span><small>{open?'Hide history':'View history'}</small></button>
-   <div className="payoutFigure"><small>Winnings</small><b>{money2(balance.earned/100)}</b></div>
-   <div className="payoutFigure"><small>Paid</small><b>{money2(balance.paid/100)}</b></div>
-   <div className="payoutFigure payoutOwed"><small>Owed</small><b>{money2(owed/100)}</b></div>
-   <label className="payoutAmount"><small>New payment</small><span>£<input type="number" inputMode="decimal" aria-label={'New payment for '+balance.name} min="0.01" max={owed/100} step="0.01" placeholder="0.00" value={draft} disabled={!owed} onChange={e=>setPaymentDrafts(current=>({...current,[key]:e.target.value}))}/></span></label>
-   <button type="button" className="mini primary payoutRecord" disabled={amount<=0||amount>owed} onClick={()=>recordPayment(playerId,amount,owed)}>Record</button>
-   <label className="payoutShare"><small>2s shared</small>{canShare?<input type="checkbox" checked={!!team.shareTwos} aria-label={'Share 2s for '+team.name} onChange={()=>toggleSharing(team)}/>:<span>—</span>}</label>
-   {open&&<div className="payoutHistory">
-    <b>Payment history</b>
-    {balance.history.length?<ul>{[...balance.history].sort((a,b)=>(b.recordedAt||'').localeCompare(a.recordedAt||'')).map(payment=><li key={payment.id}>{money2(payment.amountPence/100)} · {payment.recordedAt?new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/London'}).format(new Date(payment.recordedAt)):`Previously recorded · ${payment.description}`}</li>)}</ul>:<p className="muted">No payments recorded.</p>}
-    {balance.prizes.length>0&&<><b>Winnings breakdown</b><ul>{balance.prizes.map(prize=><li key={prize.key}>{prize.reason} · {money2(prize.amount)}</li>)}</ul></>}
-   </div>}
-  </div>;
- })}
- <div className="payoutTotals" aria-label="Payout totals">
-  <strong className="payoutTotalsName">Total</strong>
-  <div className="payoutFigure"><small>Winnings</small><b>{money2(totalWinnings)}</b></div>
-  <div className="payoutFigure"><small>Paid</small><b>{money2(paidOut)}</b></div>
-  <div className="payoutFigure payoutOwed"><small>Owed</small><b>{money2(owed)}</b></div>
-  <span className="payoutTotalsBlank" aria-hidden="true"/>
-  <span className="payoutTotalsBlank" aria-hidden="true"/>
-  <span className="payoutTotalsBlank" aria-hidden="true"/>
- </div>
- </div>:<p className="muted">No golfers in this League.</p>}<h4>2S CLUB · WEEK BY WEEK</h4><p className="muted">Every gross 2 earns one equal share. Teams marked “2s shared” divide all shares earned by either partner equally; other golfers keep their own shares.</p>{twosLedger.map(w=>{const detail=w.status==='won'?`${money2(w.share)} per 2 · payout confirmed`:'No gross 2s · pot carried forward';return <div className="twosLedgerWeek" key={`twos-week-${w.week}`}><div className="twosLedgerSummary"><span><b>Week {w.week} · {effectiveCompStatus(w.comp).toUpperCase()}</b><small>{w.hits.length} gross 2{w.hits.length===1?'':'s'} · {detail}</small></span><em>{money2(w.pot)}</em></div>{w.allocations.map(a=>{const p=state.players.find(x=>x.id===a.playerId);return <div className="twosPayoutRow" key={a.playerId}><span><b>{p?.name||'Unknown golfer'}</b><small>{a.reason}</small></span><em>{money2(a.amount)} earned</em></div>})}</div>})}{twosCarry>0&&<p className="muted"><b>2s rollover:</b> {money2(twosCarry)} currently carried forward.</p>}<p className="muted">League prize pot after weekly winner prizes: <b>{money2(finalPot)}</b>{completed?' · final split is now included above':' · final 1st/2nd payout appears when the League is complete'}.</p></div></div>
+function LeagueMoneyManager({ state, setState, me, society }) {
+  const leagues = (state.leagues || []).filter(
+      (l) => l.societyId === society?.id && (l.memberIds || []).length,
+    ),
+    [leagueId, setLeagueId] = useState(leagues[0]?.id || "");
+  useEffect(() => {
+    if (!leagues.some((l) => l.id === leagueId))
+      setLeagueId(leagues[0]?.id || "");
+  }, [society?.id, state.leagues?.length]);
+  const [paymentDrafts, setPaymentDrafts] = useState({}),
+    [historyGolfer, setHistoryGolfer] = useState(null);
+  const league = leagues.find((l) => l.id === leagueId);
+  if (!league)
+    return (
+      <div className="card">
+        <h3>LEAGUE MONEY</h3>
+        <p className="muted">No League with players in this Group.</p>
+      </div>
+    );
+  const cfg = {
+      entryFee: 12,
+      twosFee: 8,
+      weeklyPrizePerPlayer: 10,
+      finalFirst: 60,
+      ...(league.moneySettings || {}),
+    },
+    paid = league.moneyPaidIn || {},
+    settled = league.moneyPaidOut || {},
+    payments = league.moneyPayoutPayments || {};
+  const members = (league.memberIds || [])
+      .map((id) => state.players.find((p) => p.id === id))
+      .filter(Boolean),
+    totalPerPlayer = (+cfg.entryFee || 0) + (+cfg.twosFee || 0),
+    expected = members.length * totalPerPlayer,
+    received = members.reduce(
+      (n, p) => n + (paid[p.id] ? totalPerPlayer : 0),
+      0,
+    );
+  let wl = null;
+  try {
+    wl = winterLeagueTable(league, state);
+  } catch {}
+  const weeks = wl?.weekly || [],
+    payouts = [],
+    twosLedger = [];
+  let twosCarry = 0;
+  const twosPerWeek =
+    (members.length * (+cfg.twosFee || 0)) /
+    Math.max(1, weeks.length || league.targetCompetitions || 1);
+  const weekIsFinal = (w) =>
+    effectiveCompStatus(w.comp) === "completed" &&
+    !resultsEmbargoActive(w.comp);
+  weeks.forEach((w) => {
+    if (!weekIsFinal(w)) return;
+    const winner = w.rows?.find(
+      (r) => r.position === 1 && Number.isFinite(r.points),
+    );
+    if (winner) {
+      const team = (league.teams || []).find((t) => t.id === winner.teamId);
+      for (const id of team?.memberIds || []) {
+        const p = state.players.find((x) => x.id === id);
+        if (p)
+          payouts.push({
+            key: "week-" + w.comp.id + "-" + id,
+            playerId: id,
+            name: p.name,
+            reason: "Week " + w.weekNumber + " winner",
+            amount: +cfg.weeklyPrizePerPlayer || 0,
+          });
+      }
+    }
+    const c = w.comp;
+    twosCarry += twosPerWeek;
+    const pot = twosCarry,
+      ids = new Set(c?.entries || league.memberIds || []),
+      hits = [];
+    (state.cards || [])
+      .filter((card) => card.compId === c?.id && ids.has(card.playerId))
+      .forEach((card) =>
+        (card.gross || []).forEach((g, h) => {
+          if (+g === 2) hits.push({ playerId: card.playerId, hole: h + 1 });
+        }),
+      );
+    const won = hits.length > 0,
+      share = hits.length ? pot / hits.length : 0,
+      allocations = [];
+    const allocated = new Set();
+    for (const team of league.teams || []) {
+      const memberIds = (team.memberIds || []).filter((id) =>
+          state.players.some((p) => p.id === id),
+        ),
+        teamHits = hits.filter((h) => memberIds.includes(h.playerId));
+      if (!teamHits.length) continue;
+      memberIds.forEach((id) => allocated.add(id));
+      if (team.shareTwos) {
+        const each = (share * teamHits.length) / Math.max(1, memberIds.length);
+        for (const id of memberIds)
+          allocations.push({
+            playerId: id,
+            amount: each,
+            reason: `Week ${w.weekNumber} 2s · ${team.name} shared`,
+          });
+      } else
+        for (const id of memberIds) {
+          const count = teamHits.filter((h) => h.playerId === id).length;
+          if (count)
+            allocations.push({
+              playerId: id,
+              amount: share * count,
+              reason: `Week ${w.weekNumber} 2s`,
+            });
+        }
+    }
+    for (const id of new Set(hits.map((h) => h.playerId)))
+      if (!allocated.has(id)) {
+        const count = hits.filter((h) => h.playerId === id).length;
+        allocations.push({
+          playerId: id,
+          amount: share * count,
+          reason: `Week ${w.weekNumber} 2s`,
+        });
+      }
+    twosLedger.push({
+      week: w.weekNumber,
+      comp: c,
+      pot,
+      hits,
+      status: won ? "won" : "rolled",
+      share,
+      allocations,
+    });
+    if (won) {
+      for (const a of allocations) {
+        const p = state.players.find((x) => x.id === a.playerId);
+        if (p)
+          payouts.push({
+            key: "twos-" + c.id + "-" + a.playerId,
+            playerId: a.playerId,
+            name: p.name,
+            reason: a.reason,
+            amount: a.amount,
+          });
+      }
+      twosCarry = 0;
+    }
+  });
+  const leaguePot = members.length * (+cfg.entryFee || 0),
+    weeklyCommitted = payouts
+      .filter((x) => x.reason.includes("winner"))
+      .reduce((n, x) => n + x.amount, 0),
+    finalPot = Math.max(0, leaguePot - weeklyCommitted),
+    completed = weeks.length > 0 && weeks.every(weekIsFinal);
+  if (completed && wl?.table?.length) {
+    const first = wl.table[0],
+      second = wl.table[1],
+      pct = Math.max(0, Math.min(100, +cfg.finalFirst || 0));
+    for (const [team, amount, label] of [
+      [first, (finalPot * pct) / 100, "League 1st"],
+      [second, (finalPot * (100 - pct)) / 100, "League 2nd"],
+    ])
+      if (team && amount > 0)
+        for (const id of team.memberIds || []) {
+          const p = state.players.find((x) => x.id === id);
+          if (p)
+            payouts.push({
+              key: "final-" + label + "-" + id,
+              playerId: id,
+              name: p.name,
+              reason: label,
+              amount: amount / Math.max(1, team.memberIds?.length || 1),
+            });
+        }
+  }
+  const toPence = (amount) => Math.round((Number(amount) || 0) * 100);
+  const paidFor = (x) =>
+    Object.prototype.hasOwnProperty.call(payments, x.key)
+      ? Math.max(0, Math.min(toPence(x.amount), toPence(payments[x.key])))
+      : settled[x.key]
+        ? toPence(x.amount)
+        : 0;
+  const balances = new Map(
+    members.map((player) => [
+      player.id,
+      { name: player.name, earned: 0, paid: 0, prizes: [], history: [] },
+    ]),
+  );
+  const sharingTeams = new Map(
+    (league.teams || []).flatMap((team) =>
+      (team.memberIds || []).map((id) => [id, team]),
+    ),
+  );
+  for (const payout of payouts) {
+    if (!balances.has(payout.playerId))
+      balances.set(payout.playerId, {
+        name: payout.name,
+        earned: 0,
+        paid: 0,
+        prizes: [],
+        history: [],
+      });
+    const balance = balances.get(payout.playerId);
+    balance.earned += toPence(payout.amount);
+    const legacyPaid = paidFor(payout);
+    if (legacyPaid > 0)
+      balance.history.push({
+        id: payout.key,
+        amountPence: legacyPaid,
+        description: payout.reason,
+      });
+    balance.paid += legacyPaid;
+    balance.prizes.push(payout);
+  }
+  for (const payment of Object.values(league.moneyPaymentsById || {})) {
+    const balance = balances.get(payment.playerId);
+    if (!balance) continue;
+    balance.history.push(payment);
+    balance.paid += payment.amountPence;
+  }
+  const totalWinnings =
+    [...balances.values()].reduce(
+      (total, balance) => total + balance.earned,
+      0,
+    ) / 100;
+  const paidOut =
+    [...balances.values()].reduce((total, balance) => total + balance.paid, 0) /
+    100;
+  const owed =
+    [...balances.values()].reduce(
+      (total, balance) => total + Math.max(0, balance.earned - balance.paid),
+      0,
+    ) / 100;
+  const bankExpected = received - paidOut;
+  const updateLeague = (update) =>
+    setState((s) => ({
+      ...s,
+      leagues: (s.leagues || []).map((l) =>
+        l.id === league.id ? update(l) : l,
+      ),
+    }));
+  const setCfg = (key, value) =>
+    updateLeague((l) => ({
+      ...l,
+      moneySettings: { ...cfg, ...l.moneySettings, [key]: value },
+    }));
+  const toggleIn = (id) =>
+    updateLeague((l) => ({
+      ...l,
+      moneyPaidIn: { ...l.moneyPaidIn, [id]: !l.moneyPaidIn?.[id] },
+    }));
+  const draftKey = (playerId) => league.id + ":" + playerId;
+  const recordPayment = (playerId, amountPence, owedPence) => {
+    if (
+      !Number.isSafeInteger(amountPence) ||
+      amountPence <= 0 ||
+      amountPence > owedPence
+    )
+      return;
+    const id = uid(),
+      recordedAt = new Date().toISOString();
+    updateLeague((l) => ({
+      ...l,
+      moneyPaymentsById: {
+        ...l.moneyPaymentsById,
+        [id]: {
+          id,
+          playerId,
+          amountPence,
+          recordedAt,
+          recordedBy: me?.id || null,
+        },
+      },
+    }));
+    setPaymentDrafts((drafts) => ({ ...drafts, [draftKey(playerId)]: "" }));
+  };
+  const toggleSharing = (team) => {
+    const shareTwos = !team.shareTwos;
+    updateLeague((l) => ({
+      ...l,
+      teams: (l.teams || []).map((t) =>
+        t.id === team.id ? { ...t, shareTwos } : t,
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+  };
+  return (
+    <div className="leagueMoney">
+      <div className="card">
+        <h3>LEAGUE MONEY</h3>
+        <p className="muted">
+          Admin calculator only. GGC does not connect to or move money in your
+          bank account.
+        </p>
+        <label>
+          League
+          <select
+            value={league.id}
+            onChange={(e) => setLeagueId(e.target.value)}
+          >
+            {leagues.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="grid">
+          <label>
+            League pot per player £
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={cfg.entryFee}
+              onChange={(e) => setCfg("entryFee", +e.target.value || 0)}
+            />
+          </label>
+          <label>
+            2s contribution per player £
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={cfg.twosFee}
+              onChange={(e) => setCfg("twosFee", +e.target.value || 0)}
+            />
+          </label>
+          <label>
+            Weekly winner per player £
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={cfg.weeklyPrizePerPlayer}
+              onChange={(e) =>
+                setCfg("weeklyPrizePerPlayer", +e.target.value || 0)
+              }
+            />
+          </label>
+          <label>
+            Final 1st / 2nd split
+            <select
+              value={cfg.finalFirst}
+              onChange={(e) => setCfg("finalFirst", +e.target.value)}
+            >
+              <option value="70">70 / 30</option>
+              <option value="60">60 / 40</option>
+              <option value="50">50 / 50</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div className="card">
+        <h3>RECONCILIATION</h3>
+        <div className="leaderrow">
+          <span>
+            <b>Expected when everyone has paid</b>
+            <small>
+              {members.length} golfers × {money2(totalPerPlayer)}
+            </small>
+          </span>
+          <em>{money2(expected)}</em>
+        </div>
+        <div className="leaderrow">
+          <span>
+            <b>Received and ticked off</b>
+            <small>
+              {members.filter((p) => paid[p.id]).length} of {members.length}{" "}
+              paid
+            </small>
+          </span>
+          <em>{money2(received)}</em>
+        </div>
+        <div className="leaderrow">
+          <span>
+            <b>Paid out</b>
+          </span>
+          <em>{money2(paidOut)}</em>
+        </div>
+        <div className="leaderrow">
+          <span>
+            <b>Total prize fund</b>
+            <small>Received minus payouts entered</small>
+          </span>
+          <em>{money2(bankExpected)}</em>
+        </div>
+        <div className="leaderrow">
+          <span>
+            <b>Still owed to golfers</b>
+          </span>
+          <em>{money2(owed)}</em>
+        </div>
+      </div>
+      <div className="card">
+        <h3>WHO HAS PAID IN?</h3>
+        {members.map((p) => (
+          <div className="memberRow" key={p.id}>
+            <span>
+              <b>{p.name}</b>
+              <small>
+                {money2(totalPerPlayer)} · {money2(cfg.entryFee)} League +{" "}
+                {money2(cfg.twosFee)} 2s
+              </small>
+            </span>
+            <button
+              className={paid[p.id] ? "mini" : "mini secondary"}
+              onClick={() => toggleIn(p.id)}
+            >
+              {paid[p.id] ? "✓ PAID" : "NOT PAID"}
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <h3>PAYOUTS</h3>
+        {balances.size ? (
+          <div
+            className="payoutRoster"
+            role="region"
+            aria-label="Golfer payouts"
+          >
+            <div className="payoutRosterHead" aria-hidden="true">
+              <span>Golfer</span>
+              <span>Winnings</span>
+              <span>Paid</span>
+              <span>Owed</span>
+              <span>New payment</span>
+              <span>Record</span>
+              <span>2s shared</span>
+            </div>
+            {[...balances]
+              .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+              .map(([playerId, balance]) => {
+                const key = draftKey(playerId),
+                  draft = paymentDrafts[key] || "",
+                  amount = toPence(draft),
+                  owed = Math.max(0, balance.earned - balance.paid);
+                const team = sharingTeams.get(playerId),
+                  canShare = (team?.memberIds || []).length === 2,
+                  open = historyGolfer === key;
+                return (
+                  <div className="payoutGolfer" key={playerId}>
+                    <button
+                      type="button"
+                      className="payoutGolferName"
+                      aria-expanded={open}
+                      onClick={() => setHistoryGolfer(open ? null : key)}
+                    >
+                      <span>{balance.name}</span>
+                      <small>{open ? "Hide history" : "View history"}</small>
+                    </button>
+                    <div className="payoutFigure">
+                      <small>Winnings</small>
+                      <b>{money2(balance.earned / 100)}</b>
+                    </div>
+                    <div className="payoutFigure">
+                      <small>Paid</small>
+                      <b>{money2(balance.paid / 100)}</b>
+                    </div>
+                    <div className="payoutFigure payoutOwed">
+                      <small>Owed</small>
+                      <b>{money2(owed / 100)}</b>
+                    </div>
+                    <label className="payoutAmount">
+                      <small>New payment</small>
+                      <span>
+                        £
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          aria-label={"New payment for " + balance.name}
+                          min="0.01"
+                          max={owed / 100}
+                          step="0.01"
+                          placeholder="0.00"
+                          value={draft}
+                          disabled={!owed}
+                          onChange={(e) =>
+                            setPaymentDrafts((current) => ({
+                              ...current,
+                              [key]: e.target.value,
+                            }))
+                          }
+                        />
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      className="mini primary payoutRecord"
+                      disabled={amount <= 0 || amount > owed}
+                      onClick={() => recordPayment(playerId, amount, owed)}
+                    >
+                      Record
+                    </button>
+                    <label className="payoutShare">
+                      <small>2s shared</small>
+                      {canShare ? (
+                        <input
+                          type="checkbox"
+                          checked={!!team.shareTwos}
+                          aria-label={"Share 2s for " + team.name}
+                          onChange={() => toggleSharing(team)}
+                        />
+                      ) : (
+                        <span>—</span>
+                      )}
+                    </label>
+                    {open && (
+                      <div className="payoutHistory">
+                        <b>Payment history</b>
+                        {balance.history.length ? (
+                          <ul>
+                            {[...balance.history]
+                              .sort((a, b) =>
+                                (b.recordedAt || "").localeCompare(
+                                  a.recordedAt || "",
+                                ),
+                              )
+                              .map((payment) => (
+                                <li key={payment.id}>
+                                  {money2(payment.amountPence / 100)} ·{" "}
+                                  {payment.recordedAt
+                                    ? new Intl.DateTimeFormat("en-GB", {
+                                        dateStyle: "medium",
+                                        timeStyle: "short",
+                                        timeZone: "Europe/London",
+                                      }).format(new Date(payment.recordedAt))
+                                    : `Previously recorded · ${payment.description}`}
+                                </li>
+                              ))}
+                          </ul>
+                        ) : (
+                          <p className="muted">No payments recorded.</p>
+                        )}
+                        {balance.prizes.length > 0 && (
+                          <>
+                            <b>Winnings breakdown</b>
+                            <ul>
+                              {balance.prizes.map((prize) => (
+                                <li key={prize.key}>
+                                  {prize.reason} · {money2(prize.amount)}
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            <div className="payoutTotals" aria-label="Payout totals">
+              <strong className="payoutTotalsName">Total</strong>
+              <div className="payoutFigure">
+                <small>Winnings</small>
+                <b>{money2(totalWinnings)}</b>
+              </div>
+              <div className="payoutFigure">
+                <small>Paid</small>
+                <b>{money2(paidOut)}</b>
+              </div>
+              <div className="payoutFigure payoutOwed">
+                <small>Owed</small>
+                <b>{money2(owed)}</b>
+              </div>
+              <span className="payoutTotalsBlank" aria-hidden="true" />
+              <span className="payoutTotalsBlank" aria-hidden="true" />
+              <span className="payoutTotalsBlank" aria-hidden="true" />
+            </div>
+          </div>
+        ) : (
+          <p className="muted">No golfers in this League.</p>
+        )}
+        <h4>2S CLUB · WEEK BY WEEK</h4>
+        <p className="muted">
+          Every gross 2 earns one equal share. Teams marked “2s shared” divide
+          all shares earned by either partner equally; other golfers keep their
+          own shares.
+        </p>
+        {twosLedger.map((w) => {
+          const detail =
+            w.status === "won"
+              ? `${money2(w.share)} per 2 · payout confirmed`
+              : "No gross 2s · pot carried forward";
+          return (
+            <div className="twosLedgerWeek" key={`twos-week-${w.week}`}>
+              <div className="twosLedgerSummary">
+                <span>
+                  <b>
+                    Week {w.week} · {effectiveCompStatus(w.comp).toUpperCase()}
+                  </b>
+                  <small>
+                    {w.hits.length} gross 2{w.hits.length === 1 ? "" : "s"} ·{" "}
+                    {detail}
+                  </small>
+                </span>
+                <em>{money2(w.pot)}</em>
+              </div>
+              {w.allocations.map((a) => {
+                const p = state.players.find((x) => x.id === a.playerId);
+                return (
+                  <div className="twosPayoutRow" key={a.playerId}>
+                    <span>
+                      <b>{p?.name || "Unknown golfer"}</b>
+                      <small>{a.reason}</small>
+                    </span>
+                    <em>{money2(a.amount)} earned</em>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+        {twosCarry > 0 && (
+          <p className="muted">
+            <b>2s rollover:</b> {money2(twosCarry)} currently carried forward.
+          </p>
+        )}
+        <p className="muted">
+          League prize pot after weekly winner prizes: <b>{money2(finalPot)}</b>
+          {completed
+            ? " · final split is now included above"
+            : " · final 1st/2nd payout appears when the League is complete"}
+          .
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function SettingsHub({state,setState,me,society,setSocId,setTab,hiddenGroups,toggleGroupVisibility,setEditComp,setModal,auth,setCloud}){

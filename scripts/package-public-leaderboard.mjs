@@ -14,6 +14,7 @@ for (const name of [
   "pairing.js",
   "competitionCourse.js",
   "scoreInput.js",
+  "eclectic.js",
 ])
   await copyFile(
     new URL("../src/" + name, import.meta.url),

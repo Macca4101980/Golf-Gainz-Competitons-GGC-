@@ -282,7 +282,7 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 .groupCompTwirl[open]>summary>strong{transform:rotate(90deg)}
 @media(max-width:520px){.goLiveAt{margin-left:12px}.groupCompTwirl>summary{gap:8px}.groupCompTwirl>summary .groupCompName b{font-size:.95rem}}
 
-/* V4 Beta 12.5 — Results-style cards across the primary disclosure lists */
+/* V4 Beta 12.6 — Results-style cards across the primary disclosure lists */
 .groupList.card,
 .groupCompTwirl>summary{
  display:flex;
@@ -1139,3 +1139,5 @@ button.leaderboardShareBtn:active{
 header>div.headerActions{flex-direction:row;align-items:center;gap:12px}
 .updateAdminActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #dfe5e1}.updateAdminActions button{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #cbd3ce;border-radius:10px;background:#fff;color:#172019;padding:10px 12px;font-weight:900}.updateAdminActions button svg{width:17px}.updateAdminActions button.delete{color:#a32626;border-color:#e0bcbc}.pollResponses{margin-top:12px;border:1px solid #d8dfda;border-radius:12px;overflow:hidden}.pollResponses h4{margin:0;padding:11px 12px;background:#edf2ee}.pollResponses>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-top:1px solid #e2e7e4}.pollResponses strong{text-align:right}.pollResponses .notVoted{color:#7d8780;font-weight:700}
 .pushSettings{margin:18px 0;padding:16px;border:1px solid #d8dfda;border-radius:14px;background:#eef3ef}.pushSettings>b{display:block;color:#122018;letter-spacing:.04em}.pushSettings .primary,.pushSettings .secondary{margin-top:10px}.pushNotice{margin:9px 0 0;color:#5c685f;font-size:.85rem;font-weight:700}
+.emailSettings{display:grid;gap:9px;margin:14px 0 18px;padding:16px;border:1px solid #d8dfda;border-radius:14px;background:#eef3ef;color:#122018}.emailSettings>small:first-of-type{overflow-wrap:anywhere;color:#5c685f}.emailSettings .editHiBtn{margin:2px 0 0}
+.formatInformationCard dl{display:grid;gap:.9rem;margin:1rem 0 0}.formatInformationCard dl>div{border-top:1px solid #d7ddd8;padding-top:.75rem}.formatInformationCard dt{color:#36c92b;font-size:.78rem;font-weight:900;letter-spacing:.1em}.formatInformationCard dd{margin:.25rem 0 0;line-height:1.45}.formatInformationNote{background:#eaf7e7;border-left:4px solid #46df35;border-radius:.5rem;margin:1rem 0 0;padding:.85rem;font-weight:700}.eclecticRoundBanner{display:flex;flex-direction:column;gap:.35rem;border-color:#46df35}.eclecticRoundBanner>b{color:#36c92b;letter-spacing:.08em}.eclecticRoundBanner span{font-weight:800}.eclecticRoundBanner small{color:var(--muted);line-height:1.4}

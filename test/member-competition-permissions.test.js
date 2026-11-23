@@ -23,7 +23,7 @@ test('ordinary members keep competition pair definitions unchanged when starting
   assert.equal(mayChangePairs(admin,pairFormat,fixedLeagueTeams,Array(size).fill('golfer')),admin&&pairFormat&&!fixedLeagueTeams&&size>=2,
    `admin=${admin}, pairs=${pairFormat}, fixed League teams=${fixedLeagueTeams}, golfers=${size}`);
  }
- assert.match(main,/pairs=\(c\.pairs\|\|\[\]\)\.filter\(pair=>!\(pair\.ids\|\|\[\]\)\.some\(id=>selected\.has\(id\)\)\)/);
+ assert.match(main.replace(/\s+/g,''),/pairs=\(c\.pairs\|\|\[\]\)\.filter\(\(pair\)=>!\(pair\.ids\|\|\[\]\)\.some\(\(id\)=>selected\.has\(id\)\),?\)/);
 });
 
 test('member competition updates are restricted to entry, invite and own round-group fields',()=>{

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp sw.js dist/sw.js",
     "test": "node --test test/*.test.js",
     "preview": "vite preview",
     "package:public-leaderboard": "node scripts/package-public-leaderboard.mjs"

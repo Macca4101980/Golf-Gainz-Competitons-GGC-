@@ -1,5 +1,5 @@
 import test from'node:test';import assert from'node:assert/strict';import{readFileSync}from'node:fs';
-const client=readFileSync(new URL('../src/pushNotifications.js',import.meta.url),'utf8'),ui=readFileSync(new URL('../src/PushNotificationSettings.jsx',import.meta.url),'utf8'),sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8'),pkg=readFileSync(new URL('../package.json',import.meta.url),'utf8'),sql=readFileSync(new URL('../supabase/migrations/20261122215348_web_push_notifications.sql',import.meta.url),'utf8'),fix=readFileSync(new URL('../supabase/migrations/20261123145000_fix_push_delivery_claim_ambiguity.sql',import.meta.url),'utf8'),edge=readFileSync(new URL('../supabase/functions/ggc-push/index.ts',import.meta.url),'utf8');
+const client=readFileSync(new URL('../src/pushNotifications.js',import.meta.url),'utf8'),ui=readFileSync(new URL('../src/PushNotificationSettings.jsx',import.meta.url),'utf8'),sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8'),pkg=readFileSync(new URL('../package.json',import.meta.url),'utf8'),sql=readFileSync(new URL('../supabase/migrations/20261122215348_web_push_notifications.sql',import.meta.url),'utf8'),fix=readFileSync(new URL('../supabase/migrations/20261123145000_fix_push_delivery_claim_ambiguity.sql',import.meta.url),'utf8'),scheduler=readFileSync(new URL('../supabase/migrations/20261123193000_scheduled_lifecycle_push_notifications.sql',import.meta.url),'utf8'),edge=readFileSync(new URL('../supabase/functions/ggc-push/index.ts',import.meta.url),'utf8');
 
 test('installed users can opt into and out of standards-based Web Push',()=>{
  assert.match(client,/display-mode: standalone/);assert.match(client,/Notification\.requestPermission/);assert.match(client,/pushManager\.subscribe/);assert.match(client,/ggc_register_push_subscription/);assert.match(client,/ggc_unregister_push_subscription/);assert.match(client,/serviceWorker\.ready/);assert.doesNotMatch(client,/serviceWorker\.register/);assert.match(client,/GGC_PUSH_SERVICE_WORKER_TIMEOUT/);assert.match(client,/ggc_push_subscription_status/);assert.match(ui,/ENABLE NOTIFICATIONS/);
@@ -10,6 +10,17 @@ test('push subscriptions are private and delivery is audience filtered',()=>{
 });
 test('push sender keeps VAPID private key server-side and expires dead devices',()=>{assert.match(edge,/ggc_push_server_config/);assert.match(edge,/SUPABASE_SERVICE_ROLE_KEY/);assert.match(edge,/status===404\|\|status===410/);assert.doesNotMatch(client,/privateKey|private_key/);});
 test('push delivery queue uses an unambiguous uniqueness constraint',()=>{assert.match(fix,/on conflict on constraint ggc_push_deliveries_update_id_subscription_id_key/);});
+test('server scheduler publishes lifecycle events and pushes them without an open client',()=>{
+ assert.match(scheduler,/create extension if not exists pg_cron/);
+ assert.match(scheduler,/ggc-lifecycle-push-every-minute/);
+ assert.match(scheduler,/ggc_publish_scheduled_updates/);
+ assert.match(scheduler,/comp-live:/);
+ assert.match(scheduler,/source_type='system' or s\.player_id<>u\.created_by_player_id/);
+ assert.match(scheduler,/vault\.create_secret/);
+ assert.match(edge,/x-ggc-scheduler-secret/);
+ assert.match(edge,/ggc_publish_scheduled_updates/);
+ assert.match(edge,/admin\.auth\.getUser/);
+});
 test('iOS push preparation finishes before a fresh enable tap',()=>{
  assert.match(ui,/preparePushNotifications\(client\)/);
  assert.match(ui,/disabled=\{busy\|\|\(!enabled&&!installedApp\(\)\)\}/);

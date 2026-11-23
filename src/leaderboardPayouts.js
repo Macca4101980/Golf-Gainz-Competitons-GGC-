@@ -62,7 +62,7 @@ export function leaderboardPayoutLines(c, state, now = Date.now()) {
   }).filter(Boolean);
   else if (FORMAT_RULES[c.format]?.category === 'pairs') rows = (c.pairs || []).map(p=>({...pairScore(p,c,state),ids:p.ids}));
   else if (FORMAT_RULES[c.format]?.verified) rows = (state.cards || []).filter(card=>card.compId===c.id).map(card=>({...scoreCard(card,c,state),ids:[card.playerId]}));
-  if (c.format !== '4bbb-match') rows = rows.filter(r=>!r.noReturn && (c.format === 'flag' ? !!r.flagResult?.hole || r.flagResult?.completed18 : r.complete === undefined || r.complete === indexes(c).length));
+  if (c.format !== '4bbb-match') rows = rows.filter(r=>!r.noReturn && (c.format === 'flag' ? !!r.flagResult?.planted : r.complete === undefined || r.complete === indexes(c).length));
   if (c.format !== '4bbb-match') rows.sort((a,b)=>FORMAT_RULES[c.format]?.lowerWins?a.rankValue-b.rankValue:b.rankValue-a.rankValue);
   const split = c.overallSplit || {first:100,second:0,third:0};
   const pot = (c.entries || []).length * (+c.fee || 0) * (+(c.payouts?.overall ?? 100))/100;

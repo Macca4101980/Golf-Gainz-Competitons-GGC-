@@ -282,7 +282,7 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 .groupCompTwirl[open]>summary>strong{transform:rotate(90deg)}
 @media(max-width:520px){.goLiveAt{margin-left:12px}.groupCompTwirl>summary{gap:8px}.groupCompTwirl>summary .groupCompName b{font-size:.95rem}}
 
-/* V4 Beta 12.5 — Results-style cards across the primary disclosure lists */
+/* V4 Beta 12.6 — Results-style cards across the primary disclosure lists */
 .groupList.card,
 .groupCompTwirl>summary{
  display:flex;
@@ -1139,3 +1139,9 @@ button.leaderboardShareBtn:active{
 header>div.headerActions{flex-direction:row;align-items:center;gap:12px}
 .updateAdminActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #dfe5e1}.updateAdminActions button{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #cbd3ce;border-radius:10px;background:#fff;color:#172019;padding:10px 12px;font-weight:900}.updateAdminActions button svg{width:17px}.updateAdminActions button.delete{color:#a32626;border-color:#e0bcbc}.pollResponses{margin-top:12px;border:1px solid #d8dfda;border-radius:12px;overflow:hidden}.pollResponses h4{margin:0;padding:11px 12px;background:#edf2ee}.pollResponses>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-top:1px solid #e2e7e4}.pollResponses strong{text-align:right}.pollResponses .notVoted{color:#7d8780;font-weight:700}
 .pushSettings{margin:18px 0;padding:16px;border:1px solid #d8dfda;border-radius:14px;background:#eef3ef}.pushSettings>b{display:block;color:#122018;letter-spacing:.04em}.pushSettings .primary,.pushSettings .secondary{margin-top:10px}.pushNotice{margin:9px 0 0;color:#5c685f;font-size:.85rem;font-weight:700}
+.flagCompetitionPanel{margin:16px 0;border:1px solid rgba(101,236,61,.35)}
+.flagPanelHeading{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}.flagPanelHeading>svg{color:var(--green);flex:0 0 auto}.flagPanelHeading h3,.flagPanelHeading p{margin:0}.flagPanelHeading p{color:var(--muted);margin-top:5px}
+.flagPlayer{padding:16px 0;border-top:1px solid rgba(255,255,255,.1)}.flagPlayerStatus{display:flex;justify-content:space-between;gap:14px;align-items:center}.flagPlayerStatus span{display:flex;flex-direction:column}.flagPlayerStatus small{color:var(--muted);margin-top:3px}.flagPlayerStatus>strong{color:var(--green);white-space:nowrap}
+.flagCurrentHole{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:14px 0;padding:12px;border-radius:14px;background:#0d1a11}.flagCurrentHole>div:first-child{display:flex;flex-direction:column}.flagCurrentHole small{color:var(--muted);margin-top:3px}.flagShotCounter{display:flex;align-items:center;gap:12px}.flagShotCounter button{width:42px;height:42px;border-radius:12px;padding:0}.flagShotCounter strong{font-size:1.35rem;min-width:24px;text-align:center}
+.flagFinishFields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.flagFinishFields label{margin:0}.flagFinishFields .primary{grid-column:1/-1}.flagHoledButton{margin-top:8px}.flagResultText{font-size:1.05rem;font-weight:800;margin:12px 0;color:var(--green)}.flagPlanted{background:rgba(101,236,61,.06);margin-inline:-12px;padding-inline:12px;border-radius:14px}.flagStillPlaying{opacity:.76}.flagLeaderboard .leaderrow em{max-width:52%;text-align:right}
+@media(max-width:620px){.flagFinishFields{grid-template-columns:1fr}.flagFinishFields .primary{grid-column:auto}.flagPlayerStatus{align-items:flex-start}.flagCurrentHole{align-items:flex-start;flex-direction:column}.flagLeaderboard .leaderrow{align-items:flex-start}.flagLeaderboard .leaderrow em{max-width:48%;font-size:.86rem}}

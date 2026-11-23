@@ -34,11 +34,14 @@ function mergeRoundGroups(baseline=[],local=[],remote=[]){
   if(b&&m&&r){
    const gross=mergeHoleArray(b.teamGross||[],m.teamGross||[],r.teamGross||[],'teamGross');
    if(gross.conflicts.length)conflicts.push(...gross.conflicts.map(x=>'roundGroups/'+id+'/'+x));
-   const localMeta={...m,teamGross:structuredClone(r.teamGross||[])};
+   const drives=mergeHoleArray(b.selectedDrivePlayerIds||[],m.selectedDrivePlayerIds||[],r.selectedDrivePlayerIds||[],'selectedDrivePlayerIds');
+   if(drives.conflicts.length)conflicts.push(...drives.conflicts.map(x=>'roundGroups/'+id+'/'+x));
+   const localMeta={...m,teamGross:structuredClone(r.teamGross||[]),selectedDrivePlayerIds:structuredClone(r.selectedDrivePlayerIds||[])};
    const dirty=changedFields(b,localMeta).filter(f=>!['startedAt','startedBy'].includes(f));
    const result=reconcileRecord({baseline:b,local:localMeta,remote:r,dirtyFields:dirty});
    if(result.conflicts.length)conflicts.push(...result.conflicts.map(x=>'roundGroups/'+id+'/'+x));
    result.merged.teamGross=gross.merged;
+   result.merged.selectedDrivePlayerIds=drives.merged;
    if(JSON.stringify(m.startedAt)!==JSON.stringify(b.startedAt))result.merged.startedAt=m.startedAt;
    if(JSON.stringify(m.startedBy)!==JSON.stringify(b.startedBy))result.merged.startedBy=m.startedBy;
    out.push(result.merged);

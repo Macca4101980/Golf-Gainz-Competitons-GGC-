@@ -36,7 +36,7 @@ import{matchPlayResult,skinsResult,nassauResult,quotaResult,splitSixesResult,sha
 import{competitionPairs,isPairCompetition,isSharedBallPairFormat,pairDisplayName,pairForPlayers}from'./pairing.js';
 import{buildCourseSnapshot,competitionCourse}from'./competitionCourse.js';
 import{buildRecordConflictMessage}from'./recordConflictNotice.js';
-import{formatInformation}from'./formatInformation.js';
+import FormatRulesPanel from'./FormatRulesPanel.jsx';
 import{eclecticCompletedRounds,eclecticRoundComplete,eclecticRoundNumber,eclecticRoundsRemaining,submitEclecticRound}from'./eclectic.js';
 const SUPA_URL=import.meta.env.VITE_SUPABASE_URL||'';const SUPA_KEY=import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY||import.meta.env.VITE_SUPABASE_ANON_KEY||'';const CLOUD=!!(SUPA_URL&&SUPA_KEY);const K='ggc-build2';
 const supabase=CLOUD?createClient(SUPA_URL,SUPA_KEY,{auth:{experimental:{passkey:true},persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
@@ -340,7 +340,7 @@ if(CLOUD&&auth&&!profileReady)return <WelcomeShell><p>Loading your GGC profile�
 if(CLOUD&&auth&&profileReady&&!currentMe){const claim=claimToken?state.players.find(p=>(p.unclaimed||p.placeholder||p.guest)&&p.claimToken===claimToken):null;return <WelcomeShell>{claim?<><div className="authcard"><div className="authbrand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><h2>Claim {claim.name}</h2><p>This golfer has already been added to their Groups, League and team. Confirm your Handicap Index to take over the profile.</p></div><PlayerModal embedded defaultName={claim.name} add={addPlayer}/></div></>:<PlayerModal embedded add={addPlayer}/>}</WelcomeShell>}
 if(tab==='score'){const c=state.comps.find(x=>x.id===activeComp);if(c)return <ScoreScreen c={c} state={state} setState={setState} me={currentMe} auth={auth} setCloud={setCloud} back={()=>setTab('home')}/>}
 const resumeComp=currentMe?state.comps.find(c=>effectiveCompStatus(c)==='live'&&state.cards.some(card=>card.compId===c.id&&card.playerId===currentMe.id&&!card.submitted)):null;const pendingInvites=currentMe?state.comps.filter(c=>effectiveCompStatus(c)==='live'&&hasPendingCompetitionInvite(c,currentMe.id)):[];const pendingGroupInvites=currentMe?[...serverGroupInvites,...(state.societyInvites||[]).filter(i=>i.playerId===currentMe.id&&i.status==='pending'&&!serverGroupInvites.some(server=>server.id===i.id))]:[];async function respondGroupInvite(inv,accept){if(inv._v2){try{await runGroupAction('ggc_group_respond_invitation',{p_invitation_id:inv.id,p_accept:accept},setCloud);location.reload()}catch(error){alert(groupActionMessage(error))}return}if(accept){const group=state.societies.find(q=>q.id===inv.societyId);if(!group?.code)return alert('This Group invite can no longer be used.');try{await runGroupAction('ggc_group_join_code',{p_code:group.code},setCloud)}catch(error){return alert(groupActionMessage(error))}}const next={...state,societyInvites:(state.societyInvites||[]).map(i=>i.id===inv.id?{...i,status:accept?'accepted':'declined',respondedAt:new Date().toISOString(),updatedAt:new Date().toISOString()}:i),societies:state.societies};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);location.reload()}
-return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicator" role="status" aria-label="Refreshing"><span aria-hidden="true"/></div>}<header><div className="brand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><span>V4 Beta 12.12 · {cloud}</span></div><div className="headerActions"><button className="icon notificationIcon" aria-label={`Updates${groupUpdates.unread?` · ${groupUpdates.unread} unread`:''}`} onClick={()=>setTab('updates')}><Bell/>{groupUpdates.unread>0&&<span className="navBadge">{groupUpdates.unread>99?'99+':groupUpdates.unread}</span>}</button><button className="icon profileIcon" aria-label="Me" onClick={()=>setTab('me')}><UserRound/></button></div></header><main>
+return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicator" role="status" aria-label="Refreshing"><span aria-hidden="true"/></div>}<header><div className="brand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><span>V4 Beta 12.13 · {cloud}</span></div><div className="headerActions"><button className="icon notificationIcon" aria-label={`Updates${groupUpdates.unread?` · ${groupUpdates.unread} unread`:''}`} onClick={()=>setTab('updates')}><Bell/>{groupUpdates.unread>0&&<span className="navBadge">{groupUpdates.unread>99?'99+':groupUpdates.unread}</span>}</button><button className="icon profileIcon" aria-label="Me" onClick={()=>setTab('me')}><UserRound/></button></div></header><main>
 {tab==='home'&&<><section className="hero"><p>GOLF GAIN COMPS</p><h1>Golf competitions.<br/><em>Made simple.</em></h1><button onClick={()=>setModal('howto')}>ⓘ HOW TO USE GGC</button></section>{pendingGroupInvites.length>0&&<><SectionTitle a="GROUP INVITATIONS" b={`${pendingGroupInvites.length} waiting`}/>{pendingGroupInvites.map(inv=>{const g=state.societies.find(x=>x.id===inv.societyId);return <div className="card inviteCard" key={inv.id}><b>{inv.fromName||'A golfer'} invited you to join {g?.name||'a Group'}.</b><div className="inviteActions"><button className="primary" onClick={()=>respondGroupInvite(inv,true)}>ACCEPT</button><button className="secondary" onClick={()=>respondGroupInvite(inv,false)}>DECLINE</button></div></div>})}</>}<div className="card"><SectionTitle a="MY GROUPS" b={`${visibleGroups.length} shown`}/>{orderedVisibleGroups.map(s=><div className="societyRow" key={s.id}><span><b>{s.name}</b><small>{s.code}</small></span><button type="button" className="leaderboardShareBtn secondary" aria-label={`Share ${s.name}`} title="Share group" onClick={()=>{setSocId(s.id);localStorage.setItem('ggc-society',s.id);setModal('share')}}><Share2 aria-hidden="true"/></button></div>)}</div>{pendingInvites.length>0&&<><SectionTitle a="INVITATIONS" b={`${pendingInvites.length} waiting`}/>{pendingInvites.map(c=><div className="card inviteCard" key={c.id}><b>{c.name}</b><span>{state.societies.find(q=>q.id===c.societyId)?.name||'GGC group'}</span><button className="primary" onClick={()=>{setSocId(c.societyId);localStorage.setItem('ggc-society',c.societyId);enter(c)}}>ACCEPT & ENTER <ChevronRight/></button><button className="secondary" onClick={()=>declineInvite(c)}>DECLINE</button></div>)}</>}{resumeComp&&<div className="resume card"><b>ROUND IN PROGRESS</b><span>{resumeComp.name} · live group card.</span><button className="primary" onClick={()=>{setActiveComp(resumeComp.id);localStorage.setItem('ggc-active-comp',resumeComp.id);setTab('score')}}>CONTINUE ROUND <ChevronRight/></button></div>}{!currentMe?<div className="callout" onClick={()=>setModal('player')}><UserRound/><div><b>Set up your player</b><span>Add your name + Handicap Index once.</span></div><ChevronRight/></div>:<div className="me"><span>PLAYING AS</span><b>{currentMe.name} · HI {formatHI(currentMe.hi)}</b></div>}<SectionTitle a="LIVE COMPETITIONS" b="all shown groups"/>{dashboardLive.length?dashboardLive.map(c=>{const owner=state.societies.find(s=>s.id===c.societyId);return <CompCard key={c.id} c={c} state={state} me={currentMe} society={owner} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>}):<Empty text="No live competitions in your shown groups."/>}</>}
 {tab==='comps'&&<><Title t="Competitions"/>{import.meta.env.VITE_GGC_CROSS_COURSE==='true'&&supabase&&currentMe&&<button onClick={()=>setModal('cross-course')}>Cross-course fixtures</button>}{canManageAny&&<div className="compCreateActions"><button className="primary" onClick={()=>setModal('comp')}><Plus/> CREATE COMPETITION</button><button className="primary" onClick={()=>setModal('newleague')}><Plus/> CREATE LEAGUE</button></div>}{orderedVisibleGroups.map(s=>{const cs=comps.filter(c=>c.societyId===s.id);const byDate=(a,b)=>(Date.parse(a.starts)||Infinity)-(Date.parse(b.starts)||Infinity)||String(a.name||'').localeCompare(String(b.name||''));const active=cs.filter(c=>effectiveCompStatus(c)!=='completed'&&effectiveCompStatus(c)!=='cancelled').sort(byDate);const done=cs.filter(c=>effectiveCompStatus(c)==='completed'||effectiveCompStatus(c)==='cancelled').sort(byDate);return <details className="groupCompTwirl" key={s.id} open={s.id===society?.id}><summary><span className="groupCompName"><b>{s.name.toUpperCase()}</b></span><span className="groupCompCount">{active.length}</span><strong>›</strong></summary>{active.length?active.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={s} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>):<Empty text="No live or upcoming competitions in this group."/>}{done.length>0&&<details className="completedTwirl"><summary>COMPLETED COMPETITIONS <span>{done.length}</span></summary>{done.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={s} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>)}</details>}</details>})}</>}
 {tab==='leaguecreate'&&society&&adminGroupIds.has(society.id)&&<><Title t="Create League"/><p className="muted">Set up the League and its competitions here. Advanced customisation stays in Settings.</p><Leagues state={state} setState={setState} me={currentMe} societyId={society.id} storageAuth={CLOUD&&auth?.access_token?{url:SUPA_URL,key:SUPA_KEY,token:auth.access_token}:null} onPersist={next=>setState(next)} onCreateCompetition={league=>{setEditComp({__newLeague:true,leagueId:league.id,societyId:society.id,entries:[...(league.memberIds||[])],handicapAllowance:league.handicapAllowance??90,batchPairs:league.batchPairs||[],batchBaseName:league.batchBaseName||'',batchDates:league.batchDates||[]});setModal('leaguecomp')}} onEditCompetition={c=>{setEditComp(c);setModal('editcomp')}}/></>}
@@ -399,7 +399,7 @@ function CompCard({c,state,me,society,enter,edit,board,share=board}){
  const f=formats.find(x=>x[0]===c.format),course=competitionCourse(c,state).course,owningSociety=state.societies.find(x=>x.id===c.societyId)||society;
  const admin=!!me&&(owningSociety?.ownerId===me.id||(owningSociety?.admins||[]).includes(me.id));const canEdit=admin;const status=effectiveCompStatus(c),live=status==='live',invited=!!me&&(c.invites||[]).includes(me.id),showLeaderboard=c.showLiveLeaderboard!==false;
  const goLive=status==='scheduled'&&c.starts?new Date(c.starts):null,goLiveText=goLive&&!Number.isNaN(goLive.getTime())?`Goes live: ${goLive.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})} · ${goLive.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`:'';
- return <div className="comp card"><div className={`pill ${status}`}>{status==='completed'?'COMPLETED':status==='cancelled'?'CANCELLED':status==='scheduled'?'SCHEDULED':status==='draft'?'DRAFT':'LIVE'}</div>{goLiveText&&<small className="goLiveAt">{goLiveText}</small>}<h3>{c.name}</h3><div className="compSociety"><Building2/> {owningSociety?.name||'No group'}</div><p>{f?.[1]} · {course?.name||'Course'} · {c.tee||''}</p>{f&&<details><summary aria-label={f[1]+' format information'}>ⓘ Format rules</summary><p>{FORMAT_RULES[c.format]?.description||f[2]}</p><p>{FORMAT_RULES[c.format]?.entry}</p><p>{FORMAT_RULES[c.format]?.result}</p></details>}<div className="meta"><span><Users/> {c.entries?.length||0}</span><span><Wallet/> £{c.fee||0}</span><span><Flag/> {c.holesMode==='front9'?'Front 9':c.holesMode==='back9'?'Back 9':'18 holes'}</span><span>{c.days} day{c.days>1?'s':''}</span></div>{(live||(admin&&status==='completed'))&&<button className="primary" onClick={enter}>{live?(invited?'ACCEPT INVITE & ENTER':'ENTER / CONTINUE ROUND'):'SCORECARD ADMIN'} <ChevronRight/></button>}{(!live||showLeaderboard)&&<div className="leaderboardActions"><button className="secondary leaderboardBtn" onClick={board}><Trophy/> {live?'LIVE LEADERBOARD':'RESULTS'}</button><button className="leaderboardShareBtn shareIconBtn" onClick={share} aria-label="Share leaderboard" title="Share leaderboard"><Share2 aria-hidden="true"/></button></div>}{canEdit&&<button className="secondary editBtn" onClick={edit}><Settings/> MANAGE COMPETITION</button>}</div>
+ return <div className="comp card"><div className={`pill ${status}`}>{status==='completed'?'COMPLETED':status==='cancelled'?'CANCELLED':status==='scheduled'?'SCHEDULED':status==='draft'?'DRAFT':'LIVE'}</div>{goLiveText&&<small className="goLiveAt">{goLiveText}</small>}<h3>{c.name}</h3><div className="compSociety"><Building2/> {owningSociety?.name||'No group'}</div><p>{f?.[1]} · {course?.name||'Course'} · {c.tee||''}</p>{f&&<FormatRulesPanel format={c.format} rule={FORMAT_RULES[c.format]} label={f[1]} allowance={c.handicapAllowance} competition={c} details/>}<div className="meta"><span><Users/> {c.entries?.length||0}</span><span><Wallet/> £{c.fee||0}</span><span><Flag/> {c.holesMode==='front9'?'Front 9':c.holesMode==='back9'?'Back 9':'18 holes'}</span><span>{c.days} day{c.days>1?'s':''}</span></div>{(live||(admin&&status==='completed'))&&<button className="primary" onClick={enter}>{live?(invited?'ACCEPT INVITE & ENTER':'ENTER / CONTINUE ROUND'):'SCORECARD ADMIN'} <ChevronRight/></button>}{(!live||showLeaderboard)&&<div className="leaderboardActions"><button className="secondary leaderboardBtn" onClick={board}><Trophy/> {live?'LIVE LEADERBOARD':'RESULTS'}</button><button className="leaderboardShareBtn shareIconBtn" onClick={share} aria-label="Share leaderboard" title="Share leaderboard"><Share2 aria-hidden="true"/></button></div>}{canEdit&&<button className="secondary editBtn" onClick={edit}><Settings/> MANAGE COMPETITION</button>}</div>
 }
 function PlayerModal({close=()=>{},add,embedded=false,defaultName=''}){const[n,setN]=useState(defaultName);const[h,setH]=useState('');return embedded?<div className="authcard"><div className="authbrand"><div className="wordmark">GOLF <em>GAIN</em><small>COMPS</small></div><p>Your sign-in is confirmed. Create your player profile.</p></div><label>Display name<input value={n} onChange={e=>setN(e.target.value)} placeholder="Your name"/></label><label>Handicap Index<input type="number" step="0.1" value={h} onChange={e=>setH(e.target.value)} placeholder="0.0"/></label><button className="primary" disabled={!n||h===''} onClick={()=>add({name:n.trim(),hi:+h})}><Save/>CREATE PLAYER</button></div>:<Modal close={close} title="Set up player"><label>Name<input value={n} onChange={e=>setN(e.target.value)} placeholder="Your name"/></label><label>Handicap Index<input type="number" step="0.1" value={h} onChange={e=>setH(e.target.value)} placeholder="0.0"/></label><button className="primary" disabled={!n||h===''} onClick={()=>add({name:n.trim(),hi:+h})}><Save/>SAVE & REMEMBER ME</button></Modal>}
 function CompModal({
@@ -451,6 +451,9 @@ function CompModal({
   );
   const [eclecticScoring, setEclecticScoring] = useState(
     existing?.eclecticScoring || "gross",
+  );
+  const [minimumDrivesPerPlayer, setMinimumDrivesPerPlayer] = useState(
+    existing?.minimumDrivesPerPlayer ?? 0,
   );
   const [course, setCourse] = useState(existing?.course || "");
   const [tee, setTee] = useState(existing?.tee || "");
@@ -533,6 +536,7 @@ function CompModal({
       setModifiedPoints(d.modifiedPoints ?? modifiedPoints);
       setEclecticRounds(d.eclecticRounds ?? eclecticRounds);
       setEclecticScoring(d.eclecticScoring ?? eclecticScoring);
+      setMinimumDrivesPerPlayer(d.minimumDrivesPerPlayer ?? minimumDrivesPerPlayer);
       setCourse(d.course ?? course);
       setTee(d.tee ?? tee);
       setFee(d.fee ?? fee);
@@ -565,6 +569,7 @@ function CompModal({
       modifiedPoints,
       eclecticRounds,
       eclecticScoring,
+      minimumDrivesPerPlayer,
       course,
       tee,
       fee,
@@ -592,6 +597,7 @@ function CompModal({
     modifiedPoints,
     eclecticRounds,
     eclecticScoring,
+    minimumDrivesPerPlayer,
     course,
     tee,
     fee,
@@ -759,6 +765,9 @@ function CompModal({
       modifiedPoints,
       eclecticRounds: Math.max(2, +eclecticRounds || 3),
       eclecticScoring,
+      minimumDrivesPerPlayer: Math.max(0, Math.min(18, +minimumDrivesPerPlayer || 0)),
+      trackSelectedDrives: ['scramble','scramble-standard','pairs-scramble','florida','shamble','greensomes','gruesomes','pinehurst'].includes(format),
+      trackTeeOrder: ['foursomes','foursomes-match'].includes(format),
       course,
       tee,
       courseSnapshot,
@@ -970,12 +979,6 @@ function CompModal({
     }
   }
   const selectedFormat = formats.find((f) => f[0] === format);
-  const selectedFormatInfo = formatInformation(
-    format,
-    FORMAT_RULES[format],
-    selectedFormat?.[1],
-    handicapAllowance,
-  );
   return (
     <Modal
       close={closeDraft}
@@ -1084,17 +1087,7 @@ function CompModal({
         </small>
       </label>
       {showFormatInfo && (
-        <div className="card formatInformationCard">
-          <h3>{selectedFormatInfo.title}</h3>
-          <dl>
-            <div><dt>PLAYERS</dt><dd>{selectedFormatInfo.participants}</dd></div>
-            <div><dt>HOW IT WORKS</dt><dd>{selectedFormatInfo.howItWorks}</dd></div>
-            <div><dt>SCORE ENTRY</dt><dd>{selectedFormatInfo.scoreEntry}</dd></div>
-            <div><dt>HANDICAP</dt><dd>{selectedFormatInfo.handicap}</dd></div>
-            <div><dt>WINNER</dt><dd>{selectedFormatInfo.winner}</dd></div>
-          </dl>
-          {selectedFormatInfo.note && <p className="formatInformationNote">{selectedFormatInfo.note}</p>}
-        </div>
+        <FormatRulesPanel format={format} rule={FORMAT_RULES[format]} label={selectedFormat?.[1]} allowance={handicapAllowance} competition={{minimumDrivesPerPlayer}}/>
       )}
       {format !== "gross-stroke" &&
         !(format === "eclectic" && eclecticScoring === "gross") &&
@@ -1117,8 +1110,15 @@ function CompModal({
           </small>
         </label>
       )}
+      {['scramble','scramble-standard','pairs-scramble','florida'].includes(format) && (
+        <label>
+          Minimum selected drives per golfer
+          <input type="number" min="0" max={holesMode==='18'?18:9} step="1" value={minimumDrivesPerPlayer} onChange={e=>setMinimumDrivesPerPlayer(e.target.value)}/>
+          <small>Set 0 when there is no minimum. The live scorecard records whose drive was selected on every hole and shows running totals.</small>
+        </label>
+      )}
       {["scramble","scramble-standard","pairs-scramble","florida","foursomes","greensomes","gruesomes","pinehurst","foursomes-match"].includes(format) && (
-        <div className="card"><b>AUTOMATIC TEAM HANDICAP</b><p className="muted">{selectedFormatInfo.handicap}</p></div>
+        <div className="card"><b>AUTOMATIC TEAM HANDICAP</b><p className="muted">{FORMAT_RULES[format]?.defaultAllowance?`${FORMAT_RULES[format].defaultAllowance}% Playing Handicap.`:'GGC calculates the format-specific team allowance automatically.'}</p></div>
       )}
       {format === "eclectic" && eclecticScoring === "gross" && (
         <div className="card"><b>GROSS ECLECTIC</b><p className="muted">The final card uses the lowest gross score achieved on each hole, so no handicap allowance is deducted.</p></div>

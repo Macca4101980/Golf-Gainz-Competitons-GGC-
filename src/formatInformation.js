@@ -20,9 +20,14 @@ const specificNotes = {
   'pairs-scramble': 'Both partners play every shot from the selected position until the ball is holed.',
   florida: 'After a shot is selected, the golfer who played it sits out the next stroke. The other team members play from the selected position.',
   shamble: 'Everybody drives and the team selects one tee shot. From there, every golfer completes the hole with their own ball.',
+  foursomes: 'Choose who drives the first hole before play. That golfer drives the odd-numbered holes and their partner drives the even-numbered holes; shots then alternate until holed.',
+  'foursomes-match': 'Choose who drives the first hole before play. That golfer drives the odd-numbered holes and their partner drives the even-numbered holes; shots then alternate until holed.',
+  greensomes: 'Both partners drive. Select one drive, then the partner whose drive was not selected plays the next shot. Alternate thereafter until holed.',
+  gruesomes: 'Both partners drive and the opposing side chooses which drive must be used. The other partner plays the next shot, then shots alternate until holed.',
+  pinehurst: 'Both partners drive, then each plays the other partner’s ball for the second shot. Select one ball and alternate shots from there until holed.',
 };
 
-export function formatInformation(format, rule, label, configuredAllowance) {
+export function formatInformation(format, rule, label, configuredAllowance, competition={}) {
   const category = rule?.category || 'individual';
   const participants = category === 'pairs'
     ? 'Pairs. Each pair can use an optional team name; otherwise GGC displays both player names.'
@@ -31,6 +36,12 @@ export function formatInformation(format, rule, label, configuredAllowance) {
       : 'Individual golfers, except head-to-head formats that require the stated number of players.';
   const allowance = configuredAllowance ?? rule?.defaultAllowance ?? 100;
   const handicap = specificHandicap[format] || `${allowance}% Playing Handicap by default. The organiser can change the allowance during setup.`;
+  const minimumDrives=Math.max(0,+competition.minimumDrivesPerPlayer||0);
+  const trackingNote=['scramble','scramble-standard','pairs-scramble','florida','shamble','greensomes','gruesomes','pinehurst'].includes(format)
+    ? `GGC records the selected drive on every hole and shows each golfer’s running total.${minimumDrives?` Each golfer must provide at least ${minimumDrives} selected drive${minimumDrives===1?'':'s'}.`:''}`
+    : ['foursomes','foursomes-match'].includes(format)
+      ? 'GGC shows the odd/even tee-shot order after the first-hole driver is selected.'
+      : '';
   return {
     title: label || format,
     participants,
@@ -38,6 +49,6 @@ export function formatInformation(format, rule, label, configuredAllowance) {
     scoreEntry: rule?.entry || 'A dedicated score-entry workflow is required.',
     handicap,
     winner: rule?.result || 'The result calculation is not enabled.',
-    note: specificNotes[format] || '',
+    note: [specificNotes[format],trackingNote].filter(Boolean).join(' '),
   };
 }

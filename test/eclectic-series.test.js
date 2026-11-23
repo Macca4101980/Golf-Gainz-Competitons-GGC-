@@ -50,10 +50,11 @@ test('live Eclectic leaderboard uses the current round when it improves a hole',
 });
 
 test('format information always exposes the same five information categories',()=>{
- const info=formatInformation('scramble',FORMAT_RULES.scramble,'Texas Scramble',100);
+ const info=formatInformation('scramble',FORMAT_RULES.scramble,'Texas Scramble',100,{minimumDrivesPerPlayer:3});
  assert.deepEqual(Object.keys(info).slice(0,6),['title','participants','howItWorks','scoreEntry','handicap','winner']);
  assert.match(info.handicap,/25%\/20%\/15%\/10%/);
  assert.match(info.note,/All golfers tee off/);
+ assert.match(info.note,/at least 3 selected drives/);
 });
 
 test('plain 4BBB remains supported as a legacy Stableford alias',()=>{

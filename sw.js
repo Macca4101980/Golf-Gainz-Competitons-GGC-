@@ -1,4 +1,4 @@
-const CACHE='ggc-4.0.0-beta.12.12-ios-push';const SHELL=['/'];
+const CACHE='ggc-4.0.0-beta.12.13-format-guidance';const SHELL=['/'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('message',e=>{if(e.data?.type==='SKIP_WAITING')self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]))});

@@ -10,3 +10,11 @@ test('push subscriptions are private and delivery is audience filtered',()=>{
 });
 test('push sender keeps VAPID private key server-side and expires dead devices',()=>{assert.match(edge,/ggc_push_server_config/);assert.match(edge,/SUPABASE_SERVICE_ROLE_KEY/);assert.match(edge,/status===404\|\|status===410/);assert.doesNotMatch(client,/privateKey|private_key/);});
 test('push delivery queue uses an unambiguous uniqueness constraint',()=>{assert.match(fix,/on conflict on constraint ggc_push_deliveries_update_id_subscription_id_key/);});
+test('iOS push preparation happens before the enable tap',()=>{
+ assert.match(ui,/preparePushNotifications\(client\)/);
+ assert.match(ui,/disabled=\{busy\|\|\(!enabled&&\(!installedApp\(\)\|\|!ready\)\)\}/);
+ const enable=client.slice(client.indexOf('export async function enablePushNotifications'),client.indexOf('export async function disablePushNotifications'));
+ assert.match(enable,/const prepared=preparedPush/);
+ assert.ok(enable.indexOf('pushManager.subscribe')<enable.indexOf('ggc_register_push_subscription'));
+ assert.doesNotMatch(enable,/ggc_push_public_key/);
+});

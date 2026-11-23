@@ -1,6 +1,7 @@
 import{isNoReturnScore,isEnteredHoleScore}from'./scoreInput.js';
 import{competitionCourse}from'./competitionCourse.js';
 import{flagProgress,flagRankValue,formatFlagResult}from'./flagCompetition.js';
+import{eclecticBestGross}from'./eclectic.js';
 
 export const FORMAT_RULES={
  stableford:{verified:true,category:'individual',defaultAllowance:95,lowerWins:false,description:'Individual Stableford. Handicap strokes are applied hole by hole and the highest points total wins.',entry:'Enter gross strokes for every hole. GGC calculates Stableford points.',result:'Highest Stableford points wins.'},
@@ -38,7 +39,7 @@ export function playingHandicap(hi,tee,par,allowance=100){return playingHandicap
 export function holeStrokes(ch,si){const base=Math.trunc(ch/18),rem=Math.abs(ch%18);return ch>=0?base+(si<=rem?1:0):(base-(rem>0&&si>18-rem?1:0)||0)}
 function selectedIndexes(c,hs){return c.holesMode==='front9'?[0,1,2,3,4,5,6,7,8]:c.holesMode==='back9'?[9,10,11,12,13,14,15,16,17]:hs.map((_,i)=>i)}
 function modifiedPoints(net,par,table={}){const d=net-par;if(d<=-3)return +(table.albatross??8);if(d===-2)return +(table.eagle??5);if(d===-1)return +(table.birdie??2);if(d===0)return +(table.par??0);if(d===1)return +(table.bogey??-1);return +(table.double??-3)}
-function effectiveGross(card,c,hs){if(c.format!=='eclectic')return card.gross||[];const rounds=Array.isArray(card.eclecticRounds)?card.eclecticRounds:[];return hs.map((_,i)=>{const vals=rounds.map(r=>+(r?.gross?.[i]||0)).filter(v=>v>0);return vals.length?Math.min(...vals):rounds.some(r=>isNoReturnScore(r?.gross?.[i]))?0:''})}
+function effectiveGross(card,c,hs){if(c.format!=='eclectic')return card.gross||[];return eclecticBestGross(card,hs.length,true)}
 export function scoreCard(card,c,state){
  const p=state.players.find(x=>x.id===card.playerId);const {course,tee,holes:hs,par}=competitionCourse(c,state,card);
  const allowance=c.format==='gross-stroke'?0:(c.handicapAllowance??FORMAT_RULES[c.format]?.defaultAllowance??100);const ch=card.courseHandicap??courseHandicap(card.handicapIndexUsed??p?.hi,tee,par);const ph=card.playingHandicap??playingHandicap(card.handicapIndexUsed??p?.hi,tee,par,allowance);const selected=selectedIndexes(c,hs);const sourceGross=effectiveGross(card,c,hs);let gross=0,points=0,bogey=0,usedShots=0,cappedGross=0,modified=0,waltz=0;

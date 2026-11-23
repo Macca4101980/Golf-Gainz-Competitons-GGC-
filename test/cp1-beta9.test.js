@@ -21,10 +21,11 @@ test('CP1 team rename preserves team identity and updates linked pair display',(
 });
 
 test('CP1 competition can link or unlink a League',()=>{
-  assert.match(main,/const\[leagueId,setLeagueId\]/);
+  const compact=main.replace(/\s+/g,'');
+  assert.match(compact,/const\[leagueId,setLeagueId\]/);
   assert.match(main,/<option value="">None<\/option>/);
-  assert.match(main,/leagueId:leagueId\|\|null/);
-  assert.match(main,/leagueOomSettings:inheritedOom/);
+  assert.match(compact,/leagueId:leagueId\|\|null/);
+  assert.match(compact,/leagueOomSettings:inheritedOom/);
 });
 
 test('CP1 League length is initial setup quantity, not a hard cap',()=>{

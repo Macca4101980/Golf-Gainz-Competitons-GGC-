@@ -163,6 +163,7 @@ test("deployed function bundle uses identical application scoring engines", asyn
     "competitionCourse.js",
     "scoreInput.js",
     "flagCompetition.js",
+    "eclectic.js",
   ])
     assert.equal(
       await fs.readFile(new URL("../src/" + name, import.meta.url), "utf8"),

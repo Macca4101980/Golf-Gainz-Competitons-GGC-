@@ -9,6 +9,15 @@ import { winterLeagueTable } from "./winterLeague.js";
 import {leagueDisplayTable,publicVisibility} from './leagueDisplay.js';
 export {publicVisibility} from './leagueDisplay.js';
 import { groupLeaderboard, isGroupFormat } from "./groupScoring.js";
+import {
+  matchPlayResult,
+  skinsResult,
+  nassauResult,
+  quotaResult,
+  splitSixesResult,
+  sharedBallMatchResult,
+} from "./advancedScoring.js";
+import { competitionPairs } from "./pairing.js";
 export const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 export function newShareToken(cryptoApi = globalThis.crypto) {
   return Array.from(cryptoApi.getRandomValues(new Uint8Array(32)), (x) =>
@@ -82,6 +91,22 @@ export function buildPublicLeaderboard(c, state, now = Date.now()) {
           r.teamId,
         ),
       );
+    } else if (c.format === "foursomes-match") {
+      const match = sharedBallMatchResult(comp, masked);
+      rows = match
+        ? match.teams.map((team, i) =>
+            row(
+              team.playerIds || [],
+              { complete: match.played },
+              match.diff === 0
+                ? "AS"
+                : Math.abs(match.diff) +
+                    ((i === 0 ? match.diff : -match.diff) > 0
+                      ? " UP"
+                      : " DOWN"),
+            ),
+          )
+        : [];
     } else if (isGroupFormat(c.format)) {
       rows = groupLeaderboard(comp, masked).map((r) =>
         row(
@@ -94,11 +119,12 @@ export function buildPublicLeaderboard(c, state, now = Date.now()) {
       FORMAT_RULES[c.format]?.category === "pairs" &&
       c.format !== "blind-pairs"
     ) {
-      if (c.format === "4bbb-match") {
-        if ((c.pairs || []).length !== 2)
+      if (["4bbb-match", "fourball-match"].includes(c.format)) {
+        const pairs = competitionPairs(c);
+        if (pairs.length !== 2)
           throw Error("Set two matchplay pairs before sharing");
-        const r = fourballMatchResult(c.pairs[0], c.pairs[1], comp, masked);
-        rows = c.pairs.map((p, i) =>
+        const r = fourballMatchResult(pairs[0], pairs[1], comp, masked);
+        rows = pairs.map((p, i) =>
           row(
             p.ids,
             { complete: r.played },
@@ -109,7 +135,7 @@ export function buildPublicLeaderboard(c, state, now = Date.now()) {
           ),
         );
       } else {
-        const rs = (c.pairs || []).map((p) => ({
+        const rs = competitionPairs(c).map((p) => ({
           p,
           r: pairScore(p, comp, masked),
         }));
@@ -140,8 +166,37 @@ export function buildPublicLeaderboard(c, state, now = Date.now()) {
         })
         .filter(Boolean);
       rows.sort((a, b) => parseFloat(b.result) - parseFloat(a.result));
+    } else if (c.format === "matchplay" || c.format === "nassau") {
+      const match = c.format === "nassau" ? nassauResult(comp, masked) : matchPlayResult(comp, masked);
+      rows = match
+        ? match.rows.map((r, i) =>
+            row(
+              [r.player.id],
+              { complete: match.played },
+              match.diff === 0
+                ? "AS"
+                : Math.abs(match.diff) +
+                    ((i === 0 ? match.diff : -match.diff) > 0
+                      ? " UP"
+                      : " DOWN"),
+            ),
+          )
+        : [];
+    } else if (c.format === "skins") {
+      const skins = skinsResult(comp, masked);
+      rows = skins.rows.map((r) => row([r.player.id], r, r.skins + " skins"));
+    } else if (c.format === "quota") {
+      const results = masked.cards
+        .filter((card) => card.compId === c.id)
+        .map((card) => quotaResult(card, comp, masked))
+        .filter((r) => r.player)
+        .sort((a, b) => b.rankValue - a.rankValue);
+      rows = results.map((r) => row([r.player.id], r, (r.rankValue >= 0 ? "+" : "") + r.rankValue));
+    } else if (c.format === "sixes") {
+      const sixes = splitSixesResult(comp, masked);
+      rows = sixes.rows.map((r) => row([r.player.id], r, r.points + " pts"));
     } else {
-      if (c.format === "matchplay" || !FORMAT_RULES[c.format]?.verified)
+      if (!FORMAT_RULES[c.format]?.verified)
         throw Error("Public sharing is not available for this format yet");
       const rs = masked.cards
         .filter((x) => x.compId === c.id)

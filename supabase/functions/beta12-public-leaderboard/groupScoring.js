@@ -1,13 +1,20 @@
 import{isEnteredHoleScore,isNoReturnScore}from'./scoreInput.js';
 import{courseHandicap,playingHandicap,holeStrokes}from'./scoring.js';
 import{competitionCourse}from'./competitionCourse.js';
+import{teamPlayingHandicap}from'./advancedScoring.js';
+import{pairDisplayName,pairForPlayers}from'./pairing.js';
 
-export const GROUP_FORMATS=new Set(['scramble','scramble-standard','florida','pairs-scramble','shamble','best1','best2','best3','cha-cha-cha','irish-fourball','bowmaker','alliance','yellow-ball']);
+export const GROUP_FORMATS=new Set(['scramble','scramble-standard','florida','pairs-scramble','foursomes','greensomes','gruesomes','pinehurst','foursomes-match','shamble','best1','best2','best3','cha-cha-cha','irish-fourball','bowmaker','alliance','yellow-ball']);
 export const GROUP_FORMAT_RULES={
  scramble:{name:'Texas Scramble',mode:'team-gross',lowerWins:true},
  'scramble-standard':{name:'Scramble',mode:'team-gross',lowerWins:true},
  florida:{name:'Florida Scramble',mode:'team-gross',lowerWins:true},
  'pairs-scramble':{name:'Pairs Scramble',mode:'team-gross',lowerWins:true},
+ foursomes:{name:'Foursomes',mode:'team-gross',lowerWins:true},
+ greensomes:{name:'Greensomes',mode:'team-gross',lowerWins:true},
+ gruesomes:{name:'Gruesomes',mode:'team-gross',lowerWins:true},
+ pinehurst:{name:'Pinehurst / Chapman',mode:'team-gross',lowerWins:true},
+ 'foursomes-match':{name:'Foursomes Matchplay',mode:'team-gross',lowerWins:false},
  shamble:{name:'Shamble',mode:'stableford-combine',count:2,lowerWins:false},
  best1:{name:'Best 1',mode:'stableford-combine',count:1,lowerWins:false},
  best2:{name:'Best 2',mode:'stableford-combine',count:2,lowerWins:false},
@@ -24,7 +31,7 @@ function selectedIndexes(c,hs){return c.holesMode==='front9'?[0,1,2,3,4,5,6,7,8]
 function courseData(c,state){return competitionCourse(c,state)}
 function cardFor(state,c,id){return(state.cards||[]).find(x=>x.compId===c.id&&x.playerId===id)}
 function playerHole(state,c,id,h,i,tee,par){const p=(state.players||[]).find(x=>x.id===id);const card=cardFor(state,c,id);const allowance=c.handicapAllowance??95;const ph=card?.playingHandicap??playingHandicap(card?.handicapIndexUsed??p?.hi??0,tee,par,allowance);const gross=+(card?.gross?.[i]||0),shots=holeStrokes(ph,h.si);return{entered:isEnteredHoleScore(card?.gross?.[i]),id,name:p?.name||'Golfer',gross,shots,net:gross?gross-shots:null,points:stablefordPoints(gross,h.par,shots)}}
-export function scrambleTeamHandicap(playerIds,c,state){const{tee,par}=courseData(c,state);const hs=playerIds.map(id=>{const p=(state.players||[]).find(x=>x.id===id);return courseHandicap(p?.hi??0,tee,par)}).sort((a,b)=>a-b);const pct=hs.length>=4?[.25,.20,.15,.10]:hs.length===3?[.30,.20,.10]:hs.length===2?[.35,.15]:[1];const allowance=hs.reduce((n,h,i)=>n+h*(pct[i]??0),0);return GROUP_FORMAT_RULES[c.format]?.mode==='team-gross'&&['front9','back9'].includes(c.holesMode)?allowance/2:allowance}
+export function scrambleTeamHandicap(playerIds,c,state){if(['pairs-scramble','foursomes','greensomes','gruesomes','pinehurst','foursomes-match'].includes(c.format)){const allowance=teamPlayingHandicap(playerIds,c,state);return['front9','back9'].includes(c.holesMode)?allowance/2:allowance}const{tee,par}=courseData(c,state);const hs=playerIds.map(id=>{const p=(state.players||[]).find(x=>x.id===id);return courseHandicap(p?.hi??0,tee,par)}).sort((a,b)=>a-b);const pct=hs.length>=4?[.25,.20,.15,.10]:hs.length===3?[.30,.20,.10]:hs.length===2?[.35,.15]:[1];const allowance=hs.reduce((n,h,i)=>n+h*(pct[i]??0),0);return GROUP_FORMAT_RULES[c.format]?.mode==='team-gross'&&['front9','back9'].includes(c.holesMode)?allowance/2:allowance}
 export function groupScore(group,c,state){
  const ids=[...(group?.playerIds||group?.ids||[])].filter(Boolean);const rule=GROUP_FORMAT_RULES[c.format];if(!rule)return null;const{holes,tee,par}=courseData(c,state);const selected=selectedIndexes(c,holes);
  if(rule.mode==='team-gross'){const gross=group?.teamGross||[];const rawHcap=Number.isFinite(+group?.teamPlayingHandicap)?+group.teamPlayingHandicap:scrambleTeamHandicap(ids,c,state);const teamHcap=Math.round(rawHcap);let grossTotal=0,played=0,noReturn=false;const detail=holes.map((h,i)=>{if(!selected.includes(i))return null;const g=+(gross[i]||0);if(GROUP_FORMAT_RULES[c.format]?.mode==='team-gross'&&isNoReturnScore(gross[i])){played++;noReturn=true}if(!g)return{hole:i+1,gross:0,net:null};grossTotal+=g;played++;return{hole:i+1,gross:g,net:g}});return{playerIds:ids,holes:detail,gross:grossTotal,teamHandicap:teamHcap,net:grossTotal-teamHcap,points:0,complete:played,noReturn,rankValue:grossTotal-teamHcap,lowerWins:true}}
@@ -34,4 +41,4 @@ export function groupScore(group,c,state){
  const pts=counted.reduce((n,r)=>n+r.points,0);total+=pts;played++;return{hole:i+1,points:pts,counted:counted.map(r=>r.id),yellowBallId:rule.mode==='yellow-ball'?ids[selected.indexOf(i)%Math.max(1,ids.length)]:null,players:rows}});
  return{playerIds:ids,holes:detail,points:total,complete:played,rankValue:total,lowerWins:false}
 }
-export function groupLeaderboard(c,state){return(c.roundGroups||[]).map(g=>({...groupScore(g,c,state),groupId:g.id,name:g.name||((g.playerIds||[]).map(id=>(state.players||[]).find(p=>p.id===id)?.name?.split(' ')[0]).filter(Boolean).join(' · ')||'Group')})).filter(r=>r.complete>0&&!r.noReturn).sort((a,b)=>GROUP_FORMAT_RULES[c.format]?.mode==='team-gross'&&a.complete!==b.complete?b.complete-a.complete:a.lowerWins?a.rankValue-b.rankValue:b.rankValue-a.rankValue)}
+export function groupLeaderboard(c,state){return(c.roundGroups||[]).map(g=>{const pair=pairForPlayers(c,g.playerIds||[]);return{...groupScore(g,c,state),groupId:g.id,name:pair?pairDisplayName(pair,state):(g.name||((g.playerIds||[]).map(id=>(state.players||[]).find(p=>p.id===id)?.name).filter(Boolean).join(' + ')||'Group'))}}).filter(r=>r.complete>0&&!r.noReturn).sort((a,b)=>GROUP_FORMAT_RULES[c.format]?.mode==='team-gross'&&a.complete!==b.complete?b.complete-a.complete:a.lowerWins?a.rankValue-b.rankValue:b.rankValue-a.rankValue)}

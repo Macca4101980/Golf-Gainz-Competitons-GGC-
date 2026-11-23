@@ -7,7 +7,7 @@ export function groupStartError({c,ids,me,admin=false,memberIds=[],saved=null}){
  const players=ids.filter(Boolean);
  if(new Set(players).size!==players.length)return 'Choose each golfer only once.';
  const min=groupMinimumPlayers(c.format);
- if(c.format==='pairs-scramble'&&players.length!==2)return 'Pairs Scramble needs exactly two golfers.';
+ if(['pairs-scramble','foursomes','greensomes','gruesomes','pinehurst','foursomes-match'].includes(c.format)&&players.length!==2)return 'This pairs format needs exactly two golfers.';
  if(players.length<min||players.length>4)return `This format needs ${min}–4 golfers.`;
  if(!admin&&!players.includes(me.id))return 'Your playing group must include you.';
  if(!admin&&players.some(id=>id!==me.id&&!memberIds.includes(id)))return 'Choose golfers who belong to this group.';

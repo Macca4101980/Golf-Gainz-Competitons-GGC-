@@ -282,7 +282,7 @@ nav i svg{width:22px!important;height:22px!important;stroke-width:2.2}
 .groupCompTwirl[open]>summary>strong{transform:rotate(90deg)}
 @media(max-width:520px){.goLiveAt{margin-left:12px}.groupCompTwirl>summary{gap:8px}.groupCompTwirl>summary .groupCompName b{font-size:.95rem}}
 
-/* V4 Beta 12.4 — Results-style cards across the primary disclosure lists */
+/* V4 Beta 12.5 — Results-style cards across the primary disclosure lists */
 .groupList.card,
 .groupCompTwirl>summary{
  display:flex;

@@ -19,7 +19,7 @@ export function groupCodeError(code) {
 export function scoreGroupStartError(format, playerIds) {
   const count = [...new Set((playerIds || []).filter(Boolean))].length;
   if (!count) return 'Choose at least one golfer.';
-  if (format === '4bbb-match' && count !== 4) return 'Pairs Matchplay needs four golfers.';
+  if (['4bbb-match', 'fourball-match'].includes(format) && count !== 4) return 'Pairs Matchplay needs four golfers.';
   if (count > 1 && count % 2 !== 0) return 'Pairs competitions need an even number of golfers.';
   return null;
 }

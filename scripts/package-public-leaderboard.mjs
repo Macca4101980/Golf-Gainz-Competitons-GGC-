@@ -10,6 +10,8 @@ for (const name of [
   "scoring.js",
   "winterLeague.js",
   "groupScoring.js",
+  "advancedScoring.js",
+  "pairing.js",
   "competitionCourse.js",
   "scoreInput.js",
 ])

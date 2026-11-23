@@ -2,9 +2,10 @@ import {competitionCourse} from './competitionCourse.js';
 import {FORMAT_RULES,scoreCard,formatResult,pairScore,fourballMatchResult,fourballMatchHandicaps,normaliseBlindPairIds} from './scoring.js';
 import {winterLeagueTable} from './winterLeague.js';
 import {isNoReturnScore} from './scoreInput.js';
+import {competitionPairs,pairDisplayName} from './pairing.js';
 
 const entered=value=>isNoReturnScore(value)||(value!==''&&value!=null&&Number(value)>0);
-const individualFormat=format=>['4bbb-stroke','aggregate-stroke','4bbb-match'].includes(format)?'stroke'
+const individualFormat=format=>['4bbb-stroke','aggregate-stroke','4bbb-match','fourball-match'].includes(format)?'stroke'
  :['4bbb-stableford','aggregate-stableford','multiplier-stableford','blind-pairs'].includes(format)?'stableford':format;
 
 // A read-only projection: never mask the saved cards or change their handicaps.
@@ -19,7 +20,7 @@ export function buildRoundTotals(c,state,playerIds){
  if(c.holesMode==='front9'||c.holesMode==='back9')windows.splice(0,windows.length-1);
  const league=(state.leagues||[]).find(l=>l.id===c.leagueId&&(l.teams||[]).length);
  const handicaps=league?Object.assign({},...winterLeagueTable(league,state).table.map(t=>t.weeks.find(w=>w.compId===c.id)?.playerHandicaps||{})):{};
- const matchPairs=c.format==='4bbb-match'&&(c.pairs||[]).length===2?c.pairs:null;
+ const matchPairs=['4bbb-match','fourball-match'].includes(c.format)&&(c.pairs||[]).length===2?c.pairs:null;
  const matchHandicaps=matchPairs?fourballMatchHandicaps(...matchPairs,c,state):{};
  const format=league?'stableford':individualFormat(c.format);
  const resultsByWindow=windows.map(window=>{
@@ -51,9 +52,9 @@ export function buildRoundTotals(c,state,playerIds){
  const individuals=playerIds.map(id=>({id,name:state.players.find(p=>p.id===id)?.name||'Golfer',scores:resultsByWindow.map(({score})=>score(id))}));
  const roster=league?league.teams.map(t=>({...t,ids:t.memberIds||[]}))
   :c.format==='blind-pairs'?(c.blindDraw?.pairs||[]).map((p,i)=>({id:`blind-${i}`,ids:normaliseBlindPairIds(p),name:p.name}))
-  :(c.pairs||[]);
+  :competitionPairs(c);
  const teams=roster.filter(t=>(t.ids||[]).some(id=>playerIds.includes(id))).map((team,i)=>({
-  id:team.id||`pair-${i}`,name:team.name||`Team ${i+1}`,memberLine:(team.ids||[]).map(id=>state.players.find(p=>p.id===id)?.name||'Golfer').join(' & '),
+  id:team.id||`pair-${i}`,name:pairDisplayName(team,state),memberLine:(team.ids||[]).map(id=>state.players.find(p=>p.id===id)?.name||'Golfer').join(' & '),
   scores:resultsByWindow.map(({window,projected})=>{
    const ids=(team.ids||[]).filter(Boolean),cards=ids.map(id=>projected.cards.find(x=>x.compId===c.id&&x.playerId===id));
    const aggregate=['aggregate-stableford','multiplier-stableford','aggregate-stroke','blind-pairs'].includes(c.format)&&!league;

@@ -18,9 +18,20 @@ export const matchplaySeries = (state) =>
 
 export function matchplayHandicapSettings(record, state) {
   const team = record?.matchplay?.entrantType === "team";
-  const source =
+  const storedSource =
     record?.handicapSettings?.source ||
     (record?.sourceLeagueId ? "league-start" : "current");
+  const storedAdjustment =
+    record?.handicapSettings?.adjustmentMode ||
+    (record?.handicapSettings?.excludeLeagueAdjustments === false
+      ? "league-final"
+      : "none");
+  const source =
+    storedSource === "league-start"
+      ? storedAdjustment === "league-final"
+        ? "competition-end"
+        : "competition-start"
+      : storedSource;
   const allowance = Math.max(
     0,
     Math.min(
@@ -31,15 +42,12 @@ export function matchplayHandicapSettings(record, state) {
   const league = record?.sourceLeagueId
     ? standardLeagues(state).find((item) => item.id === record.sourceLeagueId)
     : null;
-  const adjustmentMode =
-    record?.handicapSettings?.adjustmentMode ||
-    (record?.handicapSettings?.excludeLeagueAdjustments === false
-      ? "league-final"
-      : "none");
+  const adjustmentMode = source === "competition-end" ? "league-final" : "none";
   const snapshot =
-    source === "league-start"
+    source === "competition-start" || source === "competition-end"
       ? {
           ...(league?.startingHandicaps ||
+            record?.handicapSettings?.startSnapshot ||
             record?.handicapSettings?.snapshot ||
             {}),
         }
@@ -221,8 +229,17 @@ export function buildMatchplayRecord({
       entrantType,
       createdAt,
     });
+  const entrantMemberIds = [
+    ...new Set(entrants.flatMap((item) => item.memberIds || [item.id])),
+  ];
+  const startSnapshot = Object.fromEntries(
+    entrantMemberIds.map((playerId) => [
+      playerId,
+      Number(state?.players?.find((player) => player.id === playerId)?.hi) || 0,
+    ]),
+  );
   const resolvedHandicaps = handicapSettings || {
-    source: sourceLeague ? "league-start" : "current",
+    source: sourceLeague ? "competition-start" : "current",
     allowance: matchplay.entrantType === "team" ? 90 : 100,
     adjustmentMode: "none",
     excludeLeagueAdjustments: true,
@@ -234,11 +251,15 @@ export function buildMatchplayRecord({
     recordType: "matchplay-series",
     structure: mode,
     sourceLeagueId: sourceLeague?.id || null,
-    memberIds: [
-      ...new Set(entrants.flatMap((item) => item.memberIds || [item.id])),
-    ],
+    memberIds: entrantMemberIds,
     matchplay,
-    handicapSettings: resolvedHandicaps,
+    handicapSettings: {
+      ...resolvedHandicaps,
+      startSnapshot:
+        resolvedHandicaps.startSnapshot ||
+        resolvedHandicaps.snapshot ||
+        startSnapshot,
+    },
     createdBy,
     createdAt,
     updatedAt: createdAt,
@@ -305,9 +326,7 @@ export function editMatchplayRecord(
       0,
       Math.min(100, Number(handicapAllowance ?? existing.allowance)),
     ),
-    adjustmentMode = record.sourceLeagueId
-      ? handicapAdjustmentMode || existing.adjustmentMode
-      : "none";
+    adjustmentMode = source === "competition-end" ? "league-final" : "none";
   return {
     ...record,
     name: String(name ?? record.name).trim() || record.name,
@@ -317,6 +336,10 @@ export function editMatchplayRecord(
       allowance,
       adjustmentMode,
       excludeLeagueAdjustments: adjustmentMode !== "league-final",
+      startSnapshot:
+        record.handicapSettings?.startSnapshot ||
+        record.handicapSettings?.snapshot ||
+        existing.snapshot,
     },
     updatedAt: nowIso(),
   };

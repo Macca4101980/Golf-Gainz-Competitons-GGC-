@@ -77,6 +77,24 @@ test('a remote edit to another field is merged and the pending local field is sa
  assert.deepEqual(await store.load('players','p1'),{id:'p1',name:'Local name',hi:5});
 });
 
+test('an access-denied stale snapshot is safely rebased before retry',async()=>{
+ const initial={players:[],societies:[],comps:[{id:'week',entries:['me'],roundGroups:[{id:'mine',playerIds:['me'],teamGross:[4]},{id:'other',playerIds:['other'],teamGross:[5]}]}],cards:[],leagues:[],courses:[],audit:[],societyInvites:[],appFields:[]};
+ const store=mockStore(initial),coordinator=createRecordSaveCoordinator(store);coordinator.initialize(initial);
+ const local=structuredClone(initial);local.comps[0].roundGroups[0].teamGross=[3];
+ store.rejectNextSave();
+ await assert.rejects(coordinator.enqueue(local),/GGC_VERSION_CONFLICT/);
+ // Model the same stale non-caller group that the database transition guard
+ // reports as access denied after an offline session.
+ coordinator.getLastFailure().message=coordinator.getLastFailure().message.replace('GGC_VERSION_CONFLICT','GGC_ACCESS_DENIED');
+ store.setRemote('comps','week',{...initial.comps[0],roundGroups:[initial.comps[0].roundGroups[0],{...initial.comps[0].roundGroups[1],teamGross:[6]}]},2);
+ const result=await coordinator.recoverVersionConflict(local);
+ assert.deepEqual(result.conflicts,[]);
+ assert.deepEqual(result.snapshot.comps[0].roundGroups.find(g=>g.id==='mine').teamGross,[3]);
+ assert.deepEqual(result.snapshot.comps[0].roundGroups.find(g=>g.id==='other').teamGross,[6]);
+ await coordinator.enqueue(result.snapshot);
+ assert.deepEqual((await store.load('comps','week')).roundGroups.find(g=>g.id==='mine').teamGross,[3]);
+});
+
 test('same-field edits are surfaced as conflicts without replacing either value',async()=>{
  const initial={players:[{id:'p1',name:'Old',hi:4}],societies:[],comps:[],cards:[],leagues:[],courses:[],audit:[],societyInvites:[],appFields:[]};
  const store=mockStore(initial),coordinator=createRecordSaveCoordinator(store);coordinator.initialize(initial);
@@ -113,16 +131,16 @@ test('record startup reads real groups without importing hidden default IDs or s
  assert.deepEqual(local,before);
  assert.equal(client.writes,0);
  assert.equal(session.store.getVersion('societies','real-group'),3);
+ assert.equal(session.coordinator.isInitialized(),true);
  await result.finishHydration;
  assert.equal(session.coordinator.isInitialized(),true);
 });
 
 test('large audit history does not block operational startup',async()=>{
- let releaseAudit;
- const auditGate=new Promise(resolve=>{releaseAudit=resolve});
+ let auditReads=0;
  const client={
   from(){let kind;return {select(){return this},eq(_key,value){kind=value;return this},order(){return this},async range(){
-   if(kind==='audit')await auditGate;
+   if(kind==='audit')auditReads++;
    const data=kind==='players'?[{record_id:'p1',data:{id:'p1',name:'Ready'},version:1,deleted:false}]:[];
    return {data,error:null};
   }}}
@@ -130,10 +148,35 @@ test('large audit history does not block operational startup',async()=>{
  const session=createAppRecordSession(client);
  const started=await session.load({}, {userId:'u1'});
  assert.equal(started.snapshot.players[0].name,'Ready');
- assert.equal(session.coordinator.isInitialized(),false);
- releaseAudit();
+ assert.equal(session.coordinator.isInitialized(),true);
+ assert.equal(auditReads,0);
  await started.finishHydration;
  assert.equal(session.coordinator.isInitialized(),true);
+});
+
+test('startup retains newer local cards and only the locally newer shared round group',async()=>{
+ const remoteComp={id:'week',name:'Week',roundGroups:[
+  {id:'mine',updatedAt:'2026-11-24T12:00:00Z',teamGross:[4]},
+  {id:'other',updatedAt:'2026-11-24T12:30:00Z',teamGross:[5]}
+ ]};
+ const client=readClient({
+  cards:[{id:'summy-card',updatedAt:'2026-11-24T12:00:00Z',gross:[4]}],
+  comps:[remoteComp]
+ });
+ const local={
+  cards:[{id:'summy-card',updatedAt:'2026-11-24T12:55:00Z',gross:[3]}],
+  comps:[{...remoteComp,roundGroups:[
+   {id:'mine',updatedAt:'2026-11-24T12:55:00Z',teamGross:[3]},
+   {id:'other',updatedAt:'2026-11-24T12:10:00Z',teamGross:[6]}
+  ]}]
+ };
+ const session=createAppRecordSession(client);
+ const result=await session.load(local,{userId:'u1'});
+ assert.deepEqual(result.snapshot.cards[0].gross,[3]);
+ assert.deepEqual(result.snapshot.comps[0].roundGroups.find(group=>group.id==='mine').teamGross,[3]);
+ assert.deepEqual(result.snapshot.comps[0].roundGroups.find(group=>group.id==='other').teamGross,[5]);
+ assert.deepEqual(session.coordinator.getBaseline().cards[0].gross,[4]);
+ assert.deepEqual(session.coordinator.getBaseline().comps[0].roundGroups.find(group=>group.id==='mine').teamGross,[4]);
 });
 
 test('concurrent startup and token refresh share one load and preserve pending local changes',async()=>{
@@ -141,13 +184,13 @@ test('concurrent startup and token refresh share one load and preserve pending l
  const session=createAppRecordSession(client);
  const [a,b]=await Promise.all([session.load({}, {userId:'u1'}),session.load({}, {userId:'u1'})]);
  await a.finishHydration;
- assert.equal(client.reads,9);
+ assert.equal(client.reads,8);
  a.snapshot.players[0].name='Local edit';
  assert.equal(b.snapshot.players[0].name,'Original');
  const desired=structuredClone(session.coordinator.getBaseline());desired.players[0].name='Pending edit';
  await assert.rejects(session.coordinator.enqueue(desired),/Startup must not write/);
  await session.load({}, {userId:'u1'});
- assert.equal(client.reads,9);
+ assert.equal(client.reads,8);
  assert.equal(session.coordinator.getDesired().players[0].name,'Pending edit');
  const other=createAppRecordSession(readClient({players:[{id:'p2',name:'Other'}]}));
  await other.load({}, {userId:'u2'});

@@ -220,7 +220,7 @@ export function createRecordSaveCoordinator(store){
   * Return conflicts for human review instead of automatically choosing a winner.
   */
  async function recoverVersionConflict(currentSnapshot,{canCommit=()=>true}={}){
-  if(!baseline||!lastFailure||!/GGC_VERSION_CONFLICT/.test(lastFailure.message||''))return null;
+  if(!baseline||!lastFailure||!/(GGC_VERSION_CONFLICT|GGC_ACCESS_DENIED)/.test(lastFailure.message||''))return null;
   await pending;
   const original=structuredClone(baseline);
   const changes=planRecordChanges(original,currentSnapshot);

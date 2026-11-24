@@ -48,6 +48,7 @@ export function scoreCard(card,c,state){
 export function formatResult(r,format){if(r?.noReturn)return'N/R';if(format==='stroke'||format==='max-score')return `${r.net} net`;if(format==='gross-stroke')return `${r.gross} gross`;if(format==='par-bogey')return r.bogey>0?`+${r.bogey}`:`${r.bogey}`;if(format==='modified-stableford')return `${r.modified} pts`;if(format==='waltz')return `${r.waltz} pts`;if(format==='eclectic')return `${r.net} ${r.net===r.gross?'gross':'net'}`;if(format==='flag'){const f=r.flagResult;if(!f)return 'Flag result needed';return f.completed18?`18 finished · ${+f.strokesLeft||0} left`:`Hole ${f.hole} · shot ${f.shot}`}return `${r.points} pts`}
 export function validateFormatStart(format,count){return null}
 export function normaliseBlindPairIds(pair){return Array.isArray(pair)?pair:Array.isArray(pair?.ids)?pair.ids:[]}
+export function competitionHandicapIndex(c,state,id){const snap=c?.handicapSnapshot?.[id];if(snap!==''&&snap!=null&&Number.isFinite(Number(snap)))return Number(snap);return Number(state?.players?.find(x=>x.id===id)?.hi)||0}
 export function oomPointsForField(n){if(n<5)return[];const first=n<=8?10:n<=12?12:n<=16?14:16;return Array.from({length:n},(_,i)=>Math.max(0,first-(i*2)))}
 
 export function pairScore(pair,c,state){
@@ -63,7 +64,7 @@ export function pairScore(pair,c,state){
  const complete=holes.filter(Boolean).length; const lower=format==='4bbb-stroke'||format==='aggregate-stroke'; return {ids,complete,points,net,holes,rankValue:lower?net:points};
 }
 export function fourballMatchHandicaps(pairA,pairB,c,state){
- const all=[...(pairA?.ids||[]),...(pairB?.ids||[])].filter(Boolean);const {course,tee,holes:hs}=competitionCourse(c,state);const par=hs.reduce((a,h)=>a+h.par,0)||72;const allowance=c.handicapAllowance??90;const ch=Object.fromEntries(all.map(id=>{const p=state.players.find(x=>x.id===id);return[id,courseHandicap(p?.hi,tee,par)]}));if(!all.length)return{};const low=Math.min(...Object.values(ch));return Object.fromEntries(all.map(id=>[id,whsRound((ch[id]-low)*(allowance/100))]));
+ const all=[...(pairA?.ids||[]),...(pairB?.ids||[])].filter(Boolean);const {course,tee,holes:hs}=competitionCourse(c,state);const par=hs.reduce((a,h)=>a+h.par,0)||72;const allowance=c.handicapAllowance??90;const ch=Object.fromEntries(all.map(id=>[id,courseHandicap(competitionHandicapIndex(c,state,id),tee,par)]));if(!all.length)return{};const low=Math.min(...Object.values(ch));return Object.fromEntries(all.map(id=>[id,whsRound((ch[id]-low)*(allowance/100))]));
 }
 export function fourballMatchResult(pairA,pairB,c,state){
  const {holes:courseHoles}=competitionCourse(c,state);

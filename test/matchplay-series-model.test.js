@@ -1,6 +1,6 @@
 import test from'node:test';
 import assert from'node:assert/strict';
-import{buildMatchplayRecord,currentMatchplayRecord,fixtureCompetitionPreset,isMatchplaySeries,matchplaySeries,standardLeagues}from'../src/matchplaySeriesModel.js';
+import{buildMatchplayRecord,currentMatchplayRecord,editMatchplayRecord,fixtureCompetitionPreset,isMatchplaySeries,matchplayHandicapSettings,matchplaySeries,standardLeagues}from'../src/matchplaySeriesModel.js';
 
 const teams=[
  {id:'t1',name:'Team One',memberIds:['p1','p2']},
@@ -8,7 +8,7 @@ const teams=[
  {id:'t3',name:'Team Three',memberIds:['p5','p6']},
  {id:'t4',name:'Team Four',memberIds:['p7','p8']}
 ];
-const league={id:'wl',name:'Winter League',societyId:'g1',teams,oomSettings:{bestCount:0}};
+const league={id:'wl',name:'Winter League',societyId:'g1',teams,oomSettings:{bestCount:0},startingHandicaps:{p1:7.6,p2:12,p3:18,p4:20,p5:5,p6:9,p7:14,p8:22}};
 const players=teams.flatMap(team=>team.memberIds.map(id=>({id,name:id,hi:10})));
 
 function leagueState({releaseAt='2027-01-10T18:00:00Z'}={}){
@@ -69,4 +69,26 @@ test('a fixture creates a linked GGC scorecard preset',()=>{
  const record=buildMatchplayRecord({id:'scorecard-series',name:'Club Cup',societyId:'g1',entrants:teams.slice(0,2),entrantType:'team',createdAt:'2027-01-01T12:00:00Z'}),fixture=record.matchplay.fixtures[0];
  const preset=fixtureCompetitionPreset(record,fixture);
  assert.deepEqual({format:preset.format,entries:preset.entries,pairs:preset.pairs.map(pair=>pair.id),series:preset.matchplaySeriesId,fixture:preset.matchplayFixtureId},{format:'fourball-match',entries:['p1','p2','p3','p4'],pairs:['t1','t2'],series:'scorecard-series',fixture:fixture.id});
+});
+
+test('a linked playoff returns to the League-start handicap snapshot without Winter League cuts',()=>{
+ const state=leagueState({releaseAt:'2027-01-09T18:00:00Z'}),createdAt='2027-01-10T19:00:00Z';
+ const record=buildMatchplayRecord({id:'handicap-playoff',name:'Winter Playoffs',societyId:'g1',mode:'playoff',sourceLeague:league,playoffSize:4,createdAt,state});
+ const fixture=record.matchplay.fixtures.find(item=>item.round===1),settings=matchplayHandicapSettings(record,{...state,leagues:[league,record]}),preset=fixtureCompetitionPreset(record,fixture,{...state,leagues:[league,record]});
+ assert.equal(settings.source,'league-start');
+ assert.equal(settings.allowance,90);
+ assert.equal(settings.excludeLeagueAdjustments,true);
+ assert.deepEqual(preset.handicapSnapshot,league.startingHandicaps);
+ assert.equal(preset.excludeLeagueAdjustments,true);
+ assert.equal(preset.handicapAllowance,90);
+});
+
+test('forecast playoff settings can be edited but handicap rules lock after a scorecard exists',()=>{
+ const state=leagueState(),createdAt='2027-01-09T19:00:00Z';
+ const record=buildMatchplayRecord({id:'editable-playoff',name:'Knockouts',societyId:'g1',mode:'playoff',sourceLeague:league,playoffSize:4,createdAt,state});
+ const edited=editMatchplayRecord(record,{...state,leagues:[league,record]},{name:'Final Four',playoffSize:2,handicapAllowance:95});
+ assert.equal(edited.name,'Final Four');
+ assert.equal(edited.matchplay.qualificationSize,2);
+ assert.equal(edited.handicapSettings.allowance,95);
+ assert.throws(()=>editMatchplayRecord(edited,{...state,leagues:[league,edited],comps:[{id:'ko-card',matchplaySeriesId:edited.id}]},{handicapAllowance:90}),/locked/);
 });

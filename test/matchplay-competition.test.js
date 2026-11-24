@@ -2,6 +2,7 @@ import test from'node:test';
 import assert from'node:assert/strict';
 import{syncMatchplayCompetitionResult}from'../src/matchplayCompetition.js';
 import{buildMatchplayRecord,fixtureCompetitionPreset}from'../src/matchplaySeriesModel.js';
+import{competitionHandicapIndex,fourballMatchHandicaps}from'../src/scoring.js';
 
 const holes=Array.from({length:18},(_,index)=>({n:index+1,par:4,si:index+1}));
 const courseSnapshot={name:'Test Course',tee:{name:'Test',slope:113,rating:72,holes}};
@@ -29,4 +30,11 @@ test('an unfinished linked scorecard does not alter its fixture',()=>{
  const entrants=[{id:'a',name:'A'},{id:'b',name:'B'}],record=buildMatchplayRecord({id:'unfinished',name:'Unfinished',societyId:'g',entrants,createdAt:'2027-01-01T12:00:00Z'}),preset=fixtureCompetitionPreset(record,record.matchplay.fixtures[0]),comp={id:'unfinished-comp',...preset,holesMode:'18',courseSnapshot};
  const state={players:[{id:'a',hi:0},{id:'b',hi:0}],cards:[{compId:comp.id,playerId:'a',gross:[3]},{compId:comp.id,playerId:'b',gross:[4]}],leagues:[record]};
  assert.equal(syncMatchplayCompetitionResult(state,comp),state);
+});
+
+test('matchplay scoring reads its saved handicap snapshot instead of later profile changes',()=>{
+ const state={players:[{id:'a',hi:2},{id:'b',hi:30},{id:'c',hi:30},{id:'d',hi:30}],courses:[]};
+ const comp={handicapAllowance:90,handicapSnapshot:{a:10,b:12,c:18,d:20},courseSnapshot};
+ assert.equal(competitionHandicapIndex(comp,state,'a'),10);
+ assert.deepEqual(fourballMatchHandicaps({ids:['a','b']},{ids:['c','d']},comp,state),{a:0,b:2,c:7,d:9});
 });

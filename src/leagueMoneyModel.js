@@ -28,18 +28,22 @@ export function linkedPrizePlayoffs(state, leagueId) {
 export function leaguePrizeForecast({
   memberCount = 0,
   entryFeePerPlayer = 0,
+  twosFeePerPlayer = 0,
   scheduledWeeks = 0,
   weeklyPrizePerPlayer = 0,
   weeklyWinnerRecipients = 1,
 } = {}) {
-  const entryFund =
-      Math.max(0, Number(memberCount) || 0) *
-      Math.max(0, Number(entryFeePerPlayer) || 0),
+  const players = Math.max(0, Number(memberCount) || 0),
+    entryFund = players * Math.max(0, Number(entryFeePerPlayer) || 0),
+    twosFund = players * Math.max(0, Number(twosFeePerPlayer) || 0),
+    totalCollected = entryFund + twosFund,
     weeklyPrizeFund =
       Math.max(0, Number(scheduledWeeks) || 0) *
       Math.max(0, Number(weeklyPrizePerPlayer) || 0) *
       Math.max(1, Number(weeklyWinnerRecipients) || 1);
   return {
+    totalCollected,
+    twosFund,
     entryFund,
     weeklyPrizeFund,
     seasonEndingFund: Math.max(0, entryFund - weeklyPrizeFund),
@@ -104,4 +108,11 @@ export function leagueEntrantMemberIds(league, entrantId) {
   if (!entrantId) return [];
   const team = (league?.teams || []).find((item) => item.id === entrantId);
   return team?.memberIds?.length ? [...team.memberIds] : [entrantId];
+}
+
+export function entrantPrizeShares(league, entrantId, amount) {
+  const memberIds = leagueEntrantMemberIds(league, entrantId),
+    total = Math.max(0, Number(amount) || 0),
+    share = memberIds.length ? total / memberIds.length : 0;
+  return memberIds.map((playerId) => ({ playerId, amount: share }));
 }

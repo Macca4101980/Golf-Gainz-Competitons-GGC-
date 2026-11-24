@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   completedPlayoffPlacings,
+  entrantPrizeShares,
   leagueEntrantMemberIds,
   linkedPrizePlayoffs,
   moneyEligibleLeagues,
@@ -104,6 +105,14 @@ test("completed playoff resolves team winners to both golfers", () => {
     runnerUpId: "team-b",
   });
   assert.deepEqual(leagueEntrantMemberIds(league, "team-a"), ["a", "b"]);
+  assert.deepEqual(entrantPrizeShares(league, "team-a", 96), [
+    { playerId: "a", amount: 48 },
+    { playerId: "b", amount: 48 },
+  ]);
+  assert.deepEqual(entrantPrizeShares(league, "team-b", 64), [
+    { playerId: "c", amount: 32 },
+    { playerId: "d", amount: 32 },
+  ]);
 });
 
 test("forecast playoffs never produce payable placings", () => {

@@ -32,7 +32,7 @@ import HowToSlideshow from'./HowToSlideshow.jsx';
 import CompetitionGuide from'./CompetitionGuide.jsx';
 import{MatchplayCreate,MatchplayEdit,MatchplayFixtures,MatchplayResults}from'./MatchplaySeries.jsx';
 import{matchplaySeries,standardLeagues}from'./matchplaySeriesModel.js';
-import{completedPlayoffPlacings,leagueEntrantMemberIds,leaguePrizeForecast,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
+import{completedPlayoffPlacings,entrantPrizeShares,leaguePrizeForecast,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
 import{syncMatchplayCompetitionResult}from'./matchplayCompetition.js';
 import{flushPushNotifications}from'./pushNotifications.js';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
@@ -3089,6 +3089,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
     } = leaguePrizeForecast({
       memberCount: members.length,
       entryFeePerPlayer: cfg.entryFee,
+      twosFeePerPlayer: cfg.twosFee,
       scheduledWeeks: scheduledWeekCount,
       weeklyPrizePerPlayer: cfg.weeklyPrizePerPlayer,
       weeklyWinnerRecipients,
@@ -3160,18 +3161,18 @@ function LeagueMoneyManager({ state, setState, me, society }) {
         "Playoff runner-up",
       ],
     ]) {
-      const ids = leagueEntrantMemberIds(league, entrantId).filter((id) =>
-        state.players.some((player) => player.id === id),
+      const shares = entrantPrizeShares(league, entrantId, amount).filter(
+        ({ playerId }) => state.players.some((player) => player.id === playerId),
       );
-      if (!ids.length || amount <= 0) continue;
-      for (const id of ids) {
-        const player = state.players.find((item) => item.id === id);
+      if (!shares.length || amount <= 0) continue;
+      for (const { playerId, amount: playerAmount } of shares) {
+        const player = state.players.find((item) => item.id === playerId);
         payouts.push({
-          key: `playoff-${selectedPlayoff.id}-${label}-${id}`,
-          playerId: id,
+          key: `playoff-${selectedPlayoff.id}-${label}-${playerId}`,
+          playerId,
           name: player.name,
           reason: label,
-          amount: amount / ids.length,
+          amount: playerAmount,
         });
       }
     }
@@ -3360,9 +3361,15 @@ function LeagueMoneyManager({ state, setState, me, society }) {
             <div className="seasonMoneyCalculation">
               <h5>HOW THE SEASON-ENDING POT IS CALCULATED</h5>
               <div>
-                <span>League entry fund</span>
+                <span>Total collected</span>
                 <b>
-                  {members.length} golfers × {money2(cfg.entryFee)} = {money2(leaguePot)}
+                  {members.length} golfers × {money2(totalPerPlayer)} = {money2(members.length * totalPerPlayer)}
+                </b>
+              </div>
+              <div>
+                <span>2s fund reserved separately</span>
+                <b>
+                  {members.length} golfers × {money2(cfg.twosFee)} = {money2(members.length * (+cfg.twosFee || 0))}
                 </b>
               </div>
               <div>
@@ -3373,7 +3380,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
               </div>
               <div className="seasonMoneyTotal">
                 <span>Season-ending pot</span>
-                <b>{money2(leaguePot)} − {money2(weeklyCommitted)} = {money2(finalPot)}</b>
+                <b>{money2(members.length * totalPerPlayer)} − {money2(members.length * (+cfg.twosFee || 0))} − {money2(weeklyCommitted)} = {money2(finalPot)}</b>
               </div>
             </div>
             <p className="playoffMoneyExplanation">
@@ -3462,7 +3469,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
                 </label>
               )}
               {prizeDestination !== "league-table" && (
-                <label>
+                <label className="playoffCancellationField">
                   If the knockout is cancelled
                   <select
                     value={cfg.playoffCancellationFallback ?? "league-table"}
@@ -3491,7 +3498,9 @@ function LeagueMoneyManager({ state, setState, me, society }) {
                 <b>{money2(playoffPot)}</b>
                 <em>
                   {playoffPot > 0
-                    ? `${cfg.playoffFinalFirst ?? 60}% winner · ${100 - (cfg.playoffFinalFirst ?? 60)}% runner-up`
+                    ? selectedPlayoff?.matchplay?.entrantType === "team"
+                      ? `Winning team ${money2((playoffPot * (cfg.playoffFinalFirst ?? 60)) / 100)} (${money2((playoffPot * (cfg.playoffFinalFirst ?? 60)) / 200)} each) · Runner-up team ${money2((playoffPot * (100 - (cfg.playoffFinalFirst ?? 60))) / 100)} (${money2((playoffPot * (100 - (cfg.playoffFinalFirst ?? 60))) / 200)} each)`
+                      : `${cfg.playoffFinalFirst ?? 60}% winner · ${100 - (cfg.playoffFinalFirst ?? 60)}% runner-up`
                     : "No knockout payout"}
                 </em>
               </span>

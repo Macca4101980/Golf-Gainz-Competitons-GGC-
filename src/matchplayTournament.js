@@ -187,6 +187,34 @@ export function groupStageStandings(series){
  });
 }
 
+/** Builds the planned knockout bracket using group-position placeholders. */
+export function groupStageKnockoutPreview(source){
+ if(source?.type!=='group-stage')throw new Error('A knockout preview requires a group-stage series.');
+ if(source.groups.length%2!==0)throw new Error('Cross-group qualification requires an even number of groups.');
+ const pairs=[];
+ for(let index=0;index<source.groups.length;index+=2){
+  const left=source.groups[index],right=source.groups[index+1];
+  for(let rank=0;rank<source.qualifiersPerGroup;rank++){
+   const leftPosition={id:`${left.id}-position-${rank+1}`,name:`${left.name} · ${ordinal(rank+1)}`};
+   const reverseRank=source.qualifiersPerGroup-rank;
+   const rightPosition={id:`${right.id}-position-${reverseRank}`,name:`${right.name} · ${ordinal(reverseRank)}`};
+   pairs.push(rank%2===0?[leftPosition,rightPosition]:[rightPosition,leftPosition]);
+  }
+ }
+ const field=pairs.length*2,order=knockoutSeedOrder(field),entrants=[];
+ pairs.forEach((pair,index)=>pair.forEach((entrant,side)=>entrants.push({...entrant,seed:order[index*2+side]})));
+ const preview=createKnockout({id:`${source.id}-planned-knockout`,name:`${source.name} Knockout`,societyId:source.societyId,entrants,entrantType:source.entrantType,createdAt:source.createdAt,rules:{preview:true,sourceGroupStageId:source.id}});
+ preview.fixtures=preview.fixtures.map(fixture=>({...fixture,status:'forecasted'}));
+ preview.preview=true;
+ return preview;
+}
+
+function ordinal(value){
+ const remainder=value%100;
+ if(remainder>=11&&remainder<=13)return`${value}th`;
+ return`${value}${value%10===1?'st':value%10===2?'nd':value%10===3?'rd':'th'}`;
+}
+
 /** Converts final group tables into a cross-group knockout (A1 v B2, B1 v A2, and so on). */
 export function qualifyGroupStage(source,{id=`${source?.id}-knockout`,name=`${source?.name||'Matchplay'} Knockout`,qualifiedAt=new Date().toISOString()}={}){
  if(source?.type!=='group-stage')throw new Error('Only a group-stage series can be qualified.');

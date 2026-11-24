@@ -15,12 +15,17 @@ export const standardLeagues = (state) =>
   (state?.leagues || []).filter((record) => !isMatchplaySeries(record));
 export const matchplaySeries = (state) =>
   (state?.leagues || []).filter(isMatchplaySeries);
+export const isLeaguePlayoffRecord = (record) =>
+  isMatchplaySeries(record) &&
+  (record.structure === "playoff" ||
+    ["forecasted", "qualified"].includes(record.matchplay?.qualificationStatus));
 
 export function matchplayHandicapSettings(record, state) {
   const team = record?.matchplay?.entrantType === "team";
+  const linkedPlayoff = isLeaguePlayoffRecord(record);
   const storedSource =
     record?.handicapSettings?.source ||
-    (record?.sourceLeagueId ? "league-start" : "current");
+    (linkedPlayoff ? "league-start" : "current");
   const storedAdjustment =
     record?.handicapSettings?.adjustmentMode ||
     (record?.handicapSettings?.excludeLeagueAdjustments === false
@@ -39,7 +44,7 @@ export function matchplayHandicapSettings(record, state) {
       Number(record?.handicapSettings?.allowance ?? (team ? 90 : 100)),
     ),
   );
-  const league = record?.sourceLeagueId
+  const league = linkedPlayoff && record?.sourceLeagueId
     ? standardLeagues(state).find((item) => item.id === record.sourceLeagueId)
     : null;
   const adjustmentMode = source === "competition-end" ? "league-final" : "none";
@@ -238,8 +243,14 @@ export function buildMatchplayRecord({
       Number(state?.players?.find((player) => player.id === playerId)?.hi) || 0,
     ]),
   );
+  const linkedPlayoff = mode === "playoff";
+  const requestedSource = handicapSettings?.source;
+  if (!linkedPlayoff && requestedSource === "competition-end")
+    throw new Error(
+      "End-of-competition handicap position is only available for a linked League playoff.",
+    );
   const resolvedHandicaps = handicapSettings || {
-    source: sourceLeague ? "competition-start" : "current",
+    source: linkedPlayoff ? "competition-start" : "current",
     allowance: matchplay.entrantType === "team" ? 90 : 100,
     adjustmentMode: "none",
     excludeLeagueAdjustments: true,
@@ -250,7 +261,9 @@ export function buildMatchplayRecord({
     societyId,
     recordType: "matchplay-series",
     structure: mode,
-    sourceLeagueId: sourceLeague?.id || null,
+    sourceLeagueId: linkedPlayoff ? sourceLeague?.id || null : null,
+    entrantSourceLeagueId:
+      !linkedPlayoff && entrantType === "team" ? sourceLeague?.id || null : null,
     memberIds: entrantMemberIds,
     matchplay,
     handicapSettings: {
@@ -282,7 +295,7 @@ export function rebuildMatchplayRecord(
 ) {
   if (!isMatchplaySeries(record))
     throw new Error("Matchplay competition not found.");
-  if (record.sourceLeagueId)
+  if (isLeaguePlayoffRecord(record))
     throw new Error("A linked League playoff must remain a knockout.");
   const mode = structure || record.structure || record.matchplay?.type || "knockout";
   const existing = matchplayHandicapSettings(record, state);
@@ -306,6 +319,10 @@ export function rebuildMatchplayRecord(
     ),
   );
   const source = handicapSource || existing.source;
+  if (source === "competition-end")
+    throw new Error(
+      "End-of-competition handicap position is only available for a linked League playoff.",
+    );
   const allowance = Math.max(
     0,
     Math.min(100, Number(handicapAllowance ?? existing.allowance)),
@@ -396,6 +413,10 @@ export function editMatchplayRecord(
       Math.min(100, Number(handicapAllowance ?? existing.allowance)),
     ),
     adjustmentMode = source === "competition-end" ? "league-final" : "none";
+  if (source === "competition-end" && !isLeaguePlayoffRecord(record))
+    throw new Error(
+      "End-of-competition handicap position is only available for a linked League playoff.",
+    );
   return {
     ...record,
     name: String(name ?? record.name).trim() || record.name,

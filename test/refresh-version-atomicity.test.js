@@ -32,3 +32,25 @@ test('rejected refresh cannot advance the version and authorize overwriting a re
  await coordinator.enqueue(recovered.snapshot);
  assert.deepEqual(row.data.gross,['5','6']);
 });
+
+test('interactive refresh never downloads or injects historical audit rows',async()=>{
+ const baseline={cards:[{id:'card',gross:['4']}],audit:[]};
+ let requestedKinds=[];
+ const store={
+  async loadAll(kinds,{commitVersions}={}){
+   requestedKinds=[...kinds];
+   assert.equal(commitVersions,false);
+   assert.equal(kinds.includes('audit'),false);
+   return {records:Object.fromEntries(kinds.map(kind=>[kind,kind==='cards'?[{id:'card',gross:['5']}]:[]])),versions:new Map([['cards:card',2]])};
+  },
+  commitLoadedVersions(){},
+  async save(){throw Error('not used')},
+  async saveFields(){throw Error('not used')},
+ };
+ const coordinator=createRecordSaveCoordinator(store);
+ coordinator.initialize(baseline);
+ const result=await coordinator.reconcileRecordsFromCloud(baseline);
+ assert.equal(requestedKinds.includes('audit'),false);
+ assert.deepEqual(result.snapshot.cards[0].gross,['5']);
+ assert.deepEqual(result.snapshot.audit,[]);
+});

@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState}from'react';
 import{winterLeagueTable,leagueHandicapSettings,leagueCompetitionLifecycle}from'./winterLeague.js';
+import{APP_VERSION_LABEL}from'./version.js';
 
 const uid=()=>crypto.randomUUID?.()||Date.now()+''+Math.random();
 const fmt=v=>{const n=Number(v)||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toFixed(1)};
@@ -177,7 +178,7 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
 }
 
 export default function Leagues({state,setState,me,societyId,onPersist,onCreateCompetition,onEditCompetition,storageAuth}){
- const leagues=(state.leagues||[]).filter(g=>g.societyId===societyId);
+ const leagues=(state.leagues||[]).filter(g=>g.societyId===societyId&&g.recordType!=='matchplay-series');
  const storageKey=`ggc-league-setup-${societyId}`;const saved=(()=>{try{return JSON.parse(sessionStorage.getItem(storageKey)||'{}')}catch{return {}}})();
  const[selected,setSelected]=useState(saved.selected||null);const[placeholderName,setPlaceholderName]=useState('');const[placeholderHi,setPlaceholderHi]=useState('');const[placeholderEmail,setPlaceholderEmail]=useState('');const[teamA,setTeamA]=useState('');const[teamB,setTeamB]=useState('');const[teamName,setTeamName]=useState('');const[openTeamId,setOpenTeamId]=useState(null);const[showNewTeamForm,setShowNewTeamForm]=useState(false);const[showHandicapInfo,setShowHandicapInfo]=useState(false);const[teamBadgeImage,setTeamBadgeImage]=useState(null);const[badgeStatus,setBadgeStatus]=useState({});const[badgeTarget,setBadgeTarget]=useState(null);const badgePickerRef=useRef(null);const[creating,setCreating]=useState(!!saved.creating);const[editingLeague,setEditingLeague]=useState(!!saved.editingLeague);const[name,setName]=useState(saved.name||'');const[target,setTarget]=useState(saved.target||10);const[weekDates,setWeekDates]=useState(saved.weekDates||[]);
  useEffect(()=>{if(selected||creating||name||weekDates.length)sessionStorage.setItem(storageKey,JSON.stringify({selected,creating,editingLeague,name,target,weekDates}));else sessionStorage.removeItem(storageKey)},[storageKey,selected,creating,editingLeague,name,target,weekDates]);
@@ -220,7 +221,7 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 <button className="secondary" onClick={()=>{setSelected(null);setEditingLeague(false)}}>← LEAGUES</button>
 <div className="card">
 <h2>{league.name}</h2>
-<small>League · GGC V4 Beta 12.3</small>
+<small>League · GGC {APP_VERSION_LABEL}</small>
 <p className="muted">{comps.length} League competition{comps.length===1?'':'s'} created. The setup quantity only controls how many competitions are created initially; you can add more at any time.</p>{canEdit(league)&&comps.length===0&&<label>Initial number of competitions<input type="number" min="1" max="52" value={league.targetCompetitions||1} onChange={e=>patchLeague(g=>({...g,targetCompetitions:Math.max(1,Math.min(52,+e.target.value||1))}))}/>
 </label>}</div>
 <h3>PLAYERS</h3>

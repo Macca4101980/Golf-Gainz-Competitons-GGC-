@@ -32,9 +32,10 @@ test('card tombstone metadata survives snapshot translation and live merge',()=>
 });
 
 test('every scorecard removal path records card tombstones',()=>{
- assert.match(main,/deleteAdminRound[\s\S]*?deletedCardIds/);
- assert.match(main,/RESTART GROUP ROUND[\s\S]*?deletedCardIds|deletedCardIds[\s\S]*?RESTART GROUP ROUND/);
- assert.match(main,/removedCards=scoringChanged&&hasScores[\s\S]*?deletedCardIds/);
+ const compact=main.replace(/\s+/g,'');
+ assert.match(compact,/deleteAdminRound[\s\S]*?deletedCardIds/);
+ assert.match(compact,/RESTARTGROUPROUND[\s\S]*?deletedCardIds|deletedCardIds[\s\S]*?RESTARTGROUPROUND/);
+ assert.match(compact,/removedCards=scoringChanged&&hasScores[\s\S]*?deletedCardIds/);
  assert.match(groups,/restart\(\)[\s\S]*?deletedCardIds/);
  assert.match(leagues,/deletePlaceholder[\s\S]*?deletedCardIds/);
  assert.match(leagues,/deleteLeague[\s\S]*?deletedCardIds/);

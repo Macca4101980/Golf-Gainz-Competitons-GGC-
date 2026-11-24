@@ -6,6 +6,11 @@ import {planRecordChanges,RECORD_COLLECTIONS} from './recordChanges.js';
 import {changedFields,reconcileRecord} from './editProtection.js';
 import {mergeScorecardConflict} from './scorecardConflict.js';
 
+// Audit history is append-only operational evidence, not interactive app
+// state. Loading thousands of historical rows during a pull refresh can exceed
+// a mobile browser's memory/localStorage budget and must never gate scoring.
+const INTERACTIVE_RECORD_COLLECTIONS=RECORD_COLLECTIONS.filter(kind=>kind!=='audit');
+
 function mergeAppendOnlyIds(baseline=[],local=[],remote=[],field='entries'){
  const base=new Set((baseline||[]).map(String)),mine=new Set((local||[]).map(String)),theirs=new Set((remote||[]).map(String));
  if([...base].some(id=>!mine.has(id)||!theirs.has(id)))return {merged:[...(remote||[])],conflicts:[field+' removal requires review']};
@@ -34,11 +39,14 @@ function mergeRoundGroups(baseline=[],local=[],remote=[]){
   if(b&&m&&r){
    const gross=mergeHoleArray(b.teamGross||[],m.teamGross||[],r.teamGross||[],'teamGross');
    if(gross.conflicts.length)conflicts.push(...gross.conflicts.map(x=>'roundGroups/'+id+'/'+x));
-   const localMeta={...m,teamGross:structuredClone(r.teamGross||[])};
+   const drives=mergeHoleArray(b.selectedDrivePlayerIds||[],m.selectedDrivePlayerIds||[],r.selectedDrivePlayerIds||[],'selectedDrivePlayerIds');
+   if(drives.conflicts.length)conflicts.push(...drives.conflicts.map(x=>'roundGroups/'+id+'/'+x));
+   const localMeta={...m,teamGross:structuredClone(r.teamGross||[]),selectedDrivePlayerIds:structuredClone(r.selectedDrivePlayerIds||[])};
    const dirty=changedFields(b,localMeta).filter(f=>!['startedAt','startedBy'].includes(f));
    const result=reconcileRecord({baseline:b,local:localMeta,remote:r,dirtyFields:dirty});
    if(result.conflicts.length)conflicts.push(...result.conflicts.map(x=>'roundGroups/'+id+'/'+x));
    result.merged.teamGross=gross.merged;
+   result.merged.selectedDrivePlayerIds=drives.merged;
    if(JSON.stringify(m.startedAt)!==JSON.stringify(b.startedAt))result.merged.startedAt=m.startedAt;
    if(JSON.stringify(m.startedBy)!==JSON.stringify(b.startedBy))result.merged.startedBy=m.startedBy;
    out.push(result.merged);
@@ -166,14 +174,14 @@ export function createRecordSaveCoordinator(store){
   await pending;
   if(lastFailure||failedDesired)return null;
   const start=structuredClone(baseline);
-  const staged=await store.loadAll(RECORD_COLLECTIONS,{commitVersions:false});
+  const staged=await store.loadAll(INTERACTIVE_RECORD_COLLECTIONS,{commitVersions:false});
   if(JSON.stringify(baseline)!==JSON.stringify(start)||lastFailure||failedDesired||!canCommit())return null;
   const next=structuredClone(currentSnapshot);
   const nextBaseline=structuredClone(start);
   const acceptedVersions=new Map();
   let accepted=0,protectedRecords=0;
   const protectedDetails=[];
-  for(const kind of RECORD_COLLECTIONS){
+  for(const kind of INTERACTIVE_RECORD_COLLECTIONS){
    const base=new Map((start[kind]||[]).map(record=>[String(record.id),record]));
    const local=new Map((currentSnapshot[kind]||[]).map(record=>[String(record.id),record]));
    const remote=new Map((staged.records[kind]||[]).map(record=>[String(record.id),record]));
@@ -217,7 +225,7 @@ export function createRecordSaveCoordinator(store){
   * Return conflicts for human review instead of automatically choosing a winner.
   */
  async function recoverVersionConflict(currentSnapshot,{canCommit=()=>true}={}){
-  if(!baseline||!lastFailure||!/GGC_VERSION_CONFLICT/.test(lastFailure.message||''))return null;
+  if(!baseline||!lastFailure||!/(GGC_VERSION_CONFLICT|GGC_ACCESS_DENIED)/.test(lastFailure.message||''))return null;
   await pending;
   const original=structuredClone(baseline);
   const changes=planRecordChanges(original,currentSnapshot);

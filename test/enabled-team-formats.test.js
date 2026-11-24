@@ -64,6 +64,29 @@ test('N/R locks the roster and counts for submission; blank selected holes block
  assert.equal(groupSubmissionError(group,{...c,holesMode:'front9'},state),null);
 });
 
+test('selected-drive tracking is additive, validates configured minimums and leaves scoring unchanged',()=>{
+ const c={...base,format:'scramble',trackSelectedDrives:true,minimumDrivesPerPlayer:2};
+ const scoreGroup={...group,playerIds:['a','b'],teamGross:Array(18).fill(4),selectedDrivePlayerIds:Array(18).fill('')};
+ const state={players,courses:[],cards:[]};
+ assert.match(groupSubmissionError(scoreGroup,c,state),/Choose whose drive/);
+ scoreGroup.selectedDrivePlayerIds=Array.from({length:18},(_,i)=>i===0?'b':'a');
+ assert.match(groupSubmissionError(scoreGroup,c,state),/B needs 1 more selected drive/);
+ scoreGroup.selectedDrivePlayerIds[1]='b';
+ assert.equal(groupSubmissionError(scoreGroup,c,state),null);
+ assert.equal(groupScore(scoreGroup,c,{...state,comps:[c]}).net,72);
+ const legacy={...c,trackSelectedDrives:undefined};
+ assert.equal(groupSubmissionError({...scoreGroup,selectedDrivePlayerIds:[]},legacy,state),null);
+});
+
+test('new foursomes tee-order guidance is required without changing legacy rounds',()=>{
+ const c={...base,format:'foursomes',trackTeeOrder:true};
+ const scoreGroup={...group,playerIds:['a','b'],teamGross:Array(18).fill(4)};
+ const state={players,courses:[],cards:[]};
+ assert.match(groupSubmissionError(scoreGroup,c,state),/drives the first hole/);
+ assert.equal(groupSubmissionError({...scoreGroup,firstTeePlayerId:'a'},c,state),null);
+ assert.equal(groupSubmissionError(scoreGroup,{...c,trackTeeOrder:undefined},state),null);
+});
+
 test('restarting or changing one group never requires replacing other playing groups',()=>{
  const other={id:'other',playerIds:['x','y']};
  const c={...base,format:'best1',roundGroups:[group,other]};

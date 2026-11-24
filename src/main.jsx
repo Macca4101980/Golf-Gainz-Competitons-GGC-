@@ -391,13 +391,13 @@ function HistoricalLeagueResults({league,state,isAdmin=false,playoffs=[],me,setS
  const teamById=id=>{const own=(league.teams||[]).find(t=>t.id===id)||{};if(own.badgeImage)return own;const name=String(own.name||'').trim().toLowerCase();const match=(state.leagues||[]).flatMap(l=>l.teams||[]).find(t=>t.badgeImage&&String(t.name||'').trim().toLowerCase()===name);return match?{...own,badgeImage:match.badgeImage}:own};
  const badgeForTeam=teamId=>{const t=teamById(teamId);return {badgeImage:t.badgeImage,name:t.name||'Team',memberLine:(t.memberIds||t.ids||[]).map(id=>state.players.find(p=>p.id===id)?.name).filter(Boolean).join(' & ')}};
  return <div className="historicalLeagueResults">
-  {playoffs.map(record=><details className="card wlMatchplayCard wlSection" key={record.id}><summary className="wlSectionSummary">{record.name.toUpperCase()}</summary><MatchplayResults record={record} state={state} me={me} setState={setState} onScorecard={onScorecard} onManage={onManage}/></details>)}
   <details className="card wlWeeklyCard wlSection" defaultOpen><summary className="wlSectionSummary">WEEKLY RESULTS</summary><p className="muted">Tap a week to open the full result.</p>
    {wl.weekly?.length?<div className="wlWeeks">{wl.weekly.map(w=>{const winner=w.rows?.[0];const through=Math.max(1,Math.min(17,Number(w.comp.resultsEmbargo?.visibleThroughHole)||15));const live=effectiveCompStatus(w.comp)==='live';return <details className="wlWeekResult" key={w.comp.id} defaultOpen={live}><summary><span className="wlWeekNo">W{w.weekNumber}</span><span><b>Week {w.weekNumber}</b><small>{w.resultsHidden?`Provisional results available ${new Date(w.comp.resultsEmbargo.provisionalAt).toLocaleString()}`:winner?`${w.provisional?'PROVISIONAL (holes 1–'+through+')':'Winner'} · ${winner.teamName} · ${winner.points} pts`:'No completed team cards yet'}</small></span><button type="button" className="leaderboardShareBtn secondary" aria-label={`Share ${league.name} Week ${w.weekNumber} leaderboard`} title="Share leaderboard" onClick={e=>{e.preventDefault();e.stopPropagation();setSharingComp(w.comp)}}><Share2 aria-hidden="true"/></button><strong>›</strong></summary><div className="wlWeekRows">{w.rows.length?w.rows.map(r=><div className={r.position===1?'winner':''} key={r.teamId}><span className="wlWeekPos">{r.position}</span><LeaderboardBadge {...badgeForTeam(r.teamId)} small/><span className="wlWeekTeam"><b>{r.teamName}</b>{r.cut?<small>{w.provisional?'Provisional WL cut':'WL cut'} {r.cut.toFixed(1)}</small>:null}</span><strong>{r.points===0&&w.comp.historical?'DNP':r.points+' pts'}</strong></div>):<p className="muted">No completed team cards yet.</p>}</div><LeaderboardPayoutSummary c={w.comp} state={state}/></details>})}</div>:<p className="muted">Weekly results will appear here as cards are entered.</p>}
   </details>
   <details className="card wlOomCard wlSection"><summary className="wlSectionSummary">LEAGUE TABLE</summary><div className="wlCardTitle"><div className="wlTitleRow"><h3>{league.name} LEAGUE TABLE</h3><button type="button" className="leaderboardShareBtn secondary" aria-label={`Share ${league.name} overall leaderboard`} title="Share overall leaderboard" onClick={()=>setSharingComp({overall:true,league})}><Share2 aria-hidden="true"/></button></div></div><small>Best {wl.bestCount||0} counting scores · {leagueHandicapSettings(league).allowance}% handicap · League handicap adjustments</small>{wl.weekly.some(w=>w.provisional)&&<p className="muted">Week scores are provisional through hole 15. Official league points are withheld, but the provisional cut is carried into the next week’s playing handicap and recalculated when full scores are released.</p>}
    {wl.table?.length?<div className="wlMobileTable">{wl.table.map(r=><details className={`wlMobileRow wlPos${r.position}`} key={r.id}><summary><strong className="wlPosition">{r.position}</strong><LeaderboardBadge {...badgeForTeam(r.id)}/><span className="wlTeamCopy"><b>{r.name}</b><small>{(r.memberIds||[]).map(id=>state.players.find(p=>p.id===id)?.name||'?').join(' & ')}</small><small>Played {r.played} · {r.provisionalCut?'Provisional WL cut':'WL cut'} {r.finalCut?'-'+r.finalCut.toFixed(1):'—'}</small></span><em>{r.total}<small>PTS</small></em></summary><div className="wlCounting">Counting scores: <b>{[...r.counting].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)).map(w=>`W${w.weekNumber}: ${w.points}${w.provisional?' (P)':''}`).join(' · ')||'—'}</b></div></details>)}</div>:<p className="muted">The table will populate as League scorecards are submitted.</p>}
   </details>
+  {playoffs.map(record=><details className="card wlMatchplayCard wlSection" key={record.id}><summary className="wlSectionSummary">{record.name.toUpperCase()}</summary><MatchplayResults record={record} state={state} me={me} isAdmin={isAdmin} setState={setState} onScorecard={onScorecard} onManage={onManage}/></details>)}
   <details className="card wlHandicapCard wlSection"><summary className="wlSectionSummary">HANDICAPS</summary><div className="wlCardTitle"><h3>{league.name} HANDICAPS</h3></div><p className="muted">Shown as <b>EG Handicap / Green Playing Handicap</b>. The Green figure includes the 90% allowance and the Winter League cut carried into that week. Tap a player for history.</p>
    {wl.table.map(t=><div className="wlHcpTeam" key={'hcp-'+t.id}><div className="wlHcpTeamTitle"><LeaderboardBadge {...badgeForTeam(t.id)}/><b>{t.name}</b></div>{(t.memberIds||[]).map(id=>{const p=state.players.find(x=>x.id===id);if(!p)return null;const currentWeek=t.weeks.find(w=>!Number.isFinite(w.points)&&w.playerHandicaps?.[id])||[...t.weeks].reverse().find(w=>w.playerHandicaps?.[id]);const current=currentWeek?.playerHandicaps?.[id]||{handicapIndex:+p.hi||0,playingHandicap:+p.hi||0};return <details className="wlHcpPlayer" key={id}><summary><span>{p.name}<small>Tap for history</small></span><strong><small>EG / GREEN PH</small>{h(current.handicapIndex)} / {h(current.playingHandicap)}</strong></summary><div className="wlHcpHistory">{t.weeks.map(w=>{const values=w.playerHandicaps?.[id];if(!values)return null;return <div key={w.compId}><span>Week {w.weekNumber}{w.provisional?' · provisional':''}</span><b>{h(values.handicapIndex)} / {h(values.playingHandicap)} {values.adjustment?<em>({values.adjustment>0?'+':''}{values.adjustment.toFixed(1)} WL)</em>:''}</b></div>})}</div></details>})}</div>)}
   </details>
@@ -817,6 +817,7 @@ function CompModal({
       matchplayFixtureId: liveExisting?.matchplayFixtureId || preset?.matchplayFixtureId || null,
       handicapSource: liveExisting?.handicapSource || preset?.handicapSource || null,
       handicapSnapshot: liveExisting?.handicapSnapshot || preset?.handicapSnapshot || null,
+      handicapAdjustments: liveExisting?.handicapAdjustments || preset?.handicapAdjustments || null,
       excludeLeagueAdjustments: liveExisting?.excludeLeagueAdjustments ?? preset?.excludeLeagueAdjustments ?? false,
       status,
       updatedAt: new Date().toISOString(),
@@ -2046,14 +2047,17 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
     const p = state.players.find((x) => x.id === id);
     const old = cardFor(id);
     const snapshotHi = competitionHandicapIndex(c, state, id);
+    const matchplayAdjustment = Number(c.handicapAdjustments?.[id]) || 0;
     const wl = c.excludeLeagueAdjustments ? null : winterLeagueCardHandicap(c, state, id);
     return {
       hi: wl?.handicapIndex ?? old?.handicapIndexUsed ?? snapshotHi,
-      ch: old?.courseHandicap ?? courseHandicap(snapshotHi, tee, par),
+      ch:
+        old?.courseHandicap ??
+        courseHandicap(snapshotHi, tee, par) + matchplayAdjustment,
       ph:
         wl?.playingHandicap ??
         old?.playingHandicap ??
-        playingHandicap(snapshotHi, tee, par, allowance),
+        playingHandicap(snapshotHi, tee, par, allowance) + matchplayAdjustment,
     };
   }
   function normalShots(ph, si) {

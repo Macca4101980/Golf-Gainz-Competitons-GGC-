@@ -77,6 +77,7 @@ test('a linked playoff returns to the League-start handicap snapshot without Win
  const fixture=record.matchplay.fixtures.find(item=>item.round===1),settings=matchplayHandicapSettings(record,{...state,leagues:[league,record]}),preset=fixtureCompetitionPreset(record,fixture,{...state,leagues:[league,record]});
  assert.equal(settings.source,'league-start');
  assert.equal(settings.allowance,90);
+ assert.equal(settings.adjustmentMode,'none');
  assert.equal(settings.excludeLeagueAdjustments,true);
  assert.deepEqual(preset.handicapSnapshot,league.startingHandicaps);
  assert.equal(preset.excludeLeagueAdjustments,true);
@@ -86,9 +87,14 @@ test('a linked playoff returns to the League-start handicap snapshot without Win
 test('forecast playoff settings can be edited but handicap rules lock after a scorecard exists',()=>{
  const state=leagueState(),createdAt='2027-01-09T19:00:00Z';
  const record=buildMatchplayRecord({id:'editable-playoff',name:'Knockouts',societyId:'g1',mode:'playoff',sourceLeague:league,playoffSize:4,createdAt,state});
- const edited=editMatchplayRecord(record,{...state,leagues:[league,record]},{name:'Final Four',playoffSize:2,handicapAllowance:95});
+ const edited=editMatchplayRecord(record,{...state,leagues:[league,record]},{name:'Final Four',playoffSize:2,handicapAllowance:95,handicapAdjustmentMode:'league-final'});
  assert.equal(edited.name,'Final Four');
  assert.equal(edited.matchplay.qualificationSize,2);
  assert.equal(edited.handicapSettings.allowance,95);
+ assert.equal(edited.handicapSettings.adjustmentMode,'league-final');
+ const settings=matchplayHandicapSettings(edited,{...state,leagues:[league,edited]});
+ assert.equal(settings.adjustments.p1,-1);
+ assert.equal(settings.adjustments.p5,0);
  assert.throws(()=>editMatchplayRecord(edited,{...state,leagues:[league,edited],comps:[{id:'ko-card',matchplaySeriesId:edited.id}]},{handicapAllowance:90}),/locked/);
+ assert.throws(()=>editMatchplayRecord(edited,{...state,leagues:[league,edited],comps:[{id:'ko-card',matchplaySeriesId:edited.id}]},{handicapAdjustmentMode:'none'}),/locked/);
 });

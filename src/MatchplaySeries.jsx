@@ -58,6 +58,9 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
   const [winPoints, setWinPoints] = useState(3);
   const [drawPoints, setDrawPoints] = useState(1);
   const [lossPoints, setLossPoints] = useState(0);
+  const [handicapSource, setHandicapSource] = useState("league-start");
+  const [handicapAllowance, setHandicapAllowance] = useState(100);
+  const [handicapAdjustmentMode, setHandicapAdjustmentMode] = useState("none");
   const group = manageable.find((item) => item.id === groupId),
     leagues = standardLeagues(state).filter(
       (item) => item.societyId === groupId,
@@ -109,6 +112,14 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         qualifiersPerGroup: qualifiers,
         legs,
         points: { winPoints, drawPoints, lossPoints },
+        handicapSettings: {
+          source: mode === "playoff" ? handicapSource : "current",
+          allowance: Math.max(0, Math.min(100, Number(handicapAllowance))),
+          adjustmentMode:
+            mode === "playoff" ? handicapAdjustmentMode : "none",
+          excludeLeagueAdjustments:
+            mode !== "playoff" || handicapAdjustmentMode !== "league-final",
+        },
         createdBy: me?.id,
         state,
       });
@@ -162,7 +173,12 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
             League
             <select
               value={sourceLeagueId}
-              onChange={(event) => setSourceLeagueId(event.target.value)}
+              onChange={(event) => {
+                const nextId = event.target.value;
+                setSourceLeagueId(nextId);
+                const nextLeague = leagues.find((item) => item.id === nextId);
+                setHandicapAllowance((nextLeague?.teams || []).length ? 90 : 100);
+              }}
             >
               <option value="">Choose League…</option>
               {leagues.map((item) => (
@@ -196,7 +212,11 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
             Entrants
             <select
               value={entrantType}
-              onChange={(event) => setEntrantType(event.target.value)}
+              onChange={(event) => {
+                const nextType = event.target.value;
+                setEntrantType(nextType);
+                setHandicapAllowance(nextType === "team" ? 90 : 100);
+              }}
             >
               <option value="individual">Individual golfers</option>
               <option value="team">Existing League teams / pairs</option>
@@ -299,6 +319,48 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
           )}
         </>
       )}
+      {mode === "playoff" && (
+        <>
+          <label>
+            Handicap basis
+            <select
+              value={handicapSource}
+              onChange={(event) => setHandicapSource(event.target.value)}
+            >
+              <option value="league-start">
+                Original League-start Handicap Index
+              </option>
+              <option value="current">
+                Current Handicap Index when each match starts
+              </option>
+            </select>
+          </label>
+          <label>
+            League handicap adjustments
+            <select
+              value={handicapAdjustmentMode}
+              onChange={(event) =>
+                setHandicapAdjustmentMode(event.target.value)
+              }
+            >
+              <option value="none">Do not carry League adjustments</option>
+              <option value="league-final">
+                Carry final League adjustments into the knockouts
+              </option>
+            </select>
+          </label>
+        </>
+      )}
+      <label>
+        Match allowance %
+        <input
+          type="number"
+          min="0"
+          max="100"
+          value={handicapAllowance}
+          onChange={(event) => setHandicapAllowance(event.target.value)}
+        />
+      </label>
       <button className="primary" onClick={create}>
         <Plus /> CREATE MATCHPLAY
       </button>
@@ -428,7 +490,8 @@ export function MatchplayEdit({ record, state, onSave }) {
   const [name, setName] = useState(record.name || "Knockouts"),
     [size, setSize] = useState(record.matchplay?.qualificationSize || 4),
     [source, setSource] = useState(settings.source),
-    [allowance, setAllowance] = useState(settings.allowance);
+    [allowance, setAllowance] = useState(settings.allowance),
+    [adjustmentMode, setAdjustmentMode] = useState(settings.adjustmentMode);
   const structuralLocked =
     record.matchplay?.qualificationStatus !== "forecasted";
   function save() {
@@ -439,6 +502,7 @@ export function MatchplayEdit({ record, state, onSave }) {
           playoffSize: size,
           handicapSource: source,
           handicapAllowance: allowance,
+          handicapAdjustmentMode: adjustmentMode,
         }),
       );
     } catch (error) {
@@ -498,12 +562,29 @@ export function MatchplayEdit({ record, state, onSave }) {
           onChange={(event) => setAllowance(event.target.value)}
         />
       </label>
+      {linked && (
+        <label>
+          League handicap adjustments
+          <select
+            value={adjustmentMode}
+            disabled={hasScorecards}
+            onChange={(event) => setAdjustmentMode(event.target.value)}
+          >
+            <option value="none">Do not carry League adjustments</option>
+            <option value="league-final">
+              Carry final League adjustments into the knockouts
+            </option>
+          </select>
+        </label>
+      )}
       {source === "league-start" ? (
         <p className="matchplayForecastNote">
           <b>Winter League playoff rule:</b> every golfer returns to the
-          Handicap Index saved when the League began. Winter League performance
-          cuts are not carried into the knockouts. The {allowance}% match
-          allowance is then applied.
+          Handicap Index saved when the League began. The {allowance}% match
+          allowance is applied
+          {adjustmentMode === "league-final"
+            ? ", followed by the final League handicap adjustments."
+            : ". League performance adjustments are not carried into the knockouts."}
         </p>
       ) : (
         <p className="matchplayForecastNote">
@@ -537,6 +618,7 @@ export function MatchplayResults({
   setState,
   onScorecard,
   onManage,
+  isAdmin: adminAccess,
 }) {
   const resolved = useMemo(
       () => currentMatchplayRecord(record, state),
@@ -545,7 +627,8 @@ export function MatchplayResults({
     series = resolved.matchplay,
     group = state.societies.find((item) => item.id === record.societyId),
     isAdmin =
-      group?.ownerId === me?.id || (group?.admins || []).includes(me?.id);
+      adminAccess ??
+      (group?.ownerId === me?.id || (group?.admins || []).includes(me?.id));
   useEffect(() => {
     if (
       series.qualificationStatus !== "qualified" ||
@@ -632,9 +715,12 @@ export function MatchplayResults({
       <p className="matchplayHandicapSummary">
         <b>HANDICAPS:</b>{" "}
         {handicaps.source === "league-start"
-          ? "Original League-start handicaps · no Winter League cuts"
+          ? "Original League-start handicaps"
           : "Current handicaps at match start"}{" "}
-        · {handicaps.allowance}% allowance
+        · {handicaps.allowance}% allowance ·{" "}
+        {handicaps.adjustmentMode === "league-final"
+          ? "final League adjustments included"
+          : "League adjustments excluded"}
       </p>
       {series.qualificationStatus === "forecasted" && (
         <p className="matchplayForecastNote">

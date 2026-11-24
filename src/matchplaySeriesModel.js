@@ -31,6 +31,11 @@ export function matchplayHandicapSettings(record, state) {
   const league = record?.sourceLeagueId
     ? standardLeagues(state).find((item) => item.id === record.sourceLeagueId)
     : null;
+  const adjustmentMode =
+    record?.handicapSettings?.adjustmentMode ||
+    (record?.handicapSettings?.excludeLeagueAdjustments === false
+      ? "league-final"
+      : "none");
   const snapshot =
     source === "league-start"
       ? {
@@ -39,11 +44,26 @@ export function matchplayHandicapSettings(record, state) {
             {}),
         }
       : {};
+  let adjustments = {};
+  if (league && adjustmentMode === "league-final") {
+    try {
+      adjustments = Object.assign(
+        {},
+        ...leagueDisplayTable(league, state).table.map(
+          (teamRow) => teamRow.finalAdjustments || {},
+        ),
+      );
+    } catch {
+      adjustments = {};
+    }
+  }
   return {
     source,
     allowance,
-    excludeLeagueAdjustments: source === "league-start",
+    adjustmentMode,
+    excludeLeagueAdjustments: adjustmentMode !== "league-final",
     snapshot,
+    adjustments,
   };
 }
 
@@ -204,7 +224,8 @@ export function buildMatchplayRecord({
   const resolvedHandicaps = handicapSettings || {
     source: sourceLeague ? "league-start" : "current",
     allowance: matchplay.entrantType === "team" ? 90 : 100,
-    excludeLeagueAdjustments: !!sourceLeague,
+    adjustmentMode: "none",
+    excludeLeagueAdjustments: true,
   };
   return {
     id,
@@ -227,7 +248,13 @@ export function buildMatchplayRecord({
 export function editMatchplayRecord(
   record,
   state,
-  { name, playoffSize, handicapSource, handicapAllowance } = {},
+  {
+    name,
+    playoffSize,
+    handicapSource,
+    handicapAllowance,
+    handicapAdjustmentMode,
+  } = {},
 ) {
   if (!isMatchplaySeries(record))
     throw new Error("Matchplay competition not found.");
@@ -239,7 +266,9 @@ export function editMatchplayRecord(
     scorecards.length &&
     ((handicapSource && handicapSource !== existing.source) ||
       (handicapAllowance != null &&
-        Number(handicapAllowance) !== existing.allowance))
+        Number(handicapAllowance) !== existing.allowance) ||
+      (handicapAdjustmentMode &&
+        handicapAdjustmentMode !== existing.adjustmentMode))
   )
     throw new Error(
       "Handicap rules are locked because a knockout scorecard has already been created.",
@@ -275,7 +304,10 @@ export function editMatchplayRecord(
     allowance = Math.max(
       0,
       Math.min(100, Number(handicapAllowance ?? existing.allowance)),
-    );
+    ),
+    adjustmentMode = record.sourceLeagueId
+      ? handicapAdjustmentMode || existing.adjustmentMode
+      : "none";
   return {
     ...record,
     name: String(name ?? record.name).trim() || record.name,
@@ -283,7 +315,8 @@ export function editMatchplayRecord(
     handicapSettings: {
       source,
       allowance,
-      excludeLeagueAdjustments: source === "league-start",
+      adjustmentMode,
+      excludeLeagueAdjustments: adjustmentMode !== "league-final",
     },
     updatedAt: nowIso(),
   };
@@ -327,6 +360,7 @@ export function fixtureCompetitionPreset(record, fixture, state) {
     handicapAllowance: handicaps.allowance,
     handicapSource: handicaps.source,
     handicapSnapshot: handicaps.snapshot,
+    handicapAdjustments: handicaps.adjustments,
     excludeLeagueAdjustments: handicaps.excludeLeagueAdjustments,
     entries: [...new Set([...members(entrantA), ...members(entrantB)])],
     pairs,

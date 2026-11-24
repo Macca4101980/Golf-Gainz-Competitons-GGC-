@@ -38,3 +38,9 @@ test('matchplay scoring reads its saved handicap snapshot instead of later profi
  assert.equal(competitionHandicapIndex(comp,state,'a'),10);
  assert.deepEqual(fourballMatchHandicaps({ids:['a','b']},{ids:['c','d']},comp,state),{a:0,b:2,c:7,d:9});
 });
+
+test('optional League adjustments are carried into knockout match handicaps',()=>{
+ const state={players:[{id:'a',hi:2},{id:'b',hi:30},{id:'c',hi:30},{id:'d',hi:30}],courses:[]};
+ const comp={handicapAllowance:90,handicapSnapshot:{a:10,b:12,c:18,d:20},handicapAdjustments:{a:-2,b:-2,c:0,d:0},courseSnapshot};
+ assert.deepEqual(fourballMatchHandicaps({ids:['a','b']},{ids:['c','d']},comp,state),{a:0,b:2,c:9,d:11});
+});

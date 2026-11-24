@@ -4,6 +4,7 @@ import {
   entrantFixtureSummary,
   groupStageKnockoutPreview,
   groupStageStandings,
+  fixtureStageLabel,
   qualifyGroupStage,
   recordConcession,
   recordFixtureResult,
@@ -426,7 +427,7 @@ function Fixture({
   return (
     <div className={`matchFixture ${fixture.status}`}>
       <span className="matchRound">
-        {fixture.stage === "group" ? "GROUP" : `ROUND ${fixture.round}`}
+        {fixtureStageLabel(series, fixture).toUpperCase()}
       </span>
       <div>
         <b>{a}</b>
@@ -477,7 +478,7 @@ function Fixture({
 function FixtureSummary({ fixture, series }) {
   return (
     <div className={`matchFixture ${fixture.status}`}>
-      <span className="matchRound">{fixture.stage === "group" ? "GROUP" : `ROUND ${fixture.round}`}</span>
+      <span className="matchRound">{fixtureStageLabel(series, fixture).toUpperCase()}</span>
       <div><b>{entrantName(series, fixture.entrantAId)}</b><em>v</em><b>{entrantName(series, fixture.entrantBId)}</b></div>
       <small>{scoreText(fixture) || fixture.status.replace("-", " ")}</small>
     </div>

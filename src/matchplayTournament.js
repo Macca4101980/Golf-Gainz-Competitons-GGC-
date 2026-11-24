@@ -17,6 +17,27 @@ function bracketSizeFor(count){
  let size=2;while(size<count)size*=2;return size;
 }
 
+/** Human-readable knockout stage names derived from the size of the bracket. */
+export function knockoutRoundLabel(series,round){
+ const total=Math.max(1,asNumber(series?.rounds,Math.ceil(Math.log2(Math.max(2,asNumber(series?.bracketSize,2))))));
+ const current=Math.max(1,Math.min(total,asNumber(round,1))),roundsLeft=total-current;
+ if(roundsLeft===0)return'Final';
+ if(roundsLeft===1)return'Semi-final';
+ if(roundsLeft===2)return'Quarter-final';
+ return`Round of ${2**(roundsLeft+1)}`;
+}
+
+export function fixtureStageLabel(series,fixture){
+ if(fixture?.stage==='group')return'Group stage';
+ if(fixture?.stage==='league'||series?.type==='round-robin')return`Round ${fixture?.round||1}`;
+ return knockoutRoundLabel(series,fixture?.round);
+}
+
+export function knockoutStageNames(series){
+ const rounds=Math.max(1,asNumber(series?.rounds,Math.ceil(Math.log2(Math.max(2,asNumber(series?.bracketSize,2))))));
+ return Array.from({length:rounds},(_,index)=>knockoutRoundLabel({...series,rounds},index+1));
+}
+
 /** Standard seeded placement: 1 v last, 2 v second-last, preserving later-round balance. */
 export function knockoutSeedOrder(size){
  if(size<2||(size&(size-1))!==0)throw new Error('Knockout bracket size must be a power of two.');

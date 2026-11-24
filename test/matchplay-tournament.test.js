@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin,entrantFixtureSummary,fixtureResultFromMatchplay,groupStageKnockoutPreview,groupStageStandings,knockoutSeedOrder,qualifyGroupStage,qualifyLeaguePlayoff,recordConcession,recordFixtureResult,recordSuddenDeathHole,roundRobinStandings}from'../src/matchplayTournament.js';
+import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin,entrantFixtureSummary,fixtureResultFromMatchplay,fixtureStageLabel,groupStageKnockoutPreview,groupStageStandings,knockoutRoundLabel,knockoutSeedOrder,knockoutStageNames,qualifyGroupStage,qualifyLeaguePlayoff,recordConcession,recordFixtureResult,recordSuddenDeathHole,roundRobinStandings}from'../src/matchplayTournament.js';
 
 const entrants=count=>Array.from({length:count},(_,index)=>({id:`p${index+1}`,name:`Player ${index+1}`,seed:index+1}));
 
@@ -8,6 +8,16 @@ test('Top 4 is seeded 1 v 4 and 2 v 3',()=>{
  const series=createKnockout({id:'top4',entrants:entrants(4)}),round=series.fixtures.filter(f=>f.round===1);
  assert.deepEqual(round.map(f=>[f.entrantAId,f.entrantBId]),[['p1','p4'],['p2','p3']]);
  assert.deepEqual(knockoutSeedOrder(8),[1,8,4,5,2,7,3,6]);
+});
+
+test('knockout rounds use conventional bracket stage names',()=>{
+ const top4=createKnockout({id:'labels4',entrants:entrants(4)}),top16=createKnockout({id:'labels16',entrants:entrants(16)});
+ assert.deepEqual(knockoutStageNames(top4),['Semi-final','Final']);
+ assert.deepEqual(knockoutStageNames(top16),['Round of 16','Quarter-final','Semi-final','Final']);
+ assert.equal(knockoutRoundLabel(top16,2),'Quarter-final');
+ assert.equal(fixtureStageLabel(top16,top16.fixtures.find(fixture=>fixture.round===3)),'Semi-final');
+ const league=createRoundRobin({id:'league-label',entrants:entrants(4)});
+ assert.equal(fixtureStageLabel(league,league.fixtures[0]),'Round 1');
 });
 
 test('a custom knockout field gives the highest seeds byes without inventing entrants',()=>{

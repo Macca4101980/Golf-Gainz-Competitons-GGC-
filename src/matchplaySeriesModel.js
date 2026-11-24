@@ -1,4 +1,4 @@
-import{winterLeagueTable}from'./winterLeague.js';
+import{leagueDisplayTable}from'./leagueDisplay.js';
 import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin}from'./matchplayTournament.js';
 
 const uid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
@@ -9,7 +9,7 @@ export const standardLeagues=state=>(state?.leagues||[]).filter(record=>!isMatch
 export const matchplaySeries=state=>(state?.leagues||[]).filter(isMatchplaySeries);
 
 function sourceLeagueStandings(league,state,at=new Date()){
- return winterLeagueTable(league,state,at).table.filter(row=>row.position).map(row=>({teamId:row.id,id:row.id,name:row.name,position:row.position,total:row.total}));
+ return leagueDisplayTable(league,state,at.getTime()).table.filter(row=>row.position).map(row=>({teamId:row.id,id:row.id,name:row.name,position:row.position,total:row.total}));
 }
 
 function leagueFinished(league,state,at=new Date()){

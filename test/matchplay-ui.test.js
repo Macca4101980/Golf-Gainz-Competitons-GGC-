@@ -7,6 +7,8 @@ test('matchplay has its own creation action and results surface',async()=>{
  assert.match(source,/CREATE MATCHPLAY/);
  assert.match(source,/modal==='newmatchplay'/);
  assert.match(source,/<MatchplayResults/);
+ assert.match(source,/playoffs=\{series\.filter\(record=>record\.sourceLeagueId===l\.id\)\}/);
+ assert.match(source,/className="card wlMatchplayCard wlSection"/);
 });
 
 test('round-robin remaining fixtures and group-to-knockout controls are present',async()=>{

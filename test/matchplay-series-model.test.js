@@ -36,6 +36,14 @@ test('a League playoff stays forecasted and unscoreable until final results are 
  assert.ok(before.matchplay.fixtures.every(fixture=>fixture.status==='forecasted'));
 });
 
+test('a forecast playoff uses the same provisional positions shown in the live League table',()=>{
+ const state=leagueState(),createdAt='2027-01-09T19:00:00Z';
+ const record=buildMatchplayRecord({id:'live-playoff',name:'Live Playoffs',societyId:'g1',mode:'playoff',sourceLeague:league,playoffSize:4,createdAt,state});
+ const firstRound=record.matchplay.fixtures.filter(fixture=>fixture.round===1);
+ assert.deepEqual(firstRound.map(fixture=>[fixture.entrantAId,fixture.entrantBId]),[['t3','t2'],['t4','t1']]);
+ assert.ok(firstRound.every(fixture=>fixture.status==='forecasted'));
+});
+
 test('final release qualifies and locks the League playoff seeding',()=>{
  const state=leagueState(),createdAt='2027-01-09T19:00:00Z';
  const record=buildMatchplayRecord({id:'playoff-lock',name:'Winter Playoffs',societyId:'g1',mode:'playoff',sourceLeague:league,playoffSize:4,createdAt,state});

@@ -177,12 +177,14 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  </>;
 }
 
-export default function Leagues({state,setState,me,societyId,onPersist,onCreateCompetition,onEditCompetition,storageAuth}){
+export default function Leagues({state,setState,me,societyId,onPersist,onCreateCompetition,onEditCompetition,onManageMatchplay,storageAuth}){
  const leagues=(state.leagues||[]).filter(g=>g.societyId===societyId&&g.recordType!=='matchplay-series');
+ const standaloneMatchplay=(state.leagues||[]).filter(g=>g.societyId===societyId&&g.recordType==='matchplay-series'&&!g.sourceLeagueId);
  const storageKey=`ggc-league-setup-${societyId}`;const saved=(()=>{try{return JSON.parse(sessionStorage.getItem(storageKey)||'{}')}catch{return {}}})();
  const[selected,setSelected]=useState(saved.selected||null);const[placeholderName,setPlaceholderName]=useState('');const[placeholderHi,setPlaceholderHi]=useState('');const[placeholderEmail,setPlaceholderEmail]=useState('');const[teamA,setTeamA]=useState('');const[teamB,setTeamB]=useState('');const[teamName,setTeamName]=useState('');const[openTeamId,setOpenTeamId]=useState(null);const[showNewTeamForm,setShowNewTeamForm]=useState(false);const[showHandicapInfo,setShowHandicapInfo]=useState(false);const[teamBadgeImage,setTeamBadgeImage]=useState(null);const[badgeStatus,setBadgeStatus]=useState({});const[badgeTarget,setBadgeTarget]=useState(null);const badgePickerRef=useRef(null);const[creating,setCreating]=useState(!!saved.creating);const[editingLeague,setEditingLeague]=useState(!!saved.editingLeague);const[name,setName]=useState(saved.name||'');const[target,setTarget]=useState(saved.target||10);const[weekDates,setWeekDates]=useState(saved.weekDates||[]);
  useEffect(()=>{if(selected||creating||name||weekDates.length)sessionStorage.setItem(storageKey,JSON.stringify({selected,creating,editingLeague,name,target,weekDates}));else sessionStorage.removeItem(storageKey)},[storageKey,selected,creating,editingLeague,name,target,weekDates]);
  const league=leagues.find(g=>g.id===selected)||null;
+ const linkedMatchplay=league?(state.leagues||[]).filter(record=>record.recordType==='matchplay-series'&&record.sourceLeagueId===league.id):[];
  useEffect(()=>{if(selected&&!league&&(state.deletedLeagueIds||[]).includes(selected)){setSelected(null);setWeekDates([]);sessionStorage.removeItem(storageKey)}},[selected,league,state.deletedLeagueIds,storageKey]);
  const society=state.societies.find(s=>s.id===societyId);const societyPlayers=(society?.members||[]).map(id=>state.players.find(p=>p.id===id)).filter(p=>p&&!p.guest);
  const isAdmin=!!me&&(society?.ownerId===me.id||(society?.admins||[]).includes(me.id));const canEdit=g=>!!me&&(isAdmin||g?.createdBy===me.id);
@@ -352,7 +354,11 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 <b>Stableford:</b> GGC treats 36 points as net level par and converts points above/below 36 to equivalent shots better/worse than net level par.</p>
 <p>Changes continue forward into future League weeks.</p>
 <p>Normal GGC Handicap Indexes entered by the player in their profile are not changed by this method.</p>
-</div>}</div>{canEdit(league)&&<div className="card">
+</div>}</div>{canEdit(league)&&linkedMatchplay.length>0&&<div className="card leagueMatchplaySettings">
+<h3>MATCHPLAY &amp; KNOCKOUTS</h3>
+<p className="muted">Manage this League's linked playoffs and knockout handicap rules here.</p>
+{linkedMatchplay.map(record=><div className="settingsItem" key={record.id}><span><b>{record.name}</b><small>{String(record.structure||'matchplay').replaceAll('-',' ').toUpperCase()}</small></span><button className="mini secondary" onClick={()=>onManageMatchplay?onManageMatchplay(record):window.dispatchEvent(new CustomEvent('ggc-manage-matchplay',{detail:record}))}>MANAGE</button></div>)}
+</div>}{canEdit(league)&&<div className="card">
 <h3>LEAGUE SETTINGS</h3>
 <p className="muted">Delete this League if you want to start the setup again. Any competitions created inside it will also be deleted.</p>
 <button className="danger" onClick={deleteLeague}>DELETE LEAGUE</button>
@@ -370,7 +376,11 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 <small className="leagueCardMeta">{g.memberIds?.length||0} players · {n} competition{n===1?'':'s'}</small>
 </span>
 <strong className="leagueCardArrow">›</strong>
-</button>})}{!leagues.length&&<p className="muted">No Leagues in this Group yet.</p>}{creating&&<div className="modalBackdrop" onClick={()=>{setCreating(false);setName('');setTarget(10)}}>
+</button>})}{!leagues.length&&<p className="muted">No Leagues in this Group yet.</p>}{isAdmin&&standaloneMatchplay.length>0&&<div className="card standaloneMatchplaySettings">
+<h3>MATCHPLAY COMPETITIONS</h3>
+<p className="muted">Manage standalone knockout, round-robin and group-stage competitions here.</p>
+{standaloneMatchplay.map(record=><div className="settingsItem" key={record.id}><span><b>{record.name}</b><small>{String(record.structure||'matchplay').replaceAll('-',' ').toUpperCase()}</small></span><button className="mini secondary" onClick={()=>onManageMatchplay?onManageMatchplay(record):window.dispatchEvent(new CustomEvent('ggc-manage-matchplay',{detail:record}))}>MANAGE</button></div>)}
+</div>}{creating&&<div className="modalBackdrop" onClick={()=>{setCreating(false);setName('');setTarget(10)}}>
 <div className="modal" onClick={e=>e.stopPropagation()}>
 <button className="close" onClick={()=>{setCreating(false);setName('');setTarget(10)}}>×</button>
 <h2>Create League</h2>

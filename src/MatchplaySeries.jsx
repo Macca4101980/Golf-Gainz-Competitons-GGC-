@@ -15,6 +15,7 @@ import {
   editMatchplayRecord,
   fixtureCompetitionPreset,
   matchplayHandicapSettings,
+  rebuildMatchplayRecord,
   standardLeagues,
 } from "./matchplaySeriesModel.js";
 
@@ -512,7 +513,7 @@ export function MatchplayFixtures({ records = [], state, setState, me, isAdmin =
   </div>;
 }
 
-export function MatchplayEdit({ record, state, onSave }) {
+export function MatchplayEdit({ record, state, onSave, onDelete }) {
   const settings = matchplayHandicapSettings(record, state),
     linked = !!record.sourceLeagueId,
     hasScorecards = (state.comps || []).some(
@@ -520,21 +521,43 @@ export function MatchplayEdit({ record, state, onSave }) {
     );
   const [name, setName] = useState(record.name || "Knockouts"),
     [size, setSize] = useState(record.matchplay?.qualificationSize || 4),
+    [structure, setStructure] = useState(record.structure || record.matchplay?.type || "knockout"),
+    [groupCount, setGroupCount] = useState(record.matchplay?.groups?.length || 2),
+    [qualifiers, setQualifiers] = useState(record.matchplay?.qualifiersPerGroup || 1),
+    [legs, setLegs] = useState(record.matchplay?.legs || 1),
+    [winPoints, setWinPoints] = useState(record.matchplay?.rules?.winPoints ?? 3),
+    [drawPoints, setDrawPoints] = useState(record.matchplay?.rules?.drawPoints ?? 1),
+    [lossPoints, setLossPoints] = useState(record.matchplay?.rules?.lossPoints ?? 0),
     [source, setSource] = useState(settings.source),
     [allowance, setAllowance] = useState(settings.allowance);
   const structuralLocked =
     record.matchplay?.qualificationStatus !== "forecasted";
+  const resettingFixtures = !linked && structure !== record.structure;
   function save() {
     try {
-      onSave(
-        editMatchplayRecord(record, state, {
+      const structureChanged = !linked && structure !== record.structure;
+      if (structureChanged && !confirm(
+        "Change this matchplay structure? All existing generated matches, scorecards and results for this matchplay competition will be deleted, then a new fixture list will be created. This cannot be undone.",
+      )) return;
+      const updated = structureChanged
+        ? rebuildMatchplayRecord(record, state, {
+            name,
+            structure,
+            groupCount,
+            qualifiersPerGroup: qualifiers,
+            legs,
+            points: { winPoints, drawPoints, lossPoints },
+            handicapSource: source,
+            handicapAllowance: allowance,
+          })
+        : editMatchplayRecord(record, state, {
           name,
           playoffSize: size,
           handicapSource: source,
           handicapAllowance: allowance,
           handicapAdjustmentMode: source === "competition-end" ? "league-final" : "none",
-        }),
-      );
+        });
+      onSave(updated, { resetFixtures: structureChanged });
     } catch (error) {
       alert(error.message || "Could not update these knockout settings.");
     }
@@ -549,6 +572,26 @@ export function MatchplayEdit({ record, state, onSave }) {
         Name
         <input value={name} onChange={(event) => setName(event.target.value)} />
       </label>
+      {!linked && <label>
+        Structure
+        <select value={structure} onChange={(event) => setStructure(event.target.value)}>
+          <option value="knockout">Knockout</option>
+          <option value="round-robin">League — round robin</option>
+          <option value="group-stage">Group stage + knockout</option>
+        </select>
+      </label>}
+      {!linked && structure !== "knockout" && <>
+        <div className="matchplayPoints">
+          <label>Win points<input type="number" value={winPoints} onChange={(event) => setWinPoints(+event.target.value)} /></label>
+          <label>Draw points<input type="number" value={drawPoints} onChange={(event) => setDrawPoints(+event.target.value)} /></label>
+          <label>Loss points<input type="number" value={lossPoints} onChange={(event) => setLossPoints(+event.target.value)} /></label>
+        </div>
+        <label>Fixtures<select value={legs} onChange={(event) => setLegs(+event.target.value)}><option value="1">Play once</option><option value="2">Play twice</option></select></label>
+      </>}
+      {!linked && structure === "group-stage" && <div className="matchplayPoints">
+        <label>Groups<input type="number" min="2" max="16" value={groupCount} onChange={(event) => setGroupCount(+event.target.value)} /></label>
+        <label>Qualify per group<input type="number" min="1" max="4" value={qualifiers} onChange={(event) => setQualifiers(+event.target.value)} /></label>
+      </div>}
       {linked && (
         <label>
           Qualifying field
@@ -568,7 +611,7 @@ export function MatchplayEdit({ record, state, onSave }) {
         Handicap basis
         <select
           value={source}
-          disabled={hasScorecards}
+          disabled={hasScorecards && !resettingFixtures}
           onChange={(event) => setSource(event.target.value)}
         >
           <option value="competition-start">Start-of-competition handicap position</option>
@@ -583,7 +626,7 @@ export function MatchplayEdit({ record, state, onSave }) {
           min="0"
           max="100"
           value={allowance}
-          disabled={hasScorecards}
+          disabled={hasScorecards && !resettingFixtures}
           onChange={(event) => setAllowance(event.target.value)}
         />
       </label>
@@ -601,10 +644,15 @@ export function MatchplayEdit({ record, state, onSave }) {
           knockout scorecard is created.
         </p>
       )}
-      {hasScorecards && (
+      {hasScorecards && !resettingFixtures && (
         <p className="muted">
           Handicap rules are locked because a knockout scorecard has already
           been created. This protects existing match results.
+        </p>
+      )}
+      {hasScorecards && resettingFixtures && (
+        <p className="matchplayForecastNote">
+          Saving the new structure will remove the old generated scorecards and results before rebuilding the fixture list.
         </p>
       )}
       {structuralLocked && linked && (
@@ -621,8 +669,11 @@ export function MatchplayEdit({ record, state, onSave }) {
         }}><Trophy /> LOCK GROUPS &amp; CREATE KNOCKOUT</button>
       )}
       <button className="primary" onClick={save}>
-        SAVE KNOCKOUT SETTINGS
+        SAVE MATCHPLAY SETTINGS
       </button>
+      {onDelete && <button className="danger" onClick={onDelete}>
+        DELETE MATCHPLAY &amp; ALL MATCHES
+      </button>}
     </div>
   );
 }

@@ -361,7 +361,7 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 </div>}{canEdit(league)&&<div className="card">
 <h3>LEAGUE SETTINGS</h3>
 <p className="muted">Delete this League if you want to start the setup again. Any competitions created inside it will also be deleted.</p>
-<button className="danger" onClick={deleteLeague}>DELETE LEAGUE</button>
+<button className="danger" onClick={deleteLeague}>DELETE LEAGUE &amp; ALL COMPETITIONS</button>
 </div>}</section>
 </div>;
  return <section>

@@ -2,7 +2,7 @@ import test from'node:test';import assert from'node:assert/strict';import{readFi
 const client=readFileSync(new URL('../src/pushNotifications.js',import.meta.url),'utf8'),ui=readFileSync(new URL('../src/PushNotificationSettings.jsx',import.meta.url),'utf8'),sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8'),pkg=readFileSync(new URL('../package.json',import.meta.url),'utf8'),sql=readFileSync(new URL('../supabase/migrations/20261122215348_web_push_notifications.sql',import.meta.url),'utf8'),fix=readFileSync(new URL('../supabase/migrations/20261123145000_fix_push_delivery_claim_ambiguity.sql',import.meta.url),'utf8'),scheduler=readFileSync(new URL('../supabase/migrations/20261123193000_scheduled_lifecycle_push_notifications.sql',import.meta.url),'utf8'),edge=readFileSync(new URL('../supabase/functions/ggc-push/index.ts',import.meta.url),'utf8');
 
 test('installed users can opt into and out of standards-based Web Push',()=>{
- assert.match(client,/display-mode: standalone/);assert.match(client,/Notification\.requestPermission/);assert.match(client,/pushManager\.subscribe/);assert.match(client,/ggc_register_push_subscription/);assert.match(client,/ggc_unregister_push_subscription/);assert.match(client,/serviceWorker\.ready/);assert.doesNotMatch(client,/serviceWorker\.register/);assert.match(client,/GGC_PUSH_SERVICE_WORKER_TIMEOUT/);assert.match(client,/ggc_push_subscription_status/);assert.match(ui,/ENABLE NOTIFICATIONS/);
+ assert.match(client,/display-mode: standalone/);assert.match(client,/Notification\.requestPermission/);assert.match(client,/pushManager\.subscribe/);assert.match(client,/ggc_register_push_subscription/);assert.match(client,/ggc_unregister_push_subscription/);assert.match(client,/serviceWorker\.ready/);assert.doesNotMatch(client,/serviceWorker\.register/);assert.match(client,/GGC_PUSH_SERVICE_WORKER_TIMEOUT/);assert.match(client,/ggc_push_subscription_status/);assert.match(ui,/Enable push notifications/);assert.match(ui,/Push notifications enabled/);assert.match(ui,/Push notifications disabled/);
 });
 test('service worker installs from production-safe assets, displays pushes and opens Updates when tapped',()=>{assert.match(sw,/const SHELL=\['\/'\]/);assert.doesNotMatch(sw,/manifest\.webmanifest/);assert.match(pkg,/cp icons\/icon-192\.png icons\/icon-512\.png dist\/icons\//);assert.match(sw,/addEventListener\('push'/);assert.match(sw,/showNotification/);assert.match(sw,/addEventListener\('notificationclick'/);assert.match(sw,/clients\.openWindow/);});
 test('push subscriptions are private and delivery is audience filtered',()=>{
@@ -23,8 +23,8 @@ test('server scheduler publishes lifecycle events and pushes them without an ope
 });
 test('iOS push preparation finishes before a fresh enable tap',()=>{
  assert.match(ui,/preparePushNotifications\(client\)/);
- assert.match(ui,/disabled=\{busy\|\|\(!enabled&&!installedApp\(\)\)\}/);
- assert.match(ui,/PREPARE NOTIFICATIONS/);
+ assert.match(ui,/disabled=\{busy\}/);
+ assert.match(ui,/Tap the bell once more/);
  assert.match(ui,/else if\(!ready\)\{await preparePushNotifications\(client\);setReady\(true\)/);
  const enable=client.slice(client.indexOf('export async function enablePushNotifications'),client.indexOf('export async function disablePushNotifications'));
  assert.match(enable,/const prepared=preparedPush;if\(!prepared\)throw Error\('GGC_PUSH_NOT_READY'\)/);

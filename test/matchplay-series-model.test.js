@@ -1,6 +1,6 @@
 import test from'node:test';
 import assert from'node:assert/strict';
-import{buildMatchplayRecord,currentMatchplayRecord,editMatchplayRecord,fixtureCompetitionPreset,isMatchplaySeries,matchplayHandicapSettings,matchplaySeries,standardLeagues}from'../src/matchplaySeriesModel.js';
+import{buildMatchplayRecord,currentMatchplayRecord,editMatchplayRecord,fixtureCompetitionPreset,isMatchplaySeries,matchplayHandicapSettings,matchplaySeries,rebuildMatchplayRecord,standardLeagues}from'../src/matchplaySeriesModel.js';
 
 const teams=[
  {id:'t1',name:'Team One',memberIds:['p1','p2']},
@@ -63,6 +63,18 @@ test('standalone structures are wrapped as versioned matchplay series records',(
  const groups=buildMatchplayRecord({...base,id:'groups',mode:'group-stage',groupCount:2,qualifiersPerGroup:1});
  assert.deepEqual([knockout.matchplay.type,leagueSeries.matchplay.type,groups.matchplay.type],['knockout','round-robin','group-stage']);
  assert.ok([knockout,leagueSeries,groups].every(record=>record.recordType==='matchplay-series'&&record.societyId==='g1'));
+});
+
+test('a standalone matchplay structure can be rebuilt without changing its identity or entrants',()=>{
+ const state={players,cards:[],courses:[],societies:[{id:'g1'}],leagues:[],comps:[]};
+ const original=buildMatchplayRecord({id:'editable-series',name:'Match play League',societyId:'g1',mode:'round-robin',entrants:teams,entrantType:'team',createdAt:'2027-01-01T12:00:00Z',state});
+ const rebuilt=rebuildMatchplayRecord(original,state,{structure:'knockout',name:'Winter Knockout'});
+ assert.equal(rebuilt.id,original.id);
+ assert.equal(rebuilt.name,'Winter Knockout');
+ assert.equal(rebuilt.structure,'knockout');
+ assert.equal(rebuilt.matchplay.type,'knockout');
+ assert.deepEqual(rebuilt.matchplay.entrants.map(item=>item.id),original.matchplay.entrants.map(item=>item.id));
+ assert.notDeepEqual(rebuilt.matchplay.fixtures.map(item=>item.id),original.matchplay.fixtures.map(item=>item.id));
 });
 
 test('a fixture creates a linked GGC scorecard preset',()=>{

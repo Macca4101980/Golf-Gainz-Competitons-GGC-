@@ -266,6 +266,75 @@ export function buildMatchplayRecord({
   };
 }
 
+export function rebuildMatchplayRecord(
+  record,
+  state,
+  {
+    name,
+    structure,
+    groupCount,
+    qualifiersPerGroup,
+    legs,
+    points,
+    handicapSource,
+    handicapAllowance,
+  } = {},
+) {
+  if (!isMatchplaySeries(record))
+    throw new Error("Matchplay competition not found.");
+  if (record.sourceLeagueId)
+    throw new Error("A linked League playoff must remain a knockout.");
+  const mode = structure || record.structure || record.matchplay?.type || "knockout";
+  const existing = matchplayHandicapSettings(record, state);
+  const entrants = (record.matchplay?.entrants || []).map((entrant, index) => ({
+    ...entrant,
+    seed: Number(entrant.seed) || index + 1,
+  }));
+  if (mode === "group-stage" && entrants.length < 4)
+    throw new Error("A group stage needs at least four entrants.");
+  const existingGroups = record.matchplay?.groups?.length || 2;
+  const requestedGroups = Math.max(
+    2,
+    Math.min(Math.floor(entrants.length / 2), Number(groupCount) || existingGroups),
+  );
+  const smallestGroup = Math.floor(entrants.length / requestedGroups);
+  const requestedQualifiers = Math.max(
+    1,
+    Math.min(
+      Math.max(1, smallestGroup - 1),
+      Number(qualifiersPerGroup) || record.matchplay?.qualifiersPerGroup || 1,
+    ),
+  );
+  const source = handicapSource || existing.source;
+  const allowance = Math.max(
+    0,
+    Math.min(100, Number(handicapAllowance ?? existing.allowance)),
+  );
+  return buildMatchplayRecord({
+    id: record.id,
+    name: String(name ?? record.name).trim() || record.name,
+    societyId: record.societyId,
+    mode,
+    entrants,
+    entrantType: record.matchplay?.entrantType || "individual",
+    groupCount: requestedGroups,
+    qualifiersPerGroup: requestedQualifiers,
+    legs: Number(legs) || record.matchplay?.legs || 1,
+    points: points || record.matchplay?.rules || {},
+    handicapSettings: {
+      source,
+      allowance,
+      adjustmentMode: source === "competition-end" ? "league-final" : "none",
+      excludeLeagueAdjustments: source !== "competition-end",
+      startSnapshot:
+        record.handicapSettings?.startSnapshot || existing.snapshot || {},
+    },
+    createdBy: record.createdBy,
+    createdAt: record.createdAt,
+    state,
+  });
+}
+
 export function editMatchplayRecord(
   record,
   state,

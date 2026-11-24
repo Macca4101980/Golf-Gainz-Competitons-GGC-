@@ -52,6 +52,30 @@ test("linked playoffs never become separate League Money ledgers", () => {
   assert.deepEqual(linkedPrizePlayoffs(state, "winter"), [playoff]);
 });
 
+test("an expired unplayed semi leaves the completed semi as the payable deciding match", () => {
+  const collapsed = structuredClone(playoff);
+  collapsed.matchplay.rounds = 2;
+  collapsed.matchplay.collapsedFinalFixtureId = "semi-one";
+  collapsed.matchplay.runnerUpId = "team-b";
+  collapsed.matchplay.fixtures = [
+    {
+      id: "semi-one",
+      round: 1,
+      slot: 0,
+      status: "complete",
+      entrantAId: "team-a",
+      entrantBId: "team-b",
+      winnerId: "team-a",
+      loserId: "team-b",
+    },
+    { id: "final", round: 2, slot: 0, status: "void" },
+  ];
+  assert.deepEqual(completedPlayoffPlacings(collapsed), {
+    winnerId: "team-a",
+    runnerUpId: "team-b",
+  });
+});
+
 test("remaining League money can be routed to the playoff or split", () => {
   assert.deepEqual(
     seasonPrizePots({ remainingLeaguePot: 160, destination: "playoff" }),

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin,entrantFixtureSummary,fixtureResultFromMatchplay,fixtureStageLabel,groupStageKnockoutPreview,groupStageStandings,knockoutRoundLabel,knockoutSeedOrder,knockoutStageNames,qualifyGroupStage,qualifyLeaguePlayoff,recordConcession,recordFixtureResult,recordSuddenDeathHole,roundRobinStandings}from'../src/matchplayTournament.js';
+import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin,entrantFixtureSummary,expireKnockoutSeries,fixtureResultFromMatchplay,fixtureStageLabel,groupStageKnockoutPreview,groupStageStandings,knockoutRoundLabel,knockoutSeedOrder,knockoutStageNames,qualifyGroupStage,qualifyLeaguePlayoff,recordConcession,recordFixtureResult,recordSuddenDeathHole,roundRobinStandings}from'../src/matchplayTournament.js';
 
 const entrants=count=>Array.from({length:count},(_,index)=>({id:`p${index+1}`,name:`Player ${index+1}`,seed:index+1}));
 
@@ -36,6 +36,39 @@ test('knockout winners automatically advance through the bracket',()=>{
  assert.deepEqual([final.entrantAId,final.entrantBId],['p1','p3']);
  series=recordFixtureResult(series,final.id,{holesWonA:5,holesWonB:4,holesPlayed:18});
  assert.equal(series.championId,'p1');
+});
+
+test('each knockout stage receives a fresh configurable deadline',()=>{
+ let series=createKnockout({id:'timed',entrants:entrants(4),createdAt:'2027-01-01T12:00:00Z',rules:{roundTimeLimitDays:21}});
+ assert.ok(series.fixtures.filter(f=>f.round===1).every(f=>f.expiresAt==='2027-01-22T12:00:00.000Z'));
+ series=recordFixtureResult(series,'timed-r1-m1',{holesWonA:5,holesWonB:3,completedAt:'2027-01-05T10:00:00Z'});
+ series=recordFixtureResult(series,'timed-r1-m2',{holesWonA:4,holesWonB:5,completedAt:'2027-01-08T15:30:00Z'});
+ const final=series.fixtures.find(f=>f.round===2);
+ assert.equal(final.status,'scheduled');
+ assert.equal(final.activatedAt,'2027-01-08T15:30:00Z');
+ assert.equal(final.expiresAt,'2027-01-29T15:30:00.000Z');
+});
+
+test('one played semi-final becomes the deciding match when the other expires',()=>{
+ let series=createKnockout({id:'collapse',entrants:entrants(4),createdAt:'2027-01-01T00:00:00Z',rules:{roundTimeLimitDays:3}});
+ series=recordFixtureResult(series,'collapse-r1-m1',{holesWonA:6,holesWonB:4,completedAt:'2027-01-02T12:00:00Z'});
+ series=expireKnockoutSeries(series,{at:'2027-01-04T00:00:01Z'});
+ assert.equal(series.status,'complete');
+ assert.equal(series.collapsedFinalFixtureId,'collapse-r1-m1');
+ assert.equal(series.championId,'p1');
+ assert.equal(series.runnerUpId,'p4');
+ assert.equal(series.fixtures.find(f=>f.id==='collapse-r1-m2').status,'void');
+});
+
+test('an unplayed knockout stage or unplayed final cancels the competition',()=>{
+ const empty=expireKnockoutSeries(createKnockout({id:'empty-expiry',entrants:entrants(4),createdAt:'2027-01-01T00:00:00Z',rules:{roundTimeLimitDays:3}}),{at:'2027-01-04T00:00:01Z'});
+ assert.equal(empty.status,'cancelled');
+ let finalExpiry=createKnockout({id:'final-expiry',entrants:entrants(4),createdAt:'2027-01-01T00:00:00Z',rules:{roundTimeLimitDays:3}});
+ finalExpiry=recordFixtureResult(finalExpiry,'final-expiry-r1-m1',{holesWonA:5,holesWonB:3,completedAt:'2027-01-02T00:00:00Z'});
+ finalExpiry=recordFixtureResult(finalExpiry,'final-expiry-r1-m2',{holesWonA:5,holesWonB:3,completedAt:'2027-01-02T12:00:00Z'});
+ finalExpiry=expireKnockoutSeries(finalExpiry,{at:'2027-01-05T12:00:01Z'});
+ assert.equal(finalExpiry.status,'cancelled');
+ assert.equal(finalExpiry.cancellationReason,'final-deadline-expired');
 });
 
 test('a tied knockout enters sudden death and advances only after an outright hole',()=>{

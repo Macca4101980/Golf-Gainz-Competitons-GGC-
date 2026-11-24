@@ -50,10 +50,21 @@ test('final release qualifies and locks the League playoff seeding',()=>{
  const qualified=currentMatchplayRecord(record,{...state,leagues:[league,record]},new Date('2027-01-10T18:00:01Z'));
  assert.equal(qualified.matchplay.qualificationStatus,'qualified');
  assert.ok(qualified.matchplay.fixtures.filter(fixture=>fixture.round===1).every(fixture=>fixture.status==='scheduled'));
+ assert.ok(qualified.matchplay.fixtures.filter(fixture=>fixture.round===1).every(fixture=>fixture.expiresAt==='2027-01-31T18:00:01.000Z'));
  assert.deepEqual(qualified.matchplay.fixtures.filter(fixture=>fixture.round===1).map(fixture=>[fixture.entrantAId,fixture.entrantBId]),[['t3','t1'],['t4','t2']]);
 
  const corrected={...state,comps:state.comps.map(comp=>comp.id==='week-2'?{...comp,historicalTeamScores:{t1:60,t2:32,t3:20,t4:10}}:comp),leagues:[league,qualified]};
  assert.equal(currentMatchplayRecord(qualified,corrected,new Date('2027-01-11T12:00:00Z')),qualified);
+});
+
+test('knockout stage deadline can be configured and edited safely',()=>{
+ const state={players,cards:[],courses:[],societies:[{id:'g1'}],leagues:[],comps:[]};
+ const record=buildMatchplayRecord({id:'deadline-edit',name:'Timed Cup',societyId:'g1',entrants:teams,entrantType:'team',createdAt:'2027-01-01T00:00:00Z',roundTimeLimitDays:14,state});
+ assert.equal(record.matchplay.rules.roundTimeLimitDays,14);
+ assert.ok(record.matchplay.fixtures.filter(f=>f.round===1).every(f=>f.expiresAt==='2027-01-15T00:00:00.000Z'));
+ const edited=editMatchplayRecord(record,state,{roundTimeLimitDays:21});
+ assert.equal(edited.matchplay.rules.roundTimeLimitDays,21);
+ assert.ok(edited.matchplay.fixtures.filter(f=>f.round===1).every(f=>f.expiresAt==='2027-01-22T00:00:00.000Z'));
 });
 
 test('standalone structures are wrapped as versioned matchplay series records',()=>{

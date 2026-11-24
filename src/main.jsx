@@ -69,7 +69,7 @@ const formats=[
 ['skins','Skins','Each hole is worth a skin; tied holes carry forward.','points','Individual'],
 ['nassau','Nassau','Two golfers contest Front 9, Back 9 and Overall matches.','match','Individual'],
 ['quota','Quota','Gross points are compared with a personal handicap-based quota.','points','Individual'],
-['sixes','Split Sixes','Exactly three golfers share six points on every hole.','points','Individual'],
+['sixes','Split Sixes','Exactly three golfers share six points on every hole.','points','Group'],
 ['4bbb','4BBB Stableford','Both partners play their own ball. Best Stableford score on each hole counts.','points','Pairs'],
 ['4bbb-stableford','4BBB Stableford','Both partners play their own ball. Best Stableford score on each hole counts.','points','Pairs'],
 ['4bbb-stroke','4BBB Stroke Play','Both partners play their own ball. Best nett score on each hole counts.','stroke','Pairs'],

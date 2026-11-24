@@ -1,8 +1,14 @@
-const TERMINAL=new Set(['complete','bye']);
+const TERMINAL=new Set(['complete','bye','void']);
 
 const clone=value=>JSON.parse(JSON.stringify(value));
 const asNumber=(value,fallback=0)=>Number.isFinite(+value)?+value:fallback;
 const entrantId=row=>row?.entrantId||row?.teamId||row?.playerId||row?.id||null;
+const roundLimitDays=series=>Math.max(1,Math.min(365,Math.floor(asNumber(series?.rules?.roundTimeLimitDays,21))));
+const plusDays=(value,days)=>new Date(Date.parse(value)+days*86400000).toISOString();
+const activeWindow=(fixture,series,at)=>{
+ const activatedAt=fixture.activatedAt||at;
+ return{activatedAt,expiresAt:plusDays(activatedAt,roundLimitDays(series))};
+};
 
 function normaliseEntrants(entrants){
  const seen=new Set();
@@ -46,7 +52,7 @@ export function knockoutSeedOrder(size){
  return order;
 }
 
-function refreshKnockout(source){
+function refreshKnockout(source,at=source?.createdAt||new Date().toISOString()){
  const series=clone(source),byId=new Map(series.fixtures.map(fixture=>[fixture.id,fixture]));
  for(const fixture of series.fixtures.sort((a,b)=>a.round-b.round||a.slot-b.slot)){
   const sources=(fixture.sourceFixtureIds||[]).map(id=>byId.get(id));
@@ -59,10 +65,15 @@ function refreshKnockout(source){
   const present=[fixture.entrantAId,fixture.entrantBId].filter(Boolean);
   if(present.length===1){
    fixture.status='bye';fixture.winnerId=present[0];fixture.loserId=null;fixture.completedAt=fixture.completedAt||series.createdAt;
-  }else if(present.length===2){fixture.status=fixture.status==='live'?'live':'scheduled';}
+  }else if(present.length===2){
+   fixture.status=fixture.status==='live'?'live':'scheduled';
+   if(!fixture.activatedAt)Object.assign(fixture,activeWindow(fixture,series,at));
+  }
  }
  const final=series.fixtures.find(fixture=>fixture.round===series.rounds&&fixture.slot===0);
- series.championId=TERMINAL.has(final?.status)?final.winnerId:null;
+ series.championId=TERMINAL.has(final?.status)?final.winnerId:series.championId||null;
+ if(series.championId&&final?.loserId)series.runnerUpId=final.loserId;
+ if(series.championId)series.status='complete';
  return series;
 }
 
@@ -71,13 +82,40 @@ export function createKnockout({id=`matchplay-${Date.now()}`,name='Matchplay Kno
  for(let round=1;round<=rounds;round++){
   const count=bracketSize/(2**round);
   for(let slot=0;slot<count;slot++){
-   const fixture={id:`${id}-r${round}-m${slot+1}`,seriesId:id,stage:'knockout',round,slot,status:'scheduled',entrantAId:null,entrantBId:null,winnerId:null,loserId:null,draw:false,score:null,suddenDeath:null,sourceFixtureIds:[]};
+   const fixture={id:`${id}-r${round}-m${slot+1}`,seriesId:id,stage:'knockout',round,slot,status:round===1?'scheduled':'pending',entrantAId:null,entrantBId:null,winnerId:null,loserId:null,draw:false,score:null,suddenDeath:null,sourceFixtureIds:[]};
    if(round===1){fixture.entrantAId=bySeed.get(order[slot*2])||null;fixture.entrantBId=bySeed.get(order[slot*2+1])||null;}
    else fixture.sourceFixtureIds=[`${id}-r${round-1}-m${slot*2+1}`,`${id}-r${round-1}-m${slot*2+2}`];
    fixtures.push(fixture);
   }
  }
- return refreshKnockout({id,name,societyId,type:'knockout',entrantType,sourceLeagueId,entrants:seeded,bracketSize,rounds,fixtures,championId:null,createdAt,rules:{tieBreak:'sudden-death',...rules}});
+ return refreshKnockout({id,name,societyId,type:'knockout',entrantType,sourceLeagueId,entrants:seeded,bracketSize,rounds,fixtures,championId:null,runnerUpId:null,status:'live',createdAt,rules:{tieBreak:'sudden-death',roundTimeLimitDays:21,...rules}},createdAt);
+}
+
+/** Applies round deadlines. A sole completed branch becomes the deciding final; no played branch cancels the knockout. */
+export function expireKnockoutSeries(source,{at=new Date().toISOString()}={}){
+ if(source?.type!=='knockout'||source.status==='complete'||source.status==='cancelled'||source.qualificationStatus==='forecasted')return source;
+ const needsWindow=(source.fixtures||[]).some(f=>['scheduled','live','sudden-death'].includes(f.status)&&f.entrantAId&&f.entrantBId&&!f.expiresAt);
+ // Legacy live knockouts did not store deadlines. Give them a full window from
+ // the first time this rule is applied instead of expiring them retrospectively.
+ let series=needsWindow?refreshKnockout(source,at):source;
+ const time=Date.parse(at),activeRounds=[...new Set((series.fixtures||[]).filter(f=>['scheduled','live','sudden-death'].includes(f.status)&&f.entrantAId&&f.entrantBId&&f.expiresAt&&Date.parse(f.expiresAt)<=time).map(f=>f.round))].sort((a,b)=>a-b);
+ if(!activeRounds.length)return series;
+ series=clone(series);
+ for(const round of activeRounds){
+  const fixtures=series.fixtures.filter(f=>f.round===round),expired=fixtures.filter(f=>['scheduled','live','sudden-death'].includes(f.status)&&f.entrantAId&&f.entrantBId&&f.expiresAt&&Date.parse(f.expiresAt)<=time);
+  if(!expired.length)continue;
+  expired.forEach(f=>{f.status='void';f.completedAt=at;f.voidReason='deadline-expired';f.winnerId=null;f.loserId=null;});
+  const decided=fixtures.filter(f=>['complete','bye'].includes(f.status)&&f.winnerId),contested=fixtures.filter(f=>f.status==='complete'&&f.winnerId&&f.loserId);
+  if(round===series.rounds){series.status='cancelled';series.cancelledAt=at;series.cancellationReason='final-deadline-expired';series.championId=null;series.runnerUpId=null;return series;}
+  if(decided.length===0){series.status='cancelled';series.cancelledAt=at;series.cancellationReason='round-deadline-expired-with-no-result';series.championId=null;series.runnerUpId=null;return series;}
+  if(decided.length===1&&contested.length===1){
+   const final=contested[0];final.designatedFinal=true;series.championId=final.winnerId;series.runnerUpId=final.loserId;series.collapsedFinalFixtureId=final.id;series.status='complete';series.completedAt=at;
+   series.fixtures.filter(f=>f.round>round&&!TERMINAL.has(f.status)).forEach(f=>{f.status='void';f.completedAt=at;f.voidReason='no-remaining-opponent';});
+   return series;
+  }
+  series=refreshKnockout(series,at);
+ }
+ return series;
 }
 
 export function createLeaguePlayoff({id,name,leagueId,societyId,standings,size=4,entrantType='team',leagueComplete=false,createdAt,rules}={}){
@@ -151,7 +189,7 @@ export function recordFixtureResult(source,fixtureId,{holesWonA=0,holesWonB=0,ho
  if(resolvedWinner&&![fixture.entrantAId,fixture.entrantBId].includes(resolvedWinner))throw new Error('The winner must be one of the fixture entrants.');
  if(series.type==='knockout'&&!resolvedWinner){fixture.status='sudden-death';fixture.suddenDeath={active:true,holes:[],winnerId:null};fixture.draw=false;return series;}
  fixture.status='complete';fixture.completedAt=completedAt;fixture.winnerId=resolvedWinner;fixture.draw=!resolvedWinner;fixture.loserId=resolvedWinner?(resolvedWinner===fixture.entrantAId?fixture.entrantBId:fixture.entrantAId):null;
- return series.type==='knockout'?refreshKnockout(series):series;
+ return series.type==='knockout'?refreshKnockout(series,completedAt):series;
 }
 
 /** Records a voluntary concession as a 1-up result without inventing hole scores. */
@@ -165,7 +203,7 @@ export function recordConcession(source,fixtureId,{concededById,completedAt=new 
  fixture.status='complete';fixture.completedAt=completedAt;fixture.winnerId=winnerId;fixture.loserId=concededById;fixture.draw=false;
  fixture.score={method:'concession',display:'1 UP',margin:1,holesWonA:null,holesWonB:null,holesPlayed:null};
  fixture.concession={concededById,winnerId,completedAt};fixture.suddenDeath=null;
- return series.type==='knockout'?refreshKnockout(series):series;
+ return series.type==='knockout'?refreshKnockout(series,completedAt):series;
 }
 
 export function recordSuddenDeathHole(source,fixtureId,{winnerId=null,playedAt=new Date().toISOString()}={}){
@@ -174,7 +212,7 @@ export function recordSuddenDeathHole(source,fixtureId,{winnerId=null,playedAt=n
  fixture.suddenDeath.holes.push({number:fixture.suddenDeath.holes.length+1,winnerId,playedAt});
  if(!winnerId)return series;
  fixture.suddenDeath.active=false;fixture.suddenDeath.winnerId=winnerId;fixture.status='complete';fixture.completedAt=playedAt;fixture.winnerId=winnerId;fixture.loserId=winnerId===fixture.entrantAId?fixture.entrantBId:fixture.entrantAId;
- return refreshKnockout(series);
+ return refreshKnockout(series,playedAt);
 }
 
 export function fixtureResultFromMatchplay(match,entrantAId,entrantBId){
@@ -250,7 +288,7 @@ export function qualifyGroupStage(source,{id=`${source?.id}-knockout`,name=`${so
  }
  const field=pairs.length*2,order=knockoutSeedOrder(field),entrantById=new Map(source.entrants.map(item=>[item.id,item])),qualified=[];
  pairs.forEach((pair,index)=>pair.forEach((row,side)=>qualified.push({...entrantById.get(row.entrantId),seed:order[index*2+side],sourceGroupId:tables.find(table=>table.standings.some(item=>item.entrantId===row.entrantId))?.groupId,groupPosition:row.position})));
- const knockout=createKnockout({id,name,societyId:source.societyId,entrants:qualified,entrantType:source.entrantType,createdAt:qualifiedAt,rules:{sourceGroupStageId:source.id,qualifiersPerGroup:source.qualifiersPerGroup}});
+ const knockout=createKnockout({id,name,societyId:source.societyId,entrants:qualified,entrantType:source.entrantType,createdAt:qualifiedAt,rules:{sourceGroupStageId:source.id,qualifiersPerGroup:source.qualifiersPerGroup,roundTimeLimitDays:source.rules?.roundTimeLimitDays||21}});
  knockout.sourceGroupStageId=source.id;knockout.qualifiedAt=qualifiedAt;return knockout;
 }
 

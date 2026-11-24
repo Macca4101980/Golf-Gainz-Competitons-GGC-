@@ -23,11 +23,22 @@ import {
 } from "./matchplaySeriesModel.js";
 
 const nowIso = () => new Date().toISOString();
+const deadlineText = (fixture) =>
+  fixture.expiresAt
+    ? `Play by ${new Date(fixture.expiresAt).toLocaleString([], {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })}`
+    : "";
 
 const entrantName = (series, id) =>
   series.entrants.find((item) => item.id === id)?.name || "To be decided";
 const scoreText = (fixture) =>
-  fixture.score?.method === "concession"
+  fixture.status === "void"
+    ? fixture.voidReason === "deadline-expired"
+      ? "Voided — deadline expired"
+      : "Voided"
+    : fixture.score?.method === "concession"
     ? "1 UP · conceded"
     : fixture.status === "sudden-death"
       ? "All square · sudden death"
@@ -38,6 +49,43 @@ const scoreText = (fixture) =>
           : fixture.status === "forecasted"
             ? "Forecasted"
             : "";
+
+const shouldPersistResolved = (record, resolved) =>
+  resolved !== record &&
+  !(
+    record.matchplay?.qualificationStatus === "forecasted" &&
+    resolved.matchplay?.qualificationStatus === "forecasted"
+  );
+
+function persistResolvedMatchplay(previous, resolvedRecords) {
+  const replacements = new Map(resolvedRecords.map((record) => [record.id, record]));
+  const voidFixtures = new Map(
+    resolvedRecords.map((record) => [
+      record.id,
+      new Set(
+        (record.matchplay?.fixtures || [])
+          .filter((fixture) => fixture.status === "void")
+          .map((fixture) => fixture.id),
+      ),
+    ]),
+  );
+  const changedAt = nowIso();
+  return {
+    ...previous,
+    leagues: (previous.leagues || []).map(
+      (record) => replacements.get(record.id) || record,
+    ),
+    comps: (previous.comps || []).map((comp) => {
+      const ids = voidFixtures.get(comp.matchplaySeriesId);
+      if (
+        !ids?.has(comp.matchplayFixtureId) ||
+        ["completed", "cancelled", "deleted"].includes(comp.status)
+      )
+        return comp;
+      return { ...comp, status: "cancelled", statusChangedAt: changedAt };
+    }),
+  };
+}
 
 export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
   const manageable = (state.societies || []).filter(
@@ -62,6 +110,7 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
   const [winPoints, setWinPoints] = useState(3);
   const [drawPoints, setDrawPoints] = useState(1);
   const [lossPoints, setLossPoints] = useState(0);
+  const [roundTimeLimitDays, setRoundTimeLimitDays] = useState(21);
   const [handicapSource, setHandicapSource] = useState("competition-start");
   const [handicapAllowance, setHandicapAllowance] = useState(100);
   const group = manageable.find((item) => item.id === groupId),
@@ -122,6 +171,7 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         qualifiersPerGroup: qualifiers,
         legs,
         points: { winPoints, drawPoints, lossPoints },
+        roundTimeLimitDays,
         handicapSettings: {
           source: validHandicapSource,
           allowance: Math.max(0, Math.min(100, Number(handicapAllowance))),
@@ -337,6 +387,21 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
           )}
         </>
       )}
+      {["knockout", "playoff", "group-stage"].includes(mode) && (
+        <label>
+          Time limit per knockout stage (days)
+          <input
+            type="number"
+            min="1"
+            max="365"
+            value={roundTimeLimitDays}
+            onChange={(event) => setRoundTimeLimitDays(+event.target.value)}
+          />
+          <small>
+            Each stage starts when its entrants are known. The default is 21 days.
+          </small>
+        </label>
+      )}
       <label>
         Handicap basis
         <select value={handicapSource} onChange={(event) => setHandicapSource(event.target.value)}>
@@ -438,6 +503,7 @@ function Fixture({
         {scoreText(fixture) || fixture.status.replace("-", " ")}
         {competition ? ` · ${competition.status || "scorecard"} scorecard` : ""}
       </small>
+      {open && fixture.expiresAt && <small>{deadlineText(fixture)}</small>}
       {open && (
         <div className="matchFixtureActions">
           {(isAdmin || participant) && fixture.status !== "sudden-death" && onScorecard && (
@@ -481,6 +547,9 @@ function FixtureSummary({ fixture, series }) {
       <span className="matchRound">{fixtureStageLabel(series, fixture).toUpperCase()}</span>
       <div><b>{entrantName(series, fixture.entrantAId)}</b><em>v</em><b>{entrantName(series, fixture.entrantBId)}</b></div>
       <small>{scoreText(fixture) || fixture.status.replace("-", " ")}</small>
+      {["scheduled", "live", "sudden-death"].includes(fixture.status) && fixture.expiresAt && (
+        <small>{deadlineText(fixture)}</small>
+      )}
     </div>
   );
 }
@@ -515,7 +584,22 @@ const fixtureParticipant = (series, fixture, playerId) =>
   );
 
 export function MatchplayFixtures({ records = [], state, setState, me, isAdmin = false, onScorecard }) {
-  const resolvedRecords = records.map((record) => currentMatchplayRecord(record, state));
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+  const resolvedRecords = records.map((record) =>
+    currentMatchplayRecord(record, state, new Date(clock)),
+  );
+  useEffect(() => {
+    const changed = resolvedRecords.filter((resolved) => {
+      const original = records.find((record) => record.id === resolved.id);
+      return original && shouldPersistResolved(original, resolved);
+    });
+    if (changed.length)
+      setState((previous) => persistResolvedMatchplay(previous, changed));
+  });
   const openFixtures = (record) => (record.matchplay?.fixtures || []).filter((fixture) =>
     ["scheduled", "live", "sudden-death"].includes(fixture.status) && fixture.entrantAId && fixture.entrantBId,
   );
@@ -563,6 +647,9 @@ export function MatchplayEdit({ record, state, onSave, onDelete }) {
     [winPoints, setWinPoints] = useState(record.matchplay?.rules?.winPoints ?? 3),
     [drawPoints, setDrawPoints] = useState(record.matchplay?.rules?.drawPoints ?? 1),
     [lossPoints, setLossPoints] = useState(record.matchplay?.rules?.lossPoints ?? 0),
+    [roundTimeLimitDays, setRoundTimeLimitDays] = useState(
+      record.matchplay?.rules?.roundTimeLimitDays ?? 21,
+    ),
     [source, setSource] = useState(settings.source),
     [allowance, setAllowance] = useState(settings.allowance);
   const structuralLocked =
@@ -582,6 +669,7 @@ export function MatchplayEdit({ record, state, onSave, onDelete }) {
             qualifiersPerGroup: qualifiers,
             legs,
             points: { winPoints, drawPoints, lossPoints },
+            roundTimeLimitDays,
             handicapSource: source,
             handicapAllowance: allowance,
           })
@@ -591,6 +679,7 @@ export function MatchplayEdit({ record, state, onSave, onDelete }) {
           handicapSource: source,
           handicapAllowance: allowance,
           handicapAdjustmentMode: source === "competition-end" ? "league-final" : "none",
+          roundTimeLimitDays,
         });
       onSave(updated, { resetFixtures: structureChanged });
     } catch (error) {
@@ -640,6 +729,21 @@ export function MatchplayEdit({ record, state, onSave, onDelete }) {
             <option value="8">Top 8</option>
             <option value="16">Top 16</option>
           </select>
+        </label>
+      )}
+      {(linked || ["knockout", "group-stage", "group-stage-knockout"].includes(structure)) && (
+        <label>
+          Time limit per knockout stage (days)
+          <input
+            type="number"
+            min="1"
+            max="365"
+            value={roundTimeLimitDays}
+            onChange={(event) => setRoundTimeLimitDays(+event.target.value)}
+          />
+          <small>
+            A fresh deadline starts when each knockout stage becomes playable.
+          </small>
         </label>
       )}
       <label>
@@ -719,25 +823,21 @@ export function MatchplayResults({
   me,
   setState,
 }) {
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
   const resolved = useMemo(
-      () => currentMatchplayRecord(record, state),
-      [record, state],
+      () => currentMatchplayRecord(record, state, new Date(clock)),
+      [record, state, clock],
     ),
     series = resolved.matchplay,
     group = state.societies.find((item) => item.id === record.societyId);
   useEffect(() => {
-    if (
-      series.qualificationStatus !== "qualified" ||
-      record.matchplay.qualificationStatus === "qualified"
-    )
-      return;
-    setState((previous) => ({
-      ...previous,
-      leagues: (previous.leagues || []).map((item) =>
-        item.id === record.id ? resolved : item,
-      ),
-    }));
-  }, [series.qualificationStatus, record.id]);
+    if (!shouldPersistResolved(record, resolved)) return;
+    setState((previous) => persistResolvedMatchplay(previous, [resolved]));
+  }, [resolved, record, setState]);
   const table =
       series.type === "round-robin" ? roundRobinStandings(series) : null,
     groups = series.type === "group-stage" ? groupStageStandings(series) : null,

@@ -4,6 +4,7 @@ import {
   createKnockout,
   createLeaguePlayoff,
   createRoundRobin,
+  expireKnockoutSeries,
 } from "./matchplayTournament.js";
 
 const uid = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
@@ -115,36 +116,49 @@ function leagueFinished(league, state, at = new Date()) {
 }
 
 export function currentMatchplayRecord(record, state, at = new Date()) {
+  if (!isMatchplaySeries(record)) return record;
+  let resolved = record;
   if (
-    !isMatchplaySeries(record) ||
-    record.matchplay?.qualificationStatus !== "forecasted" ||
-    !record.sourceLeagueId
-  )
-    return record;
-  const league = standardLeagues(state).find(
-    (item) => item.id === record.sourceLeagueId,
-  );
-  if (!league) return record;
-  const standings = sourceLeagueStandings(league, state, at),
-    complete = leagueFinished(league, state, at);
-  if (standings.length < 2) return record;
-  const matchplay = createLeaguePlayoff({
-    id: record.matchplay.id,
-    name: record.name,
-    leagueId: league.id,
-    societyId: record.societyId,
-    standings,
-    size: record.matchplay.qualificationSize || 4,
-    entrantType: (league.teams || []).length ? "team" : "individual",
-    leagueComplete: complete,
-    createdAt: complete ? at.toISOString() : record.createdAt,
-    rules: record.matchplay.rules,
+    record.matchplay?.qualificationStatus === "forecasted" &&
+    record.sourceLeagueId
+  ) {
+    const league = standardLeagues(state).find(
+      (item) => item.id === record.sourceLeagueId,
+    );
+    if (league) {
+      const standings = sourceLeagueStandings(league, state, at),
+        complete = leagueFinished(league, state, at);
+      if (standings.length >= 2) {
+        const matchplay = createLeaguePlayoff({
+          id: record.matchplay.id,
+          name: record.name,
+          leagueId: league.id,
+          societyId: record.societyId,
+          standings,
+          size: record.matchplay.qualificationSize || 4,
+          entrantType: (league.teams || []).length ? "team" : "individual",
+          leagueComplete: complete,
+          createdAt: complete ? at.toISOString() : record.createdAt,
+          rules: record.matchplay.rules,
+        });
+        resolved = {
+          ...record,
+          matchplay,
+          qualificationStatus: matchplay.qualificationStatus,
+          updatedAt: complete ? at.toISOString() : record.updatedAt,
+        };
+      }
+    }
+  }
+  const matchplay = expireKnockoutSeries(resolved.matchplay, {
+    at: at.toISOString(),
   });
+  if (matchplay === resolved.matchplay) return resolved;
   return {
-    ...record,
+    ...resolved,
     matchplay,
-    qualificationStatus: matchplay.qualificationStatus,
-    updatedAt: complete ? at.toISOString() : record.updatedAt,
+    status: matchplay.status === "cancelled" ? "cancelled" : resolved.status,
+    updatedAt: at.toISOString(),
   };
 }
 
@@ -152,10 +166,7 @@ export function lockFinishedPlayoffs(state, at = new Date()) {
   let changed = false;
   const leagues = (state.leagues || []).map((record) => {
     const resolved = currentMatchplayRecord(record, state, at);
-    if (
-      resolved !== record &&
-      resolved.matchplay?.qualificationStatus === "qualified"
-    ) {
+    if (resolved !== record) {
       changed = true;
       return resolved;
     }
@@ -177,6 +188,7 @@ export function buildMatchplayRecord({
   qualifiersPerGroup = 2,
   legs = 1,
   points = {},
+  roundTimeLimitDays = 21,
   handicapSettings = null,
   createdBy = null,
   createdAt = nowIso(),
@@ -200,6 +212,7 @@ export function buildMatchplayRecord({
       entrantType: (sourceLeague.teams || []).length ? "team" : "individual",
       leagueComplete: leagueFinished(sourceLeague, state, new Date(createdAt)),
       createdAt,
+      rules: { roundTimeLimitDays },
     });
   } else if (mode === "round-robin")
     matchplay = createRoundRobin({
@@ -209,7 +222,7 @@ export function buildMatchplayRecord({
       entrants,
       entrantType,
       legs,
-      points,
+      points: { ...points, roundTimeLimitDays },
       createdAt,
     });
   else if (mode === "group-stage")
@@ -222,7 +235,7 @@ export function buildMatchplayRecord({
       groupCount,
       qualifiersPerGroup,
       legs,
-      points,
+      points: { ...points, roundTimeLimitDays },
       createdAt,
     });
   else
@@ -233,6 +246,7 @@ export function buildMatchplayRecord({
       entrants,
       entrantType,
       createdAt,
+      rules: { roundTimeLimitDays },
     });
   const entrantMemberIds = [
     ...new Set(entrants.flatMap((item) => item.memberIds || [item.id])),
@@ -289,6 +303,7 @@ export function rebuildMatchplayRecord(
     qualifiersPerGroup,
     legs,
     points,
+    roundTimeLimitDays,
     handicapSource,
     handicapAllowance,
   } = {},
@@ -338,6 +353,8 @@ export function rebuildMatchplayRecord(
     qualifiersPerGroup: requestedQualifiers,
     legs: Number(legs) || record.matchplay?.legs || 1,
     points: points || record.matchplay?.rules || {},
+    roundTimeLimitDays:
+      roundTimeLimitDays ?? record.matchplay?.rules?.roundTimeLimitDays ?? 21,
     handicapSettings: {
       source,
       allowance,
@@ -361,6 +378,7 @@ export function editMatchplayRecord(
     handicapSource,
     handicapAllowance,
     handicapAdjustmentMode,
+    roundTimeLimitDays,
   } = {},
 ) {
   if (!isMatchplaySeries(record))
@@ -381,6 +399,13 @@ export function editMatchplayRecord(
       "Handicap rules are locked because a knockout scorecard has already been created.",
     );
   let matchplay = record.matchplay;
+  const deadlineDays = Math.max(
+    1,
+    Math.min(
+      365,
+      Number(roundTimeLimitDays ?? matchplay.rules?.roundTimeLimitDays ?? 21) || 21,
+    ),
+  );
   const size = Math.max(
     2,
     Number(playoffSize || matchplay.qualificationSize || 4),
@@ -406,6 +431,24 @@ export function editMatchplayRecord(
       createdAt: record.createdAt,
       rules: matchplay.rules,
     });
+  }
+  if (["knockout", "group-stage"].includes(matchplay.type)) {
+    const rules = { ...(matchplay.rules || {}), roundTimeLimitDays: deadlineDays };
+    const fixtures = (matchplay.fixtures || []).map((fixture) => {
+      if (
+        matchplay.type !== "knockout" ||
+        !fixture.activatedAt ||
+        !["scheduled", "live", "sudden-death"].includes(fixture.status)
+      )
+        return fixture;
+      return {
+        ...fixture,
+        expiresAt: new Date(
+          Date.parse(fixture.activatedAt) + deadlineDays * 86400000,
+        ).toISOString(),
+      };
+    });
+    matchplay = { ...matchplay, rules, fixtures };
   }
   const source = handicapSource || existing.source,
     allowance = Math.max(

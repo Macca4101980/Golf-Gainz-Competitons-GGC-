@@ -90,13 +90,18 @@ export function seasonPrizePots({
 export function completedPlayoffPlacings(record) {
   const matchplay = record?.matchplay;
   if (!matchplay?.championId || !Array.isArray(matchplay.fixtures)) return null;
-  const final = matchplay.fixtures.find(
-    (fixture) => fixture.round === matchplay.rounds && fixture.slot === 0,
-  );
+  const final = matchplay.collapsedFinalFixtureId
+    ? matchplay.fixtures.find(
+        (fixture) => fixture.id === matchplay.collapsedFinalFixtureId,
+      )
+    : matchplay.fixtures.find(
+        (fixture) => fixture.round === matchplay.rounds && fixture.slot === 0,
+      );
   if (!final || !["complete", "bye"].includes(final.status)) return null;
   const winnerId = final.winnerId || matchplay.championId;
   const runnerUpId =
     final.loserId ||
+    matchplay.runnerUpId ||
     [final.entrantAId, final.entrantBId].find(
       (entrantId) => entrantId && entrantId !== winnerId,
     ) ||

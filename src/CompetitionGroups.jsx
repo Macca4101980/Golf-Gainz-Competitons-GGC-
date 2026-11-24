@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState}from'react';
 import{winterLeagueTable,leagueHandicapSettings,leagueCompetitionLifecycle}from'./winterLeague.js';
+import{APP_VERSION_LABEL}from'./version.js';
 
 const uid=()=>crypto.randomUUID?.()||Date.now()+''+Math.random();
 const fmt=v=>{const n=Number(v)||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toFixed(1)};
@@ -220,7 +221,7 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 <button className="secondary" onClick={()=>{setSelected(null);setEditingLeague(false)}}>← LEAGUES</button>
 <div className="card">
 <h2>{league.name}</h2>
-<small>League · GGC V4 Beta 12.15</small>
+<small>League · GGC {APP_VERSION_LABEL}</small>
 <p className="muted">{comps.length} League competition{comps.length===1?'':'s'} created. The setup quantity only controls how many competitions are created initially; you can add more at any time.</p>{canEdit(league)&&comps.length===0&&<label>Initial number of competitions<input type="number" min="1" max="52" value={league.targetCompetitions||1} onChange={e=>patchLeague(g=>({...g,targetCompetitions:Math.max(1,Math.min(52,+e.target.value||1))}))}/>
 </label>}</div>
 <h3>PLAYERS</h3>

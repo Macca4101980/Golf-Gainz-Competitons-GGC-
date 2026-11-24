@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useRef,useState}from'react';
 import{winterLeagueTable,leagueHandicapSettings,leagueCompetitionLifecycle}from'./winterLeague.js';
 import{APP_VERSION_LABEL}from'./version.js';
+import{competitionSetupSummary}from'./competitionSummary.js';
 
 const uid=()=>crypto.randomUUID?.()||Date.now()+''+Math.random();
 const fmt=v=>{const n=Number(v)||0;return n<0?`+${Math.abs(n).toFixed(1)}`:n.toFixed(1)};
@@ -177,11 +178,13 @@ function LeagueCompetitionSchedule({comp,weekNumber,editable,onSave,onEdit,onCan
  </>;
 }
 
+function SetupSummaryDialog({record,state,onClose}){const summary=competitionSetupSummary(record,state),file=`${String(record.name||'competition').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()}-setup.txt`;async function copy(){await navigator.clipboard.writeText(summary);alert('Setup summary copied.')}async function share(){if(navigator.share)try{return await navigator.share({title:`${record.name} setup`,text:summary})}catch(e){if(e?.name==='AbortError')return}await copy()}function download(){const url=URL.createObjectURL(new Blob([summary],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=file;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}return <div className="modalBackdrop setupSummaryBackdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}><section className="modal setupSummaryModal" role="dialog" aria-modal="true"><button className="close" onClick={onClose}>×</button><h2>COMPETITION SETUP</h2><p className="muted">A plain-English record of everything currently configured.</p><pre>{summary}</pre><div className="setupSummaryActions"><button className="secondary" onClick={copy}>COPY</button><button className="secondary" onClick={share}>SHARE</button><button className="primary" onClick={download}>EXPORT .TXT</button></div></section></div>}
+
 export default function Leagues({state,setState,me,societyId,onPersist,onCreateCompetition,onEditCompetition,onManageMatchplay,storageAuth}){
  const leagues=(state.leagues||[]).filter(g=>g.societyId===societyId&&g.recordType!=='matchplay-series');
  const standaloneMatchplay=(state.leagues||[]).filter(g=>g.societyId===societyId&&g.recordType==='matchplay-series'&&!g.sourceLeagueId);
  const storageKey=`ggc-league-setup-${societyId}`;const saved=(()=>{try{return JSON.parse(sessionStorage.getItem(storageKey)||'{}')}catch{return {}}})();
- const[selected,setSelected]=useState(saved.selected||null);const[placeholderName,setPlaceholderName]=useState('');const[placeholderHi,setPlaceholderHi]=useState('');const[placeholderEmail,setPlaceholderEmail]=useState('');const[teamA,setTeamA]=useState('');const[teamB,setTeamB]=useState('');const[teamName,setTeamName]=useState('');const[openTeamId,setOpenTeamId]=useState(null);const[showNewTeamForm,setShowNewTeamForm]=useState(false);const[showHandicapInfo,setShowHandicapInfo]=useState(false);const[teamBadgeImage,setTeamBadgeImage]=useState(null);const[badgeStatus,setBadgeStatus]=useState({});const[badgeTarget,setBadgeTarget]=useState(null);const badgePickerRef=useRef(null);const[creating,setCreating]=useState(!!saved.creating);const[editingLeague,setEditingLeague]=useState(!!saved.editingLeague);const[name,setName]=useState(saved.name||'');const[target,setTarget]=useState(saved.target||10);const[weekDates,setWeekDates]=useState(saved.weekDates||[]);
+ const[selected,setSelected]=useState(saved.selected||null);const[infoRecord,setInfoRecord]=useState(null);const[placeholderName,setPlaceholderName]=useState('');const[placeholderHi,setPlaceholderHi]=useState('');const[placeholderEmail,setPlaceholderEmail]=useState('');const[teamA,setTeamA]=useState('');const[teamB,setTeamB]=useState('');const[teamName,setTeamName]=useState('');const[openTeamId,setOpenTeamId]=useState(null);const[showNewTeamForm,setShowNewTeamForm]=useState(false);const[showHandicapInfo,setShowHandicapInfo]=useState(false);const[teamBadgeImage,setTeamBadgeImage]=useState(null);const[badgeStatus,setBadgeStatus]=useState({});const[badgeTarget,setBadgeTarget]=useState(null);const badgePickerRef=useRef(null);const[creating,setCreating]=useState(!!saved.creating);const[editingLeague,setEditingLeague]=useState(!!saved.editingLeague);const[name,setName]=useState(saved.name||'');const[target,setTarget]=useState(saved.target||10);const[weekDates,setWeekDates]=useState(saved.weekDates||[]);
  useEffect(()=>{if(selected||creating||name||weekDates.length)sessionStorage.setItem(storageKey,JSON.stringify({selected,creating,editingLeague,name,target,weekDates}));else sessionStorage.removeItem(storageKey)},[storageKey,selected,creating,editingLeague,name,target,weekDates]);
  const league=leagues.find(g=>g.id===selected)||null;
  const linkedMatchplay=league?(state.leagues||[]).filter(record=>record.recordType==='matchplay-series'&&record.sourceLeagueId===league.id):[];
@@ -218,11 +221,11 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
  function deleteLeague(){if(!league||!canEdit(league))return;const linked=(state.comps||[]).filter(c=>c.leagueId===league.id);const msg=linked.length?`Delete “${league.name}” and its ${linked.length} linked competition${linked.length===1?'':'s'}? This cannot be undone.`:`Delete “${league.name}”? This cannot be undone.`;if(!confirm(msg))return;const compIds=new Set(linked.map(c=>c.id)),removedCards=(state.cards||[]).filter(c=>compIds.has(c.compId));const next={...state,leagues:(state.leagues||[]).filter(g=>g.id!==league.id),deletedLeagueIds:[...new Set([...(state.deletedLeagueIds||[]),league.id])],deletedCompIds:[...new Set([...(state.deletedCompIds||[]),...compIds])],deletedCardIds:[...new Set([...(state.deletedCardIds||[]),...removedCards.map(card=>card.id)])],comps:(state.comps||[]).filter(c=>!compIds.has(c.id)),cards:(state.cards||[]).filter(c=>!compIds.has(c.compId)),audit:[...(state.audit||[]),{id:uid(),societyId:league.societyId,action:'DELETE LEAGUE',editedById:me?.id,editedByName:me?.name||'Unknown',at:new Date().toISOString(),before:{leagueId:league.id,leagueName:league.name,competitionIds:[...compIds],cardIds:removedCards.map(card=>card.id)}}]};commit(next);setSelected(null);setWeekDates([]);sessionStorage.removeItem(storageKey)}
  function cancelComp(c){if(!canEdit(league))return;const cancelled=c.status==='cancelled';const status=cancelled?(c.leaguePreviousStatus||'draft'):'cancelled';commit({...state,comps:state.comps.map(x=>x.id===c.id?{...x,status,leagueCancelled:!cancelled,leaguePreviousStatus:cancelled?null:(x.status||'draft'),statusChangedAt:new Date().toISOString(),statusChangedBy:me?.id}:x)})}
  function setHandicapRule(key,value){if(!canEdit(league))return;const hasScores=(state.cards||[]).some(card=>comps.some(c=>c.id===card.compId));if(hasScores&&!confirm('This will recalculate League handicaps and results for existing weeks. Continue?'))return;const current=leagueHandicapSettings(league),handicapSettings={...current,[key]:value};const now=new Date().toISOString();commit({...state,leagues:(state.leagues||[]).map(g=>g.id===league.id?{...g,handicapSettings,updatedAt:now}:g),comps:(state.comps||[]).map(c=>c.leagueId===league.id?{...c,handicapAllowance:key==='allowance'?+value:handicapSettings.allowance,updatedAt:now}:c),audit:[...(state.audit||[]),{id:uid(),societyId:league.societyId,action:'LEAGUE HANDICAP SETTINGS',editedById:me?.id,editedByName:me?.name||'Unknown',at:now,after:{[key]:value}}]})}
- if(league)return <div className="leagueSetupOverlay">
+ if(league)return <div className="leagueSetupOverlay">{infoRecord&&<SetupSummaryDialog record={infoRecord} state={state} onClose={()=>setInfoRecord(null)}/>}
 <section className="leagueSetupPanel">
 <button className="secondary" onClick={()=>{setSelected(null);setEditingLeague(false)}}>← LEAGUES</button>
 <div className="card">
-<h2>{league.name}</h2>
+<div className="leagueInfoHeading"><h2>{league.name}</h2><button className="setupInfoButton" aria-label={`View ${league.name} setup summary`} onClick={()=>setInfoRecord(league)}>i</button></div>
 <small>League · GGC {APP_VERSION_LABEL}</small>
 <p className="muted">{comps.length} League competition{comps.length===1?'':'s'} created. The setup quantity only controls how many competitions are created initially; you can add more at any time.</p>{canEdit(league)&&comps.length===0&&<label>Initial number of competitions<input type="number" min="1" max="52" value={league.targetCompetitions||1} onChange={e=>patchLeague(g=>({...g,targetCompetitions:Math.max(1,Math.min(52,+e.target.value||1))}))}/>
 </label>}</div>
@@ -357,7 +360,7 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 </div>}</div>{canEdit(league)&&linkedMatchplay.length>0&&<div className="card leagueMatchplaySettings">
 <h3>MATCHPLAY &amp; KNOCKOUTS</h3>
 <p className="muted">Manage this League's linked playoffs and knockout handicap rules here.</p>
-{linkedMatchplay.map(record=><div className="settingsItem" key={record.id}><span><b>{record.name}</b><small>{String(record.structure||'matchplay').replaceAll('-',' ').toUpperCase()}</small></span><button className="mini secondary" onClick={()=>onManageMatchplay?onManageMatchplay(record):window.dispatchEvent(new CustomEvent('ggc-manage-matchplay',{detail:record}))}>MANAGE</button></div>)}
+{linkedMatchplay.map(record=><div className="settingsItem" key={record.id}><span><b>{record.name}</b><small>{String(record.structure||'matchplay').replaceAll('-',' ').toUpperCase()}</small></span><button className="setupInfoButton" aria-label={`View ${record.name} setup summary`} onClick={()=>setInfoRecord(record)}>i</button><button className="mini secondary" onClick={()=>onManageMatchplay?onManageMatchplay(record):window.dispatchEvent(new CustomEvent('ggc-manage-matchplay',{detail:record}))}>MANAGE</button></div>)}
 </div>}{canEdit(league)&&<div className="card">
 <h3>LEAGUE SETTINGS</h3>
 <p className="muted">Delete this League if you want to start the setup again. Any competitions created inside it will also be deleted.</p>
@@ -369,17 +372,18 @@ export default function Leagues({state,setState,me,societyId,onPersist,onCreateC
 <h2>LEAGUES</h2>
 <p className="muted">Leagues created in this Group appear here.</p>
 <button id={`league-create-${societyId}`} style={{display:'none'}} onClick={()=>setCreating(true)} aria-hidden="true">CREATE LEAGUE</button>
-</div>{leagues.map(g=>{const n=(state.comps||[]).filter(c=>c.leagueId===g.id).length;return <button className="card compGroupCard" key={g.id} onClick={()=>setSelected(g.id)}>
+</div>{infoRecord&&<SetupSummaryDialog record={infoRecord} state={state} onClose={()=>setInfoRecord(null)}/>} {leagues.map(g=>{const n=(state.comps||[]).filter(c=>c.leagueId===g.id).length;return <button className="card compGroupCard" key={g.id} onClick={()=>setSelected(g.id)}>
 <span className="leagueCardText">
 <b>{g.name}</b>
 <small className="leagueEditLabel">EDIT LEAGUE</small>
 <small className="leagueCardMeta">{g.memberIds?.length||0} players · {n} competition{n===1?'':'s'}</small>
 </span>
+<span className="setupInfoButton" role="button" tabIndex="0" aria-label={`View ${g.name} setup summary`} onClick={e=>{e.stopPropagation();setInfoRecord(g)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();setInfoRecord(g)}}}>i</span>
 <strong className="leagueCardArrow">›</strong>
 </button>})}{!leagues.length&&<p className="muted">No Leagues in this Group yet.</p>}{isAdmin&&standaloneMatchplay.length>0&&<div className="card standaloneMatchplaySettings">
 <h3>MATCHPLAY COMPETITIONS</h3>
 <p className="muted">Manage standalone knockout, round-robin and group-stage competitions here.</p>
-{standaloneMatchplay.map(record=><div className="settingsItem" key={record.id}><span><b>{record.name}</b><small>{String(record.structure||'matchplay').replaceAll('-',' ').toUpperCase()}</small></span><button className="mini secondary" onClick={()=>onManageMatchplay?onManageMatchplay(record):window.dispatchEvent(new CustomEvent('ggc-manage-matchplay',{detail:record}))}>MANAGE</button></div>)}
+{standaloneMatchplay.map(record=><div className="settingsItem" key={record.id}><span><b>{record.name}</b><small>{String(record.structure||'matchplay').replaceAll('-',' ').toUpperCase()}</small></span><button className="setupInfoButton" aria-label={`View ${record.name} setup summary`} onClick={()=>setInfoRecord(record)}>i</button><button className="mini secondary" onClick={()=>onManageMatchplay?onManageMatchplay(record):window.dispatchEvent(new CustomEvent('ggc-manage-matchplay',{detail:record}))}>MANAGE</button></div>)}
 </div>}{creating&&<div className="modalBackdrop" onClick={()=>{setCreating(false);setName('');setTarget(10)}}>
 <div className="modal" onClick={e=>e.stopPropagation()}>
 <button className="close" onClick={()=>{setCreating(false);setName('');setTarget(10)}}>×</button>

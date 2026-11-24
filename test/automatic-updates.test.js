@@ -13,6 +13,14 @@ test('old completed competitions do not create a backlog of notifications',()=>{
  assert.deepEqual(automaticUpdateEvents({comps:[comp],players:[],cards:[],leagues:[]},new Set(['g1']),Date.parse('2026-11-22T12:00:00Z')),[]);
 });
 
+test('money changes create private, deduplicated member notifications',()=>{
+ const now=Date.parse('2026-11-24T22:00:00Z'),league={id:'league',name:'Winter League',societyId:'g1',memberIds:['p1'],moneyActivity:[{id:'entry',type:'entry-status',playerId:'p1',paid:true,at:'2026-11-24T21:58:00Z'},{id:'payment',type:'payout',playerId:'p1',amountPence:1250,at:'2026-11-24T21:59:00Z'}]};
+ const events=automaticUpdateEvents({comps:[],players:[{id:'p1',name:'Player'}],cards:[],leagues:[league]},new Set(['g1']),now);
+ assert.deepEqual(events.map(event=>event.eventKey),['money-entry:league:entry','money-payment:league:payment']);
+ assert.ok(events.every(event=>event.audience==='member'&&event.targetPlayerId==='p1'));
+ assert.match(events[1].body,/£12\.50/);
+});
+
 test('database automatic updates support group, admin and private audiences safely',()=>{
  assert.match(sql,/audience in \('group','admins','member'\)/);
  assert.match(sql,/ggc_group_updates_event_key_uidx/);

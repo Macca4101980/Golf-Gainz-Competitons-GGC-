@@ -1,5 +1,6 @@
 import{leaderboardPayoutLines}from'./leaderboardPayouts.js';
 import{winterLeagueTable}from'./winterLeague.js';
+import{leagueMoneyLedger}from'./leagueMoneyLedger.js';
 
 const DAY=86400000,HOUR=3600000;
 const at=value=>{const n=Date.parse(value);return Number.isFinite(n)?n:NaN};
@@ -27,9 +28,11 @@ export function automaticUpdateEvents(state,adminGroupIds,now=Date.now()){
     body=[...detail,...lines].join('\n');
    }catch{}
    events.push({groupId:c.societyId,eventKey:`results-released:${c.id}:${c.resultsEmbargo?.releaseAt||c.ends}`,title:`${c.name} · official results released`,body:body||'The official results are now available in Results.',audience:'group'});
+   if(league)try{const ledger=leagueMoneyLedger(state,league,now);for(const prize of ledger.payouts.filter(item=>item.compId===c.id)){const balance=ledger.balances.get(prize.playerId);events.push({groupId:c.societyId,eventKey:`money-earned:${league.id}:${prize.key}`,title:'Your prize fund has increased',body:`${prize.reason}: £${Number(prize.amount).toFixed(2)}. GGC now shows £${((balance?.owedPence||0)/100).toFixed(2)} owed to you.`,audience:'member',targetPlayerId:prize.playerId});}}catch{}
   }
   for(const playerId of c.invites||[])events.push({groupId:c.societyId,eventKey:`comp-invite:${c.id}:${playerId}`,title:`You were invited to ${c.name}`,body:'Open Competitions to accept or decline the invitation.',audience:'member',targetPlayerId:playerId});
  }
+ for(const league of state.leagues||[]){if(league.recordType==='matchplay-series'||!adminGroupIds.has(league.societyId))continue;for(const activity of league.moneyActivity||[]){const time=at(activity.at);if(!recent(time,now))continue;if(activity.type==='entry-status')events.push({groupId:league.societyId,eventKey:`money-entry:${league.id}:${activity.id}`,title:`${league.name} · entry payment updated`,body:activity.paid?'Your entry fee has been marked as paid.':'Your entry fee is now marked as outstanding.',audience:'member',targetPlayerId:activity.playerId});if(activity.type==='payout')events.push({groupId:league.societyId,eventKey:`money-payment:${league.id}:${activity.id}`,title:`${league.name} · prize payment recorded`,body:`£${((Number(activity.amountPence)||0)/100).toFixed(2)} has been recorded as paid to you.`,audience:'member',targetPlayerId:activity.playerId});}}
  return events;
 }
 

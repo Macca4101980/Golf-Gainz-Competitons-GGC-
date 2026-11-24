@@ -3,22 +3,25 @@ import React,{useRef,useState}from'react';
 const tours={
  player:[
   {eyebrow:'Player tour',title:'Play and score with GGC',copy:'Join your golf Group, enter competitions and keep your scorecard up to date from your phone.',caption:'This tour shows what a golfer sees when playing in GGC.'},
-  {eyebrow:'Step 1 of 6',title:'Join your golf Group',copy:'Accept an invite link or enter the joining code supplied by your Group Owner.',caption:'Your Group contains the golfers and competitions you play with.'},
-  {eyebrow:'Step 2 of 6',title:'Enter a competition',copy:'Open a live competition from Home and accept the invitation or choose to enter.',caption:'The competition page shows the format, course, tees and start time.'},
-  {eyebrow:'Step 3 of 6',title:'Join the playing group',copy:'The first golfer starts the round and selects the players. Everyone else joins that same live card.',caption:'One golfer can score for the group, or each player can update their own card.'},
-  {eyebrow:'Step 4 of 6',title:'Score hole by hole',copy:'Enter gross strokes. GGC applies the competition rules, handicap shots and points automatically.',caption:'If the signal drops, keep scoring — saved changes are sent when you reconnect.'},
-  {eyebrow:'Step 5 of 6',title:'Follow the leaderboard',copy:'See the leaders, holes played and whether the displayed result is provisional.',caption:'Some competitions deliberately hide later holes or scores until a release time.'},
-  {eyebrow:'Step 6 of 6',title:'See your result',copy:'When the competition closes, open Results to view the final table, cards, 2s and league standings.',caption:'Your completed rounds remain available in the Group history.'},
+  {eyebrow:'Step 1 of 7',title:'Join your golf Group',copy:'Accept an invite link or enter the joining code supplied by your Group Owner.',caption:'Your Group contains the golfers and competitions you play with.'},
+  {eyebrow:'Step 2 of 7',title:'Enter a competition',copy:'Open a live competition from Home and accept the invitation or choose to enter. Competitions can open and close automatically at scheduled times.',caption:'Check the format, course, tees and playing window before you start. The complete list of included competition types and their rules is available from Competition Formats on Home.'},
+  {eyebrow:'Step 3 of 7',title:'Join the playing group',copy:'The first golfer starts the round and selects the players. Everyone else joins that same live card.',caption:'One golfer can score for the group, or each player can update their own card.'},
+  {eyebrow:'Step 4 of 7',title:'Score hole by hole',copy:'Enter gross strokes. GGC applies the competition rules, handicap shots and points automatically.',caption:'If the signal drops, keep scoring — saved changes are sent when you reconnect.'},
+  {eyebrow:'Step 5 of 7',title:'Understand provisional scoring',copy:'A provisional leaderboard shows only the scores the organiser has chosen to reveal at that stage, so the competition stays fair while golfers are still playing.',caption:'Your complete card still saves normally. Hidden holes or full totals are revealed automatically at the scheduled full-score release time.'},
+  {eyebrow:'Step 6 of 7',title:'See your final result',copy:'When the competition closes and full scores are released, open Results to view the final table, cards and 2s.',caption:'Your completed rounds remain available in the Group history.'},
+  {eyebrow:'Step 7 of 7',title:'Follow Leagues and OOMs',copy:'Season standings can total Stableford points, nett stroke scores versus par, or finishing-position points that automatically scale with the number of entrants.',caption:'A League can lock handicaps when it starts, follow each golfer’s updated profile Handicap Index before a round, or apply custom performance adjustments. Results shows which method is in use.'},
   {eyebrow:'All done',title:'You’re ready to play',copy:'Join your Group, enter the competition and let GGC calculate the rest.',caption:'Reopen this guide from Home whenever you need it.'}
  ],
  admin:[
   {eyebrow:'Owner & admin tour',title:'Run golf with GGC',copy:'Create a Group, invite golfers and manage competitions, scoring and results from your phone.',caption:'This tour shows the controls available to Group Owners and Administrators.'},
-  {eyebrow:'Step 1 of 6',title:'Create a Group',copy:'A Group keeps your members, competitions, leagues and history together.',caption:'The person who creates the Group becomes its Owner and can appoint Administrators.'},
-  {eyebrow:'Step 2 of 6',title:'Invite your golfers',copy:'Share one invitation by WhatsApp, text or email. New golfers can register from the link.',caption:'Golfers who do not use GGC yet can be added as temporary golfers. You can include them in teams and competitions straight away, then add their email address or share their invite by WhatsApp or text when you are ready. If they sign up through your link, GGC automatically links the placeholder to their new GGC ID, keeping their teams, scores and history.'},
-  {eyebrow:'Step 3 of 6',title:'Build the competition',copy:'Choose the format, course, tees, players, handicap allowance and scoring window.',caption:'Create a one-off competition or schedule several rounds inside a league.'},
-  {eyebrow:'Step 4 of 6',title:'Manage live scoring',copy:'Golfers enter their gross scores and GGC applies the selected rules and handicap calculations.',caption:'Owners and Admins can monitor cards and correct genuine mistakes when required.'},
-  {eyebrow:'Step 5 of 6',title:'Share the leaderboard',copy:'Follow progress live and share a read-only leaderboard with people outside the Group.',caption:'Provisional displays, hidden holes and release times follow the competition settings.'},
-  {eyebrow:'Step 6 of 6',title:'Results and prizes',copy:'Finalise the competition, review the result and track winners, 2s and payouts.',caption:'Results and league standings remain together for the full season history.'},
+  {eyebrow:'Step 1 of 8',title:'Create a Group',copy:'A Group keeps your members, competitions, leagues and history together.',caption:'The person who creates the Group becomes its Owner and can appoint Administrators.'},
+  {eyebrow:'Step 2 of 8',title:'Invite your golfers',copy:'Share one invitation by WhatsApp, text or email. New golfers can register from the link.',caption:'Golfers who do not use GGC yet can be added as temporary golfers. You can include them in teams and competitions straight away, then add their email address or share their invite by WhatsApp or text when you are ready. If they sign up through your link, GGC automatically links the placeholder to their new GGC ID, keeping their teams, scores and history.'},
+  {eyebrow:'Step 3 of 8',title:'Build the competition',copy:'Choose the format, course, tees, players, handicap allowance and scoring rules.',caption:'Create a one-off competition or several rounds inside a League. The complete list of included competition types and their explanations is available from Competition Formats on Home.'},
+  {eyebrow:'Step 4 of 8',title:'Schedule the competition',copy:'Set when entry opens, when play starts and ends, when provisional scores appear and when the full result is revealed.',caption:'GGC changes the competition status automatically at the scheduled times, so you do not need to open, close or reveal it manually.'},
+  {eyebrow:'Step 5 of 8',title:'Manage live scoring',copy:'Golfers enter their gross scores and GGC applies the selected rules and handicap calculations.',caption:'Owners and Admins can monitor cards and correct genuine mistakes when required.'},
+  {eyebrow:'Step 6 of 8',title:'Control provisional scoring',copy:'Choose how much of the leaderboard is visible while the competition is live, then schedule the full-score release.',caption:'Complete cards continue saving behind the provisional display. Hidden holes and final totals appear automatically when the release time is reached.'},
+  {eyebrow:'Step 7 of 8',title:'Build a League or OOM',copy:'Use cumulative Stableford, cumulative nett stroke score versus par, matchplay records or finishing-position points that automatically scale to the number of entrants.',caption:'Choose all rounds or best-of counting. Handicaps can stay fixed, follow current profile HIs, use individual or team performance adjustments, or be managed manually.'},
+  {eyebrow:'Step 8 of 8',title:'Results and prizes',copy:'Finalise the competition, review the result and track winners, 2s and payouts.',caption:'Results and League standings remain together for the full season history.'},
   {eyebrow:'All done',title:'You’re ready to organise',copy:'Create your Group, invite the golfers and let GGC run the competition.',caption:'Reopen this guide from Home whenever you need it.'}
  ]
 };
@@ -34,8 +37,9 @@ function PlayerDemo({index,go,onClose}){
  if(index===2)return <PlayerCompetitionDemo/>;
  if(index===3)return <PlayerStartGroupDemo/>;
  if(index===4)return <PlayerScorecardDemo/>;
- if(index===5)return <PlayerLeaderboardDemo/>;
+ if(index===5)return <ProvisionalScoringDemo/>;
  if(index===6)return <PlayerResultsDemo/>;
+ if(index===7)return <LeagueOverviewDemo/>;
  return <Finish role="player" go={go} onClose={onClose}/>;
 }
 
@@ -56,9 +60,11 @@ function AdminDemo({index,go,onClose}){
  if(index===1)return <AdminCreateGroupDemo/>;
  if(index===2)return <AdminGolferDemo/>;
  if(index===3)return <AdminCompetitionDemo/>;
- if(index===4)return <><ScoreDemo/><Tip title="ADMIN">Open a submitted card from the leaderboard if an authorised correction is needed.</Tip></>;
- if(index===5)return <><div className="howtoDemoHead"><b>Live leaderboard</b><span>THRU 15</span></div><div className="howtoLeaders"><Leader pos="1" name="Team One" score="38" provisional/><Leader pos="2" name="Team Two" score="36"/><Leader pos="3" name="Team Three" score="35"/></div><button className="secondary howtoAction">SHARE READ-ONLY LEADERBOARD</button></>;
- if(index===6)return <><div className="howtoDemoHead"><b>Competition Results</b><span>FINAL</span></div><div className="howtoStats"><Stat value="£10" label="Winner each"/><Stat value="£4" label="Each 2"/></div><DemoRow icon="🏆" title="Competition winners" text="Team One · 38 points"/><DemoRow icon="②" title="2s Club" text="Golfer A · Golfer B"/></>;
+ if(index===4)return <CompetitionScheduleDemo/>;
+ if(index===5)return <><ScoreDemo/><Tip title="ADMIN">Open a submitted card from the leaderboard if an authorised correction is needed.</Tip></>;
+ if(index===6)return <><ProvisionalScoringDemo/><button className="secondary howtoAction">SHARE READ-ONLY LEADERBOARD</button></>;
+ if(index===7)return <LeagueOverviewDemo admin/>;
+ if(index===8)return <><div className="howtoDemoHead"><b>Competition Results</b><span>FINAL</span></div><div className="howtoStats"><Stat value="£10" label="Winner each"/><Stat value="£4" label="Each 2"/></div><DemoRow icon="🏆" title="Competition winners" text="Team One · 38 points"/><DemoRow icon="②" title="2s Club" text="Golfer A · Golfer B"/></>;
  return <Finish role="admin" go={go} onClose={onClose}/>;
 }
 
@@ -67,6 +73,10 @@ function AdminGolferDemo(){return <div className="playerAppMock adminGolferMock"
 function AdminInput({label,value}){return <label className="adminInput"><b>{label}</b><span>{value}</span></label>}
 function AdminCompetitionDemo(){return <div className="playerAppMock adminCompetitionMock"><div className="adminMockHead"><b>Edit competition</b><span>×</span></div><AdminSelect label="Group" value="Weekend Golf Group"/><AdminSelect label="League" value="None"/><AdminSelect label="Competition name" value="Saturday Competition"/><div className="adminFormatRow"><AdminSelect label="Format" value="Stableford"/><button>ⓘ</button></div><div className="adminCompGrid"><AdminSelect label="Allowance" value="95%"/><AdminSelect label="Course" value="Example Golf Club"/></div></div>}
 function AdminSelect({label,value}){return <label className="adminSelect"><b>{label}</b><span>{value}<em>⌄</em></span></label>}
+
+function CompetitionScheduleDemo(){return <><div className="howtoDemoHead"><b>Competition schedule</b><span>AUTOMATIC</span></div><DemoField label="ENTRY OPENS" value="Thursday · 18:00"/><DemoField label="COMPETITION ENDS" value="Sunday · 18:00"/><DemoField label="PROVISIONAL SCORES" value="Show through 15 holes while play is live"/><DemoField label="FULL SCORES RELEASE" value="Sunday · 18:00" active/></>}
+function ProvisionalScoringDemo(){return <><div className="howtoDemoHead"><b>Live leaderboard</b><span>PROVISIONAL · THRU 15</span></div><div className="howtoLeaders"><Leader pos="1" name="Team One" score="38" provisional/><Leader pos="2" name="Team Two" score="36"/><Leader pos="3" name="Team Three" score="35"/></div><Tip title="WHAT THIS MEANS">Only the released holes or totals are shown. Complete scorecards keep saving and the final result replaces this view at the scheduled release time.</Tip></>}
+function LeagueOverviewDemo({admin=false}){return <><div className="howtoDemoHead"><b>League / Order of Merit</b><span>SEASON</span></div><DemoRow icon="S" title="Cumulative Stableford" text="Add Stableford points across the counting rounds."/><DemoRow icon="±" title="Nett stroke score vs par" text="Accumulate nett under or over par; lowest total leads."/><DemoRow icon="1" title="Finishing-position points" text="Points automatically scale with the number of entrants."/><Tip title="HANDICAPS">{admin?'Lock the starting Handicap Index, follow the current profile HI, or configure fixed, individual, team-performance or manual adjustments.':'The organiser chooses whether the League locks starting handicaps, follows updated profile HIs, or applies custom performance adjustments.'}</Tip></>}
 
 function ScoreDemo(){return <><div className="howtoDemoHead"><b>Hole 7 · Par 4 · SI 3</b><span className="howtoSaved">CLOUD SAVED</span></div><div className="howtoScore"><strong>7</strong><div><i>••</i><b>5</b></div><span><b>2</b><small>points</small></span></div><DemoRow icon="☁" title="Scores save as you go" text="Gross score, handicap strokes and points stay together."/><button className="primary howtoAction">NEXT HOLE</button></>}
 function Finish({role,go,onClose}){return <><div className="howtoDemoHead"><b>GGC keeps it together</b><span>READY</span></div><div className="howtoFinish"><Stat value="👥" label="Groups"/><Stat value="⛳" label="Competitions"/><Stat value="☁" label="Live scoring"/><Stat value="🏆" label="Results"/></div><button className="primary howtoAction" onClick={onClose}>START USING GGC</button><button className="secondary howtoAction" onClick={()=>go(0)}>CHOOSE ANOTHER VIEW</button><small className="howtoRoleLabel">Completed: {role==='admin'?'Administrator / Group Owner':'Player'} walkthrough</small></>}

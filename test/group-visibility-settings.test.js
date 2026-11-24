@@ -10,7 +10,11 @@ test('Group visibility is controlled from each Settings Group card',()=>{
  assert.match(main,/type="checkbox" checked=\{shown\}/);
  assert.match(main,/onChange=\{\(\)=>toggleGroupVisibility\(g\.id\)\}/);
  assert.match(main,/SHOW ON HOME/);
+ assert.match(main,/settingsGroupLabels/);
+ assert.match(main,/SHOW OR HIDE/);
+ assert.match(main,/settingsGroup card\$\{shown\?'':' hidden'\}/);
  assert.match(css,/\.settingsGroupVisibility input/);
+ assert.match(css,/\.settingsGroup\.hidden/);
 });
 
 test('My Golf no longer duplicates the Group visibility list',()=>{

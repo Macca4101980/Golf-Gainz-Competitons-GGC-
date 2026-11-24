@@ -58,9 +58,8 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
   const [winPoints, setWinPoints] = useState(3);
   const [drawPoints, setDrawPoints] = useState(1);
   const [lossPoints, setLossPoints] = useState(0);
-  const [handicapSource, setHandicapSource] = useState("league-start");
+  const [handicapSource, setHandicapSource] = useState("competition-start");
   const [handicapAllowance, setHandicapAllowance] = useState(100);
-  const [handicapAdjustmentMode, setHandicapAdjustmentMode] = useState("none");
   const group = manageable.find((item) => item.id === groupId),
     leagues = standardLeagues(state).filter(
       (item) => item.societyId === groupId,
@@ -84,11 +83,14 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
           name: player.name,
           memberIds: [player.id],
         }));
+  const choiceKey = choices.map((item) => item.id).join("|");
   useEffect(() => {
-    setSelected([]);
     if (entrantType === "team" && !sourceLeagueId && teamSource)
       setSourceLeagueId(teamSource.id);
   }, [groupId, entrantType]);
+  useEffect(() => {
+    setSelected(choices.map((item) => item.id));
+  }, [groupId, entrantType, sourceLeagueId, choiceKey]);
   const toggle = (id) =>
     setSelected((values) =>
       values.includes(id)
@@ -113,12 +115,11 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         legs,
         points: { winPoints, drawPoints, lossPoints },
         handicapSettings: {
-          source: mode === "playoff" ? handicapSource : "current",
+          source: handicapSource,
           allowance: Math.max(0, Math.min(100, Number(handicapAllowance))),
           adjustmentMode:
-            mode === "playoff" ? handicapAdjustmentMode : "none",
-          excludeLeagueAdjustments:
-            mode !== "playoff" || handicapAdjustmentMode !== "league-final",
+            handicapSource === "competition-end" ? "league-final" : "none",
+          excludeLeagueAdjustments: handicapSource !== "competition-end",
         },
         createdBy: me?.id,
         state,
@@ -242,6 +243,10 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
           )}
           <fieldset className="matchplayEntrants">
             <legend>Choose entrants ({selected.length})</legend>
+            <div className="matchplayEntrantActions">
+              <button type="button" className="mini secondary" onClick={() => setSelected(choices.map((item) => item.id))}>SELECT ALL</button>
+              <button type="button" className="mini secondary" onClick={() => setSelected([])}>CLEAR ALL</button>
+            </div>
             {choices.map((item) => (
               <label key={item.id} className="check">
                 <input
@@ -319,38 +324,14 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
           )}
         </>
       )}
-      {mode === "playoff" && (
-        <>
-          <label>
-            Handicap basis
-            <select
-              value={handicapSource}
-              onChange={(event) => setHandicapSource(event.target.value)}
-            >
-              <option value="league-start">
-                Original League-start Handicap Index
-              </option>
-              <option value="current">
-                Current Handicap Index when each match starts
-              </option>
-            </select>
-          </label>
-          <label>
-            League handicap adjustments
-            <select
-              value={handicapAdjustmentMode}
-              onChange={(event) =>
-                setHandicapAdjustmentMode(event.target.value)
-              }
-            >
-              <option value="none">Do not carry League adjustments</option>
-              <option value="league-final">
-                Carry final League adjustments into the knockouts
-              </option>
-            </select>
-          </label>
-        </>
-      )}
+      <label>
+        Handicap basis
+        <select value={handicapSource} onChange={(event) => setHandicapSource(event.target.value)}>
+          <option value="competition-start">Start-of-competition handicap position</option>
+          <option value="competition-end">End-of-competition handicap position</option>
+          <option value="current">Current GGC Handicap Index</option>
+        </select>
+      </label>
       <label>
         Match allowance %
         <input
@@ -446,7 +427,7 @@ function Fixture({
       </small>
       {open && (
         <div className="matchFixtureActions">
-          {isAdmin && fixture.status !== "sudden-death" && onScorecard && (
+          {(isAdmin || participant) && fixture.status !== "sudden-death" && onScorecard && (
             <button
               className="mini primary"
               onClick={() =>
@@ -457,7 +438,7 @@ function Fixture({
                 )
               }
             >
-              {competition ? "MANAGE SCORECARD" : "CREATE SCORECARD"}
+              {competition ? "ENTER / CONTINUE SCORECARD" : "CREATE SCORECARD"}
             </button>
           )}
           {isAdmin && fixture.status !== "sudden-death" && (
@@ -481,6 +462,56 @@ function Fixture({
   );
 }
 
+function FixtureSummary({ fixture, series }) {
+  return (
+    <div className={`matchFixture ${fixture.status}`}>
+      <span className="matchRound">{fixture.stage === "group" ? "GROUP" : `ROUND ${fixture.round}`}</span>
+      <div><b>{entrantName(series, fixture.entrantAId)}</b><em>v</em><b>{entrantName(series, fixture.entrantBId)}</b></div>
+      <small>{scoreText(fixture) || fixture.status.replace("-", " ")}</small>
+    </div>
+  );
+}
+
+const fixtureParticipant = (series, fixture, playerId) =>
+  series.entrants.some((entrant) =>
+    (entrant.id === fixture.entrantAId || entrant.id === fixture.entrantBId) &&
+    (entrant.id === playerId || (entrant.memberIds || []).includes(playerId)),
+  );
+
+export function MatchplayFixtures({ records = [], state, setState, me, isAdmin = false, onScorecard }) {
+  const resolvedRecords = records.map((record) => currentMatchplayRecord(record, state));
+  const openFixtures = (record) => (record.matchplay?.fixtures || []).filter((fixture) =>
+    ["scheduled", "live", "sudden-death"].includes(fixture.status) && fixture.entrantAId && fixture.entrantBId,
+  );
+  const updateSeries = (recordId, matchplay) => {
+    setState((previous) => ({
+      ...previous,
+      leagues: (previous.leagues || []).map((item) => item.id === recordId ? { ...item, matchplay, updatedAt: nowIso() } : item),
+    }));
+  };
+  const renderFixture = (record, fixture) => (
+    <Fixture
+      key={`${record.id}:${fixture.id}`}
+      fixture={fixture}
+      series={record.matchplay}
+      record={record}
+      state={state}
+      me={me}
+      isAdmin={isAdmin}
+      onChange={(matchplay) => updateSeries(record.id, matchplay)}
+      competition={(state.comps || []).find((comp) => comp.matchplaySeriesId === record.id && comp.matchplayFixtureId === fixture.id)}
+      onScorecard={onScorecard}
+    />
+  );
+  const mine = resolvedRecords.flatMap((record) => openFixtures(record).filter((fixture) => fixtureParticipant(record.matchplay, fixture, me?.id)).map((fixture) => ({ record, fixture })));
+  const others = isAdmin ? resolvedRecords.flatMap((record) => openFixtures(record).filter((fixture) => !fixtureParticipant(record.matchplay, fixture, me?.id)).map((fixture) => ({ record, fixture }))) : [];
+  if (!mine.length && !others.length) return null;
+  return <div className="matchplayCompetitionFixtures">
+    {mine.map(({ record, fixture }) => renderFixture(record, fixture))}
+    {others.length > 0 && <details className="completedTwirl matchplayOtherMatches"><summary>OTHER MATCHES <span>{others.length}</span></summary>{others.map(({ record, fixture }) => renderFixture(record, fixture))}</details>}
+  </div>;
+}
+
 export function MatchplayEdit({ record, state, onSave }) {
   const settings = matchplayHandicapSettings(record, state),
     linked = !!record.sourceLeagueId,
@@ -490,8 +521,7 @@ export function MatchplayEdit({ record, state, onSave }) {
   const [name, setName] = useState(record.name || "Knockouts"),
     [size, setSize] = useState(record.matchplay?.qualificationSize || 4),
     [source, setSource] = useState(settings.source),
-    [allowance, setAllowance] = useState(settings.allowance),
-    [adjustmentMode, setAdjustmentMode] = useState(settings.adjustmentMode);
+    [allowance, setAllowance] = useState(settings.allowance);
   const structuralLocked =
     record.matchplay?.qualificationStatus !== "forecasted";
   function save() {
@@ -502,7 +532,7 @@ export function MatchplayEdit({ record, state, onSave }) {
           playoffSize: size,
           handicapSource: source,
           handicapAllowance: allowance,
-          handicapAdjustmentMode: adjustmentMode,
+          handicapAdjustmentMode: source === "competition-end" ? "league-final" : "none",
         }),
       );
     } catch (error) {
@@ -541,14 +571,9 @@ export function MatchplayEdit({ record, state, onSave }) {
           disabled={hasScorecards}
           onChange={(event) => setSource(event.target.value)}
         >
-          {linked && (
-            <option value="league-start">
-              Original League-start Handicap Index
-            </option>
-          )}
-          <option value="current">
-            Current Handicap Index when the match starts
-          </option>
+          <option value="competition-start">Start-of-competition handicap position</option>
+          <option value="competition-end">End-of-competition handicap position</option>
+          <option value="current">Current GGC Handicap Index</option>
         </select>
       </label>
       <label>
@@ -562,29 +587,13 @@ export function MatchplayEdit({ record, state, onSave }) {
           onChange={(event) => setAllowance(event.target.value)}
         />
       </label>
-      {linked && (
-        <label>
-          League handicap adjustments
-          <select
-            value={adjustmentMode}
-            disabled={hasScorecards}
-            onChange={(event) => setAdjustmentMode(event.target.value)}
-          >
-            <option value="none">Do not carry League adjustments</option>
-            <option value="league-final">
-              Carry final League adjustments into the knockouts
-            </option>
-          </select>
-        </label>
-      )}
-      {source === "league-start" ? (
+      {source === "competition-start" ? (
         <p className="matchplayForecastNote">
-          <b>Winter League playoff rule:</b> every golfer returns to the
-          Handicap Index saved when the League began. The {allowance}% match
-          allowance is applied
-          {adjustmentMode === "league-final"
-            ? ", followed by the final League handicap adjustments."
-            : ". League performance adjustments are not carried into the knockouts."}
+          Uses the handicap position saved when this competition began. The {allowance}% match allowance is then applied.
+        </p>
+      ) : source === "competition-end" ? (
+        <p className="matchplayForecastNote">
+          Uses the handicap position at the end of the linked competition, including its final adjustments, before the {allowance}% match allowance is applied.
         </p>
       ) : (
         <p className="matchplayForecastNote">
@@ -604,6 +613,13 @@ export function MatchplayEdit({ record, state, onSave }) {
           finalised.
         </p>
       )}
+      {record.matchplay?.type === "group-stage" && record.matchplay.fixtures?.length > 0 && record.matchplay.fixtures.every((fixture) => fixture.status === "complete") && (
+        <button className="secondary" onClick={() => {
+          if (!confirm("Lock these group tables and create the knockout stage?")) return;
+          const knockout = qualifyGroupStage(record.matchplay, { id: `${record.matchplay.id}-knockout`, name: `${record.name} Knockout` });
+          onSave({ ...record, matchplay: knockout, completedGroupStage: record.matchplay, structure: "group-stage-knockout", updatedAt: nowIso() });
+        }}><Trophy /> LOCK GROUPS &amp; CREATE KNOCKOUT</button>
+      )}
       <button className="primary" onClick={save}>
         SAVE KNOCKOUT SETTINGS
       </button>
@@ -616,19 +632,13 @@ export function MatchplayResults({
   state,
   me,
   setState,
-  onScorecard,
-  onManage,
-  isAdmin: adminAccess,
 }) {
   const resolved = useMemo(
       () => currentMatchplayRecord(record, state),
       [record, state],
     ),
     series = resolved.matchplay,
-    group = state.societies.find((item) => item.id === record.societyId),
-    isAdmin =
-      adminAccess ??
-      (group?.ownerId === me?.id || (group?.admins || []).includes(me?.id));
+    group = state.societies.find((item) => item.id === record.societyId);
   useEffect(() => {
     if (
       series.qualificationStatus !== "qualified" ||
@@ -642,16 +652,6 @@ export function MatchplayResults({
       ),
     }));
   }, [series.qualificationStatus, record.id]);
-  const updateRecord = (changes) =>
-    setState((previous) => ({
-      ...previous,
-      leagues: (previous.leagues || []).map((item) =>
-        item.id === record.id
-          ? { ...item, ...changes, updatedAt: nowIso() }
-          : item,
-      ),
-    }));
-  const update = (matchplay) => updateRecord({ matchplay });
   const table =
       series.type === "round-robin" ? roundRobinStandings(series) : null,
     groups = series.type === "group-stage" ? groupStageStandings(series) : null,
@@ -665,26 +665,6 @@ export function MatchplayResults({
       myEntrant && series.type === "round-robin"
         ? entrantFixtureSummary(series, myEntrant.id)
         : null;
-  const groupsComplete =
-    series.type === "group-stage" &&
-    series.fixtures.length > 0 &&
-    series.fixtures.every((fixture) => fixture.status === "complete");
-  function advanceGroups() {
-    if (
-      !groupsComplete ||
-      !confirm("Lock these group tables and create the knockout stage?")
-    )
-      return;
-    const knockout = qualifyGroupStage(series, {
-      id: `${series.id}-knockout`,
-      name: `${record.name} Knockout`,
-    });
-    updateRecord({
-      matchplay: knockout,
-      completedGroupStage: series,
-      structure: "group-stage-knockout",
-    });
-  }
   const handicaps = matchplayHandicapSettings(record, state);
   return (
     <div className="matchplayResult">
@@ -704,23 +684,14 @@ export function MatchplayResults({
           <mark>WINNER · {entrantName(series, series.championId)}</mark>
         )}
       </div>
-      {isAdmin && onManage && (
-        <button
-          className="secondary matchplayManage"
-          onClick={() => onManage(record)}
-        >
-          MANAGE KNOCKOUTS
-        </button>
-      )}
       <p className="matchplayHandicapSummary">
         <b>HANDICAPS:</b>{" "}
-        {handicaps.source === "league-start"
-          ? "Original League-start handicaps"
-          : "Current handicaps at match start"}{" "}
-        · {handicaps.allowance}% allowance ·{" "}
-        {handicaps.adjustmentMode === "league-final"
-          ? "final League adjustments included"
-          : "League adjustments excluded"}
+        {handicaps.source === "competition-start"
+          ? "Start-of-competition handicap position"
+          : handicaps.source === "competition-end"
+            ? "End-of-competition handicap position"
+            : "Current GGC Handicap Index"}{" "}
+        · {handicaps.allowance}% allowance
       </p>
       {series.qualificationStatus === "forecasted" && (
         <p className="matchplayForecastNote">
@@ -756,30 +727,10 @@ export function MatchplayResults({
           <Table rows={item.standings} />
         </div>
       ))}
-      {groupsComplete && isAdmin && (
-        <button className="primary matchplayAdvance" onClick={advanceGroups}>
-          <Trophy /> LOCK GROUPS &amp; CREATE KNOCKOUT
-        </button>
-      )}
       <div className="matchFixtures">
-        {series.fixtures.map((fixture) => (
-          <Fixture
-            key={fixture.id}
-            fixture={fixture}
-            series={series}
-            record={resolved}
-              state={state}
-            me={me}
-            isAdmin={isAdmin}
-            onChange={update}
-            competition={(state.comps || []).find(
-              (comp) =>
-                comp.matchplaySeriesId === record.id &&
-                comp.matchplayFixtureId === fixture.id,
-            )}
-            onScorecard={onScorecard}
-          />
-        ))}
+        {series.fixtures
+          .filter((fixture) => !["scheduled", "live", "forecasted"].includes(fixture.status) || ["knockout", "playoff"].includes(record.structure))
+          .map((fixture) => <FixtureSummary key={fixture.id} fixture={fixture} series={series} />)}
       </div>
     </div>
   );

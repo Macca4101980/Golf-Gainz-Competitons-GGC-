@@ -44,6 +44,14 @@ test('solo Better Ball retains entered N/R without inventing a partner card',()=
  assert.equal(r.complete,3);assert.equal(r.points,5);assert.equal(JSON.stringify(s),before);
 });
 
+test('provisional Better Ball progress is the union of both visible partner cards',()=>{
+ const a=card([...Array(15).fill(4),4,4,4]);
+ const b=card([...Array(5).fill(3),...Array(13).fill('')],'b');
+ const provisional=state([{...a,gross:a.gross.map((v,i)=>i<15?v:'')},b]);
+ const better=pairScore({ids:['a','b']},{...base,format:'4bbb-stableford'},provisional);
+ assert.equal(better.complete,15);
+});
+
 for(const format of ['best1','best2','best3','cha-cha-cha','irish-fourball','bowmaker','alliance','yellow-ball','shamble'])test(`${format} counts an entered N/R hole but leaves blanks unplayed`,()=>{
  const cards=[card([0]),card([0],'b')];const r=groupScore({playerIds:['a','b']},{...base,format},state(cards));
  assert.equal(r.complete,1);assert.equal(r.points,0);

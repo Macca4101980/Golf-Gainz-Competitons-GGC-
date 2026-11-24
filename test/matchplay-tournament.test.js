@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin,entrantFixtureSummary,fixtureResultFromMatchplay,groupStageStandings,knockoutSeedOrder,qualifyGroupStage,qualifyLeaguePlayoff,recordConcession,recordFixtureResult,recordSuddenDeathHole,roundRobinStandings}from'../src/matchplayTournament.js';
+import{createGroupStage,createKnockout,createLeaguePlayoff,createRoundRobin,entrantFixtureSummary,fixtureResultFromMatchplay,groupStageKnockoutPreview,groupStageStandings,knockoutSeedOrder,qualifyGroupStage,qualifyLeaguePlayoff,recordConcession,recordFixtureResult,recordSuddenDeathHole,roundRobinStandings}from'../src/matchplayTournament.js';
 
 const entrants=count=>Array.from({length:count},(_,index)=>({id:`p${index+1}`,name:`Player ${index+1}`,seed:index+1}));
 
@@ -134,6 +134,16 @@ test('World Cup-style groups use balanced seeding and complete round robins',()=
  assert.ok(series.fixtures.every(fixture=>fixture.groupId&&fixture.stage==='group'));
  assert.deepEqual(groupStageStandings(series).map(group=>group.standings.length),[4,4,4,4]);
  assert.throws(()=>qualifyGroupStage(series),/must be complete/);
+});
+
+test('group-stage results can preview every knockout round before qualification',()=>{
+ const series=createGroupStage({id:'preview',name:'World Cup',entrants:entrants(8),groupCount:2,qualifiersPerGroup:2});
+ const preview=groupStageKnockoutPreview(series),first=preview.fixtures.filter(fixture=>fixture.round===1),final=preview.fixtures.find(fixture=>fixture.round===2);
+ assert.equal(preview.preview,true);
+ assert.deepEqual(first.map(fixture=>[preview.entrants.find(item=>item.id===fixture.entrantAId)?.name,preview.entrants.find(item=>item.id===fixture.entrantBId)?.name]),[['Group A · 1st','Group B · 2nd'],['Group B · 1st','Group A · 2nd']]);
+ assert.ok(first.every(fixture=>fixture.status==='forecasted'));
+ assert.equal(final.status,'forecasted');
+ assert.deepEqual([final.entrantAId,final.entrantBId],[null,null]);
 });
 
 test('completed group tables qualify into cross-group knockout fixtures',()=>{

@@ -77,3 +77,10 @@ test('matchplay persistence records are excluded from ordinary League management
  assert.match(leagueSource,/recordType!=='matchplay-series'/);
  assert.match(mainSource,/recordType !== "matchplay-series"/);
 });
+
+test('mobile matchplay tables keep names and every statistic in one view',async()=>{
+ const styles=await readFile(new URL('../src/style.css',import.meta.url),'utf8');
+ assert.match(styles,/@media\(max-width:600px\)\{\.matchTable\{overflow:hidden\}/);
+ assert.match(styles,/\.matchTable>div\{grid-template-columns:16px minmax\(94px,1fr\) repeat\(4,20px\) 26px 28px;min-width:0/);
+ assert.match(styles,/text-overflow:ellipsis/);
+});

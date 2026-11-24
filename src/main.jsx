@@ -32,6 +32,7 @@ import HowToSlideshow from'./HowToSlideshow.jsx';
 import CompetitionGuide from'./CompetitionGuide.jsx';
 import{MatchplayCreate,MatchplayEdit,MatchplayFixtures,MatchplayResults}from'./MatchplaySeries.jsx';
 import{matchplaySeries,standardLeagues}from'./matchplaySeriesModel.js';
+import{completedPlayoffPlacings,leagueEntrantMemberIds,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
 import{syncMatchplayCompetitionResult}from'./matchplayCompetition.js';
 import{flushPushNotifications}from'./pushNotifications.js';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
@@ -2914,9 +2915,7 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
 }
 
 function LeagueMoneyManager({ state, setState, me, society }) {
-  const leagues = (state.leagues || []).filter(
-      (l) => l.societyId === society?.id && (l.memberIds || []).length,
-    ),
+  const leagues = moneyEligibleLeagues(state, society?.id),
     [leagueId, setLeagueId] = useState(leagues[0]?.id || "");
   useEffect(() => {
     if (!leagues.some((l) => l.id === leagueId))
@@ -2942,14 +2941,26 @@ function LeagueMoneyManager({ state, setState, me, society }) {
     paid = league.moneyPaidIn || {},
     settled = league.moneyPaidOut || {},
     payments = league.moneyPayoutPayments || {};
+  const linkedPlayoffs = linkedPrizePlayoffs(state, league.id),
+    selectedPlayoff =
+      linkedPlayoffs.find((record) => record.id === cfg.playoffSeriesId) ||
+      linkedPlayoffs[0] ||
+      null,
+    prizeDestination = selectedPlayoff
+      ? cfg.seasonPrizeDestination || "playoff"
+      : "league-table",
+    separatePlayoffFund =
+      prizeDestination === "separate"
+        ? Math.max(0, +cfg.separatePlayoffPot || 0)
+        : 0;
   const members = (league.memberIds || [])
       .map((id) => state.players.find((p) => p.id === id))
       .filter(Boolean),
     totalPerPlayer = (+cfg.entryFee || 0) + (+cfg.twosFee || 0),
-    expected = members.length * totalPerPlayer,
+    expected = members.length * totalPerPlayer + separatePlayoffFund,
     received = members.reduce(
       (n, p) => n + (paid[p.id] ? totalPerPlayer : 0),
-      0,
+      separatePlayoffFund,
     );
   let wl = null;
   try {
@@ -3064,14 +3075,29 @@ function LeagueMoneyManager({ state, setState, me, society }) {
       .filter((x) => x.reason.includes("winner"))
       .reduce((n, x) => n + x.amount, 0),
     finalPot = Math.max(0, leaguePot - weeklyCommitted),
+    {
+      leaguePot: leagueFinalPot,
+      playoffPot,
+      championBonus,
+    } = seasonPrizePots({
+      remainingLeaguePot: finalPot,
+      destination: prizeDestination,
+      playoffPercent: cfg.playoffPotPercent ?? 50,
+      separatePlayoffPot: cfg.separatePlayoffPot,
+      leagueChampionBonus: cfg.leagueChampionBonus,
+      playoffCancelled:
+        selectedPlayoff?.status === "cancelled" ||
+        selectedPlayoff?.matchplay?.status === "cancelled",
+      cancellationFallback: cfg.playoffCancellationFallback,
+    }),
     completed = weeks.length > 0 && weeks.every(weekIsFinal);
-  if (completed && wl?.table?.length) {
+  if (completed && wl?.table?.length && leagueFinalPot > 0) {
     const first = wl.table[0],
       second = wl.table[1],
       pct = Math.max(0, Math.min(100, +cfg.finalFirst || 0));
     for (const [team, amount, label] of [
-      [first, (finalPot * pct) / 100, "League 1st"],
-      [second, (finalPot * (100 - pct)) / 100, "League 2nd"],
+      [first, (leagueFinalPot * pct) / 100, "League 1st"],
+      [second, (leagueFinalPot * (100 - pct)) / 100, "League 2nd"],
     ])
       if (team && amount > 0)
         for (const id of team.memberIds || []) {
@@ -3085,6 +3111,52 @@ function LeagueMoneyManager({ state, setState, me, society }) {
               amount: amount / Math.max(1, team.memberIds?.length || 1),
             });
         }
+  }
+  if (completed && wl?.table?.length && championBonus > 0) {
+    const first = wl.table[0],
+      ids = (first?.memberIds || []).filter((id) =>
+        state.players.some((player) => player.id === id),
+      );
+    for (const id of ids) {
+      const player = state.players.find((item) => item.id === id);
+      payouts.push({
+        key: `league-champion-bonus-${id}`,
+        playerId: id,
+        name: player.name,
+        reason: "League champion bonus",
+        amount: championBonus / Math.max(1, ids.length),
+      });
+    }
+  }
+  const playoffPlacings = completedPlayoffPlacings(selectedPlayoff);
+  if (playoffPot > 0 && playoffPlacings) {
+    const pct = Math.max(
+      0,
+      Math.min(100, +(cfg.playoffFinalFirst ?? 60) || 0),
+    );
+    for (const [entrantId, amount, label] of [
+      [playoffPlacings.winnerId, (playoffPot * pct) / 100, "Playoff winner"],
+      [
+        playoffPlacings.runnerUpId,
+        (playoffPot * (100 - pct)) / 100,
+        "Playoff runner-up",
+      ],
+    ]) {
+      const ids = leagueEntrantMemberIds(league, entrantId).filter((id) =>
+        state.players.some((player) => player.id === id),
+      );
+      if (!ids.length || amount <= 0) continue;
+      for (const id of ids) {
+        const player = state.players.find((item) => item.id === id);
+        payouts.push({
+          key: `playoff-${selectedPlayoff.id}-${label}-${id}`,
+          playerId: id,
+          name: player.name,
+          reason: label,
+          amount: amount / ids.length,
+        });
+      }
+    }
   }
   const toPence = (amount) => Math.round((Number(amount) || 0) * 100);
   const paidFor = (x) =>
@@ -3252,7 +3324,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
             />
           </label>
           <label>
-            Final 1st / 2nd split
+            {selectedPlayoff ? "League table 1st / 2nd split" : "Final 1st / 2nd split"}
             <select
               value={cfg.finalFirst}
               onChange={(e) => setCfg("finalFirst", +e.target.value)}
@@ -3263,6 +3335,141 @@ function LeagueMoneyManager({ state, setState, me, society }) {
             </select>
           </label>
         </div>
+        {selectedPlayoff && (
+          <div className="playoffMoneySettings">
+            <h4>PLAYOFF PRIZE MONEY</h4>
+            <p className="muted">
+              {selectedPlayoff.name} uses this League’s paid-in ledger and its
+              remaining prize pot. It does not collect another entry fee or
+              create another 2s fund.
+            </p>
+            {linkedPlayoffs.length > 1 && (
+              <label>
+                Prize playoff
+                <select
+                  value={selectedPlayoff.id}
+                  onChange={(event) =>
+                    setCfg("playoffSeriesId", event.target.value)
+                  }
+                >
+                  {linkedPlayoffs.map((record) => (
+                    <option key={record.id} value={record.id}>
+                      {record.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div className="grid">
+              <label>
+                Remaining prize pot goes to
+                <select
+                  value={prizeDestination}
+                  onChange={(event) =>
+                    setCfg("seasonPrizeDestination", event.target.value)
+                  }
+                >
+                  <option value="league-table">League table only</option>
+                  <option value="playoff">Knockouts only</option>
+                  <option value="split">Split League and knockouts</option>
+                  <option value="separate">League table + separate knockout fund</option>
+                </select>
+              </label>
+              {prizeDestination === "split" && (
+                <label>
+                  Knockout share of remaining pot %
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={cfg.playoffPotPercent ?? 50}
+                    onChange={(event) =>
+                      setCfg(
+                        "playoffPotPercent",
+                        Math.max(0, Math.min(100, +event.target.value || 0)),
+                      )
+                    }
+                  />
+                </label>
+              )}
+              {prizeDestination === "separate" && (
+                <label>
+                  Separate knockout fund £
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={cfg.separatePlayoffPot ?? 0}
+                    onChange={(event) =>
+                      setCfg("separatePlayoffPot", +event.target.value || 0)
+                    }
+                  />
+                </label>
+              )}
+              {["playoff", "split"].includes(prizeDestination) && (
+                <label>
+                  League champion bonus £
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={cfg.leagueChampionBonus ?? 0}
+                    onChange={(event) =>
+                      setCfg("leagueChampionBonus", +event.target.value || 0)
+                    }
+                  />
+                </label>
+              )}
+              {prizeDestination !== "league-table" && (
+                <label>
+                  Knockout winner / runner-up split
+                  <select
+                    value={cfg.playoffFinalFirst ?? 60}
+                    onChange={(event) =>
+                      setCfg("playoffFinalFirst", +event.target.value)
+                    }
+                  >
+                    <option value="100">Winner takes all</option>
+                    <option value="70">70 / 30</option>
+                    <option value="60">60 / 40</option>
+                    <option value="50">50 / 50</option>
+                  </select>
+                </label>
+              )}
+              {prizeDestination !== "league-table" && (
+                <label>
+                  If the knockout is cancelled
+                  <select
+                    value={cfg.playoffCancellationFallback ?? "league-table"}
+                    onChange={(event) =>
+                      setCfg("playoffCancellationFallback", event.target.value)
+                    }
+                  >
+                    <option value="league-table">Return its pot to the League table</option>
+                    <option value="hold">Hold it for manual allocation</option>
+                  </select>
+                </label>
+              )}
+            </div>
+            <div className="playoffMoneySummary">
+              <span>
+                <small>League-table pot</small>
+                <b>{money2(leagueFinalPot)}</b>
+              </span>
+              <span>
+                <small>Knockout pot</small>
+                <b>{money2(playoffPot)}</b>
+              </span>
+              {championBonus > 0 && (
+                <span>
+                  <small>League champion bonus</small>
+                  <b>{money2(championBonus)}</b>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <div className="card">
         <h3>RECONCILIATION</h3>
@@ -3271,6 +3478,9 @@ function LeagueMoneyManager({ state, setState, me, society }) {
             <b>Expected when everyone has paid</b>
             <small>
               {members.length} golfers × {money2(totalPerPlayer)}
+              {separatePlayoffFund > 0
+                ? ` + ${money2(separatePlayoffFund)} separate knockout fund`
+                : ""}
             </small>
           </span>
           <em>{money2(expected)}</em>
@@ -3532,9 +3742,13 @@ function LeagueMoneyManager({ state, setState, me, society }) {
         )}
         <p className="muted">
           League prize pot after weekly winner prizes: <b>{money2(finalPot)}</b>
-          {completed
-            ? " · final split is now included above"
-            : " · final 1st/2nd payout appears when the League is complete"}
+          {selectedPlayoff && prizeDestination !== "league-table"
+            ? playoffPlacings
+              ? " · knockout payout is now included above"
+              : " · knockout payout appears when the playoff final is complete"
+            : completed
+              ? " · final split is now included above"
+              : " · final 1st/2nd payout appears when the League is complete"}
           .
         </p>
       </div>

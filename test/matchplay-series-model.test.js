@@ -65,6 +65,15 @@ test('standalone structures are wrapped as versioned matchplay series records',(
  assert.ok([knockout,leagueSeries,groups].every(record=>record.recordType==='matchplay-series'&&record.societyId==='g1'));
 });
 
+test('standalone matchplay cannot use a linked League end handicap position',()=>{
+ const state=leagueState(),base={id:'standalone-handicap',name:'Standalone',societyId:'g1',mode:'knockout',entrants:teams.slice(0,4),entrantType:'team',sourceLeague:league,createdAt:'2027-01-01T12:00:00Z',state};
+ const record=buildMatchplayRecord({...base,handicapSettings:{source:'competition-start',allowance:90}});
+ assert.equal(record.sourceLeagueId,null);
+ assert.equal(record.entrantSourceLeagueId,league.id);
+ assert.throws(()=>buildMatchplayRecord({...base,handicapSettings:{source:'competition-end',allowance:90}}),/only available for a linked League playoff/);
+ assert.throws(()=>editMatchplayRecord(record,{...state,leagues:[league,record]},{handicapSource:'competition-end'}),/only available for a linked League playoff/);
+});
+
 test('a standalone matchplay structure can be rebuilt without changing its identity or entrants',()=>{
  const state={players,cards:[],courses:[],societies:[{id:'g1'}],leagues:[],comps:[]};
  const original=buildMatchplayRecord({id:'editable-series',name:'Match play League',societyId:'g1',mode:'round-robin',entrants:teams,entrantType:'team',createdAt:'2027-01-01T12:00:00Z',state});

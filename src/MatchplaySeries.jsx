@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Trophy } from "lucide-react";
 import {
   entrantFixtureSummary,
+  groupStageKnockoutPreview,
   groupStageStandings,
   qualifyGroupStage,
   recordConcession,
@@ -14,6 +15,7 @@ import {
   currentMatchplayRecord,
   editMatchplayRecord,
   fixtureCompetitionPreset,
+  isLeaguePlayoffRecord,
   matchplayHandicapSettings,
   rebuildMatchplayRecord,
   standardLeagues,
@@ -103,6 +105,10 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
       const entrants = choices
         .filter((item) => selected.includes(item.id))
         .map((item, index) => ({ ...item, seed: index + 1 }));
+      const validHandicapSource =
+        mode === "playoff" || handicapSource !== "competition-end"
+          ? handicapSource
+          : "competition-start";
       const record = buildMatchplayRecord({
         name: name.trim() || "Matchplay",
         societyId: groupId,
@@ -116,11 +122,11 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         legs,
         points: { winPoints, drawPoints, lossPoints },
         handicapSettings: {
-          source: handicapSource,
+          source: validHandicapSource,
           allowance: Math.max(0, Math.min(100, Number(handicapAllowance))),
           adjustmentMode:
-            handicapSource === "competition-end" ? "league-final" : "none",
-          excludeLeagueAdjustments: handicapSource !== "competition-end",
+            validHandicapSource === "competition-end" ? "league-final" : "none",
+          excludeLeagueAdjustments: validHandicapSource !== "competition-end",
         },
         createdBy: me?.id,
         state,
@@ -162,7 +168,12 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
       </label>
       <label>
         Structure
-        <select value={mode} onChange={(event) => setMode(event.target.value)}>
+        <select value={mode} onChange={(event) => {
+          const nextMode = event.target.value;
+          setMode(nextMode);
+          if (nextMode !== "playoff" && handicapSource === "competition-end")
+            setHandicapSource("competition-start");
+        }}>
           <option value="knockout">Knockout</option>
           <option value="round-robin">League — round robin</option>
           <option value="group-stage">Group stage + knockout</option>
@@ -329,7 +340,7 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         Handicap basis
         <select value={handicapSource} onChange={(event) => setHandicapSource(event.target.value)}>
           <option value="competition-start">Start-of-competition handicap position</option>
-          <option value="competition-end">End-of-competition handicap position</option>
+          {mode === "playoff" && <option value="competition-end">End-of-competition handicap position</option>}
           <option value="current">Current GGC Handicap Index</option>
         </select>
       </label>
@@ -473,6 +484,29 @@ function FixtureSummary({ fixture, series }) {
   );
 }
 
+function GroupStageKnockoutPreview({ series }) {
+  let preview;
+  try {
+    preview = groupStageKnockoutPreview(series);
+  } catch {
+    return null;
+  }
+  return (
+    <section className="matchplayKnockoutPreview">
+      <h4>KNOCKOUT STAGE</h4>
+      <p className="matchplayForecastNote">
+        Planned from the final group positions. Entrants lock when every group
+        match is complete.
+      </p>
+      <div className="matchFixtures">
+        {preview.fixtures.map((fixture) => (
+          <FixtureSummary key={fixture.id} fixture={fixture} series={preview} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 const fixtureParticipant = (series, fixture, playerId) =>
   series.entrants.some((entrant) =>
     (entrant.id === fixture.entrantAId || entrant.id === fixture.entrantBId) &&
@@ -515,7 +549,7 @@ export function MatchplayFixtures({ records = [], state, setState, me, isAdmin =
 
 export function MatchplayEdit({ record, state, onSave, onDelete }) {
   const settings = matchplayHandicapSettings(record, state),
-    linked = !!record.sourceLeagueId,
+    linked = isLeaguePlayoffRecord(record),
     hasScorecards = (state.comps || []).some(
       (comp) => comp.matchplaySeriesId === record.id,
     );
@@ -615,7 +649,7 @@ export function MatchplayEdit({ record, state, onSave, onDelete }) {
           onChange={(event) => setSource(event.target.value)}
         >
           <option value="competition-start">Start-of-competition handicap position</option>
-          <option value="competition-end">End-of-competition handicap position</option>
+          {linked && <option value="competition-end">End-of-competition handicap position</option>}
           <option value="current">Current GGC Handicap Index</option>
         </select>
       </label>
@@ -778,6 +812,9 @@ export function MatchplayResults({
           <Table rows={item.standings} />
         </div>
       ))}
+      {series.type === "group-stage" && (
+        <GroupStageKnockoutPreview series={series} />
+      )}
       <div className="matchFixtures">
         {series.fixtures
           .filter((fixture) => !["scheduled", "live", "forecasted"].includes(fixture.status) || ["knockout", "playoff"].includes(record.structure))

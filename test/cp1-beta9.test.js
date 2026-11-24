@@ -7,8 +7,8 @@ const main=fs.readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
 const wl=fs.readFileSync(new URL('../src/winterLeague.js',import.meta.url),'utf8');
 const pkg=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 
-test('current build marker is V4 Beta 5',()=>{
-  assert.equal(pkg.version,'4.0.0-beta.5');
+test('current build marker is V5',()=>{
+  assert.equal(pkg.version,'5.0.0');
   assert.match(main,/APP_VERSION_LABEL/);
   assert.match(leagues,/APP_VERSION_LABEL/);
 });

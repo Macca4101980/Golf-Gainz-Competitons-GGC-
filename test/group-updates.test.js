@@ -23,6 +23,14 @@ test('unread updates drive both navigation and installed app badges',()=>{
  assert.match(main,/groupUpdates\.unread>0/);
 });
 
+test('Updates contains notification controls and can clear every unread item',()=>{
+ assert.match(app,/notificationSettings=null/);
+ assert.match(app,/CLEAR ALL NOTIFICATIONS/);
+ assert.match(app,/const clearAll=async\(\)=>/);
+ assert.match(app,/Promise\.all\(unreadIds\.map/);
+ assert.match(main,/notificationSettings=\{<PushNotificationSettings client=\{supabase\}\/>\}/);
+});
+
 test('hidden Groups stay out of the Groups page and Updates is labelled',()=>{
  assert.match(main,/function GroupsPage\([^)]*hiddenGroups=\[\]/);
  assert.match(main,/state\.societies\.filter\(s=>!hiddenGroups\.includes\(s\.id\)/);

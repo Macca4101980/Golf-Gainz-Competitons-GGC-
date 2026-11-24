@@ -32,7 +32,7 @@ import HowToSlideshow from'./HowToSlideshow.jsx';
 import CompetitionGuide from'./CompetitionGuide.jsx';
 import{MatchplayCreate,MatchplayEdit,MatchplayFixtures,MatchplayResults}from'./MatchplaySeries.jsx';
 import{matchplaySeries,standardLeagues}from'./matchplaySeriesModel.js';
-import{completedPlayoffPlacings,leagueEntrantMemberIds,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
+import{completedPlayoffPlacings,leagueEntrantMemberIds,leaguePrizeForecast,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
 import{syncMatchplayCompetitionResult}from'./matchplayCompetition.js';
 import{flushPushNotifications}from'./pushNotifications.js';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
@@ -3070,11 +3070,29 @@ function LeagueMoneyManager({ state, setState, me, society }) {
       twosCarry = 0;
     }
   });
-  const leaguePot = members.length * (+cfg.entryFee || 0),
-    weeklyCommitted = payouts
-      .filter((x) => x.reason.includes("winner"))
-      .reduce((n, x) => n + x.amount, 0),
-    finalPot = Math.max(0, leaguePot - weeklyCommitted),
+  const scheduledWeekCount = Math.max(
+      weeks.length,
+      Number(league.targetCompetitions) || 0,
+    ),
+    weeklyWinnerRecipients = (league.teams || []).length
+      ? Math.max(
+          1,
+          ...(league.teams || []).map((team) =>
+            Math.max(1, (team.memberIds || []).length),
+          ),
+        )
+      : 1,
+    {
+      entryFund: leaguePot,
+      weeklyPrizeFund: weeklyCommitted,
+      seasonEndingFund: finalPot,
+    } = leaguePrizeForecast({
+      memberCount: members.length,
+      entryFeePerPlayer: cfg.entryFee,
+      scheduledWeeks: scheduledWeekCount,
+      weeklyPrizePerPlayer: cfg.weeklyPrizePerPlayer,
+      weeklyWinnerRecipients,
+    }),
     {
       leaguePot: leagueFinalPot,
       playoffPot,
@@ -3329,6 +3347,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
               value={cfg.finalFirst}
               onChange={(e) => setCfg("finalFirst", +e.target.value)}
             >
+              <option value="100">Winner takes all</option>
               <option value="70">70 / 30</option>
               <option value="60">60 / 40</option>
               <option value="50">50 / 50</option>
@@ -3337,11 +3356,30 @@ function LeagueMoneyManager({ state, setState, me, society }) {
         </div>
         {selectedPlayoff && (
           <div className="playoffMoneySettings">
-            <h4>PLAYOFF PRIZE MONEY</h4>
-            <p className="muted">
-              {selectedPlayoff.name} uses this League’s paid-in ledger and its
-              remaining prize pot. It does not collect another entry fee or
-              create another 2s fund.
+            <h4>SEASON PRIZE MONEY</h4>
+            <div className="seasonMoneyCalculation">
+              <h5>HOW THE SEASON-ENDING POT IS CALCULATED</h5>
+              <div>
+                <span>League entry fund</span>
+                <b>
+                  {members.length} golfers × {money2(cfg.entryFee)} = {money2(leaguePot)}
+                </b>
+              </div>
+              <div>
+                <span>Weekly prizes reserved</span>
+                <b>
+                  {scheduledWeekCount} weeks × {weeklyWinnerRecipients} winners × {money2(cfg.weeklyPrizePerPlayer)} = {money2(weeklyCommitted)}
+                </b>
+              </div>
+              <div className="seasonMoneyTotal">
+                <span>Season-ending pot</span>
+                <b>{money2(leaguePot)} − {money2(weeklyCommitted)} = {money2(finalPot)}</b>
+              </div>
+            </div>
+            <p className="playoffMoneyExplanation">
+              Now choose how the {money2(finalPot)} season-ending pot is shared
+              between the League table and {selectedPlayoff.name}. No second
+              entry fee or 2s fund is created.
             </p>
             {linkedPlayoffs.length > 1 && (
               <label>
@@ -3362,7 +3400,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
             )}
             <div className="grid">
               <label>
-                Remaining prize pot goes to
+                Allocate the season-ending pot to
                 <select
                   value={prizeDestination}
                   onChange={(event) =>
@@ -3377,7 +3415,7 @@ function LeagueMoneyManager({ state, setState, me, society }) {
               </label>
               {prizeDestination === "split" && (
                 <label>
-                  Knockout share of remaining pot %
+                  Knockout share of season-ending pot %
                   <input
                     type="number"
                     min="0"
@@ -3403,20 +3441,6 @@ function LeagueMoneyManager({ state, setState, me, society }) {
                     value={cfg.separatePlayoffPot ?? 0}
                     onChange={(event) =>
                       setCfg("separatePlayoffPot", +event.target.value || 0)
-                    }
-                  />
-                </label>
-              )}
-              {["playoff", "split"].includes(prizeDestination) && (
-                <label>
-                  League champion bonus £
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={cfg.leagueChampionBonus ?? 0}
-                    onChange={(event) =>
-                      setCfg("leagueChampionBonus", +event.target.value || 0)
                     }
                   />
                 </label>
@@ -3456,10 +3480,20 @@ function LeagueMoneyManager({ state, setState, me, society }) {
               <span>
                 <small>League-table pot</small>
                 <b>{money2(leagueFinalPot)}</b>
+                <em>
+                  {leagueFinalPot > 0
+                    ? `${cfg.finalFirst}% winner · ${100 - cfg.finalFirst}% runner-up`
+                    : "No League-table payout"}
+                </em>
               </span>
               <span>
                 <small>Knockout pot</small>
                 <b>{money2(playoffPot)}</b>
+                <em>
+                  {playoffPot > 0
+                    ? `${cfg.playoffFinalFirst ?? 60}% winner · ${100 - (cfg.playoffFinalFirst ?? 60)}% runner-up`
+                    : "No knockout payout"}
+                </em>
               </span>
               {championBonus > 0 && (
                 <span>

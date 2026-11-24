@@ -1,4 +1,5 @@
 import test from'node:test';import assert from'node:assert/strict';import{handicapAdjustment,leagueHandicapSettings,wlCutForScore,winterLeagueTable}from'../src/winterLeague.js';
+import{leaguePrizeForecast}from'../src/leagueMoneyModel.js';
 
 test('Winter League preset remains 90%, team based and 0.5 per point above 36',()=>{const s=leagueHandicapSettings({});assert.equal(s.allowance,90);assert.equal(s.mode,'team');assert.equal(s.target,36);assert.equal(wlCutForScore(36,s),0);assert.equal(wlCutForScore(37,s),.5);assert.equal(wlCutForScore(38,s),1);assert.equal(wlCutForScore(39,s),1.5)});
 test('fixed and manual modes do not auto adjust',()=>{assert.equal(handicapAdjustment(42,{mode:'fixed',target:36,cutPerPoint:1}),0);assert.equal(handicapAdjustment(42,{mode:'manual',target:36,cutPerPoint:1}),0)});
@@ -37,3 +38,4 @@ test('locked League starting handicap remains independent of later profile HI ch
 });
 
 test('League money arithmetic matches 30-player Winter League example',()=>{const players=30,leagueFee=12,twosFee=8,weeklyPrizePerPlayer=10,weeks=10;const expected=players*(leagueFee+twosFee),leaguePot=players*leagueFee,weekly=weeks*2*weeklyPrizePerPlayer,finalPot=leaguePot-weekly;assert.equal(expected,600);assert.equal(leaguePot,360);assert.equal(players*twosFee,240);assert.equal(weekly,200);assert.equal(finalPot,160);assert.equal(finalPot*.6,96);assert.equal(finalPot*.4,64)});
+test('League prize forecast reserves every scheduled weekly pairs payout before allocating the season-ending pot',()=>{assert.deepEqual(leaguePrizeForecast({memberCount:30,entryFeePerPlayer:12,scheduledWeeks:10,weeklyPrizePerPlayer:10,weeklyWinnerRecipients:2}),{entryFund:360,weeklyPrizeFund:200,seasonEndingFund:160})});

@@ -25,6 +25,27 @@ export function linkedPrizePlayoffs(state, leagueId) {
   );
 }
 
+export function leaguePrizeForecast({
+  memberCount = 0,
+  entryFeePerPlayer = 0,
+  scheduledWeeks = 0,
+  weeklyPrizePerPlayer = 0,
+  weeklyWinnerRecipients = 1,
+} = {}) {
+  const entryFund =
+      Math.max(0, Number(memberCount) || 0) *
+      Math.max(0, Number(entryFeePerPlayer) || 0),
+    weeklyPrizeFund =
+      Math.max(0, Number(scheduledWeeks) || 0) *
+      Math.max(0, Number(weeklyPrizePerPlayer) || 0) *
+      Math.max(1, Number(weeklyWinnerRecipients) || 1);
+  return {
+    entryFund,
+    weeklyPrizeFund,
+    seasonEndingFund: Math.max(0, entryFund - weeklyPrizeFund),
+  };
+}
+
 export function seasonPrizePots({
   remainingLeaguePot = 0,
   destination = SEASON_PRIZE_DESTINATIONS.LEAGUE,

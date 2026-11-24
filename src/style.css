@@ -1173,3 +1173,23 @@ header>div.headerActions{flex-direction:row;align-items:center;gap:12px}
 
 /* Matchplay management and notification controls */
 .matchplayEntrantActions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}.matchplayEntrantActions button{width:auto;margin:0}.matchplayCompetitionFixtures{display:grid;gap:12px;margin:12px 0}.matchplayOtherMatches{margin:4px 0}.matchplayOtherMatches>.matchFixture{margin-top:10px}.leagueMatchplaySettings .settingsItem,.standaloneMatchplaySettings .settingsItem{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #dbe2dd}.leagueMatchplaySettings .settingsItem span,.standaloneMatchplaySettings .settingsItem span{display:flex;flex-direction:column;gap:3px}.leagueMatchplaySettings .settingsItem small,.standaloneMatchplaySettings .settingsItem small{color:var(--muted)}.updateNotificationControls{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;margin:-2px 0 14px}.updateNotificationControls .pushSettings{margin:0}.updateNotificationControls>button{width:auto;margin:0;min-height:42px}
+
+/* Updates: keep the notification toggle compact and aligned with the New action. */
+.updatesTitle{align-items:flex-start;margin-bottom:0}
+.updatesTitle>div:first-child{min-width:0;padding-right:12px}
+.updatesTitle h1{margin:0 0 4px}
+.updatesTitle p{margin:0;max-width:390px;line-height:1.35}
+.updatesTitle>.primary{min-height:50px;margin:4px 0 0;padding:0 18px;border-radius:15px;white-space:nowrap}
+.updateNotificationControls{align-items:center;min-height:50px;margin:-50px 148px 24px 0}
+.updateNotificationControls:has(>button){margin:8px 0 16px;min-height:42px}
+.updateNotificationControls>button{min-height:38px;padding:8px 12px}
+.pushSettings.compact{position:relative;display:block;margin:0;padding:0;border:0;border-radius:50%;background:transparent}
+.pushSettings.compact>button{position:relative;width:46px;min-width:46px;height:46px;min-height:46px;border-color:#405047;background:#101b14;color:#aab5ad}
+.pushSettings.compact>button.on{border-color:var(--green);background:#102016;color:var(--green)}
+.pushSettings.compact>button svg,.pushSettings.compact>svg{width:21px;height:21px}
+.pushSettings.compact.unavailable{display:grid;place-items:center;width:46px;height:46px;border:1px solid #35443b;color:#6f7b73}
+.pushStatusDot{position:absolute;right:3px;bottom:3px;width:8px;height:8px;border-radius:50%;border:2px solid #101b14;background:#707b74}
+.pushSettings.compact>button.on .pushStatusDot{border-color:#102016;background:var(--green)}
+.pushSettings.compact .pushNotice{position:absolute;z-index:5;top:54px;right:0;width:max-content;max-width:min(310px,78vw);margin:0;padding:9px 11px;border:1px solid #3b5c45;border-radius:11px;background:#102016;color:#dce5df;box-shadow:0 10px 28px rgba(0,0,0,.28);font-size:.66rem;line-height:1.35}
+.updateNotificationControls+.empty{margin-top:0;min-height:112px;padding:26px 18px;border-radius:18px;display:grid;place-items:center}
+@media(max-width:520px){.updatesTitle p{font-size:.86rem}.updatesTitle>.primary{min-height:46px;padding:0 14px}.updateNotificationControls{min-height:46px;margin:-46px 126px 22px 0}.pushSettings.compact>button,.pushSettings.compact.unavailable{width:42px;min-width:42px;height:42px;min-height:42px}}

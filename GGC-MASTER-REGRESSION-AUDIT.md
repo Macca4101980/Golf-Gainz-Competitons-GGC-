@@ -7,6 +7,8 @@ Status: 🔵 changed/tested this build · 🟢 retained and regression-tested ·
 - 🔵 Team event management preserves published sessions, checks organiser permissions, supports resting golfers and can publish an individual session.
 - 🔵 Two-leg knockout uses separate 18-hole cards, reverses pair order, waits for both legs and resolves tied aggregates by sudden death.
 - 🟠 Authenticated organiser save/reopen, participant submission and a second signed-in session on the isolated site require live verification.
+- 🔵 Chrome QA confirmed draft reserve-session save/reopen preserves both assigned golfers and leaves the published session locked. Existing draft fields now survive organiser edits.
+- 🟠 Isolated database roster sync restored. A fresh group and its eight memberships saved, but the Builder's first post-save refresh needed protection against concurrent sync. Retest the full new-placeholder path.
 
 ## V4 Beta 1 scope / current audit
 - 🔵 BUILD-V4B1 — visible/package build identity moved to V4 Beta 1 / 4.0.0-beta.1.

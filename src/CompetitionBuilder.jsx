@@ -221,7 +221,7 @@ export default function CompetitionBuilder({
   ];
 
   return (
-    <div className="competitionBuilder">
+    <div className="competitionBuilder" data-ggc-dirty={saving ? "true" : undefined}>
       <div className="builderHeader">
         <button className="builderBack" aria-label="Back" disabled={saving} onClick={() => step >= 0 ? setStep(step - 1) : onClose()}><ArrowLeft /></button>
         <div><small>COMPETITION BUILDER</small><b>{step < 4 ? "Let GGC build your competition" : template?.name || "Build your competition"}</b></div>

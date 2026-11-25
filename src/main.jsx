@@ -277,19 +277,23 @@ const acceptAuthoritativeGroup=useCallback(async group=>{
   setState(previous=>replaceGroup(previous));
   return group;
  }
- const current=replaceGroup(latestStateRef.current);
- const snapshot=toRecordSnapshot(current,recordContext);
- const next=await scorecardRecordCoordinator.acceptRemoteRecord('societies',String(group.id),{
-  currentSnapshot:snapshot,
-  canCommit:()=>JSON.stringify(snapshot)===JSON.stringify(toRecordSnapshot(replaceGroup(latestStateRef.current),recordContext))
- });
- if(!next)throw Error('GGC_GROUP_REFRESH_DEFERRED');
- if(next.conflicts?.length){showRecordConflict(next);throw Error('GGC_GROUP_REFRESH_CONFLICT')}
- const merged=mergeRecordSnapshotIntoAppState(current,next,recordContext);
- remoteStateRef.current=true;
- latestStateRef.current=merged;
- setState(merged);
- return merged.societies.find(item=>String(item.id)===String(group.id))||group;
+ // Let the versioned read advance the roster. Staging the RPC response in the
+ // local snapshot would make server-owned membership look like a local edit.
+ for(let attempt=0;attempt<3;attempt++){
+  const current=latestStateRef.current;
+  const snapshot=toRecordSnapshot(current,recordContext);
+  const next=await scorecardRecordCoordinator.acceptRemoteRecord('societies',String(group.id),{
+   currentSnapshot:snapshot,
+   canCommit:()=>latestStateRef.current===current,
+  });
+  if(!next)continue;
+  if(next.conflicts?.length){showRecordConflict(next);throw Error('GGC_GROUP_REFRESH_CONFLICT')}
+  const merged=mergeRecordSnapshotIntoAppState(current,next,recordContext);
+  remoteStateRef.current=true;
+  setState(merged);
+  return merged.societies.find(item=>String(item.id)===String(group.id))||group;
+ }
+ throw Error('GGC_GROUP_REFRESH_DEFERRED');
 },[appRecordReady,scorecardRecordCoordinator,auth?.user?.id,me]);
 usePullToRefresh(APP_FIELD_STORE_ENABLED&&appRecordReady?refreshRecords:null);
 useEffect(()=>{if(!APP_FIELD_STORE_ENABLED||!appRecordReady||!auth?.access_token||!profileReady)return;let active=true,busy=false;const retry=async()=>{if(!active||busy||!navigator.onLine||document.querySelector('[data-ggc-dirty="true"]'))return;const failure=scorecardRecordCoordinator.getLastFailure();if(!failure)return;busy=true;try{if(/GGC_VERSION_CONFLICT|GGC_ACCESS_DENIED/.test(failure.message||'')){const snapshot=toRecordSnapshot(latestStateRef.current,recordContext);const result=await scorecardRecordCoordinator.recoverVersionConflict(snapshot,{canCommit:()=>active&&JSON.stringify(snapshot)===JSON.stringify(toRecordSnapshot(latestStateRef.current,recordContext))});if(!active||!result)return;if(result.conflicts?.length){setCloud('Record conflict — manual review required');showRecordConflict(result);return}if(result.snapshot){const merged=mergeRecordSnapshotIntoAppState(latestStateRef.current,result.snapshot,recordContext);latestStateRef.current=merged;setState(merged);setCloud('Changes reconciled — saving')}return}await scorecardRecordCoordinator.enqueue(toRecordSnapshot(latestStateRef.current,recordContext));if(active)setCloud('Changes saved')}catch(error){if(active)setCloud('Save pending — changes retained');console.error('App record retry deferred',error?.message||error)}finally{busy=false}};const timer=setInterval(retry,5000);window.addEventListener('online',retry);return()=>{active=false;clearInterval(timer);window.removeEventListener('online',retry)}},[appRecordReady,auth?.access_token,profileReady,me]);
@@ -407,7 +411,12 @@ async function addBuilderPlaceholders(sid, ids) {
    const result=await runGroupAction('ggc_group_add_temporary_golfer',{p_group_id:sid,p_player_id:id},setCloud);
    updatedGroup=result.group||updatedGroup;
   }
-  if(updatedGroup)await acceptAuthoritativeGroup(updatedGroup);
+  if(updatedGroup){
+   const refreshed=await acceptAuthoritativeGroup(updatedGroup);
+   if(ids.some(id=>!refreshed?.members?.includes(id)))throw Error('GGC_GROUP_REFRESH_DEFERRED');
+  }else if(ids.some(id=>!(group.members||[]).includes(id))){
+   throw Error('GGC_GROUP_ROSTER_NOT_SYNCED');
+  }
  }else{
   setState(previous=>({...previous,players:[...previous.players,...added],societies:previous.societies.map(item=>item.id===sid?{...item,members:[...new Set([...(item.members||[]),...ids])]}:item)}));
  }
@@ -443,7 +452,12 @@ async function useBuilderTemplate(template,setup){
   ?createTeamEvent({template,setup,state:latestStateRef.current,createdBy:currentMe?.id})
   :null;
  try{await addBuilderPlaceholders(sid,setup.placeholderIds||[])}
- catch(error){throw new Error(`Could not add all placeholders. ${groupActionMessage(error)} Retry to finish the same set.`)}
+ catch(error){
+  const refreshIssue=/GGC_GROUP_(REFRESH|ROSTER)/.test(error?.message||'');
+  throw new Error(refreshIssue
+   ? 'GGC could not confirm the updated group roster. Retry to finish the same set of placeholders.'
+   : `Could not add all placeholders. ${groupActionMessage(error)} Retry to finish the same set.`);
+ }
  const preset={...templatePreset(template,setup),builderGroupInviteIds:setup.inviteIds};
  if(template.family==='competition'){
   setEditComp(preset);setModal('buildercomp');return;

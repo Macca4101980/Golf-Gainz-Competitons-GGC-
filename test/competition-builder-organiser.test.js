@@ -4,6 +4,7 @@ import { createTeamEvent, manageTeamEvent, teamEventScore } from "../src/teamEve
 import { recommendTemplates, templateById } from "../src/competitionBuilder.js";
 import { createGroupStage, qualifyGroupStage, recordFixtureResult, recordSuddenDeathHole } from "../src/matchplayTournament.js";
 import { currentMatchplayRecord, fixtureCompetitionPreset } from "../src/matchplaySeriesModel.js";
+import { changedFields } from "../src/editProtection.js";
 
 const holes = Array.from({ length: 18 }, (_, i) => ({n: i + 1, si: i + 1, par: 4}));
 const tee = {name: "Green", holes, slope: 113, rating: 72};
@@ -19,7 +20,8 @@ test("organiser can rest golfers, change formats and publish one session while p
       assignments: players.map((player, i) => ({playerId: player.id, side: i < 4 ? "A" : "B"}))},
     state: {courses: [course]}, createdBy: "admin", now: new Date(createdAt),
   });
-  const start = {societies:[group], comps: competitions, leagues: [record], cards: [], players};
+  const previous = {...competitions[0], roundGroups: [], showLiveLeaderboard: false};
+  const start = {societies:[group], comps: [previous, ...competitions.slice(1)], leagues: [record], cards: [], players};
   const setup = {
     expectedUpdatedAt: record.updatedAt, sideNames: ["North", "South"], publish: "fourball",
     sessions: [
@@ -33,6 +35,11 @@ test("organiser can rest golfers, change formats and publish one session while p
     ["live", "matchplay", ["p2","p6"]], ["draft", "foursomes-match", ["p0","p1","p4","p5"]],
   ]);
   assert.deepEqual(next.leagues[0].teams.map(team => team.name), ["North", "South"]);
+  const saved = next.comps.find(comp => comp.id === previous.id);
+  assert.deepEqual(saved.roundGroups, []);
+  assert.equal(saved.showLiveLeaderboard, false);
+  const patch = Object.fromEntries(changedFields(previous, saved).map(key => [key, saved[key]]));
+  assert.deepEqual(Object.keys(JSON.parse(JSON.stringify(patch))), Object.keys(patch));
   assert.ok(next.deletedCompIds.length);
   assert.throws(() => manageTeamEvent(next, record.id, "admin", setup), /event has changed/);
   assert.throws(() => manageTeamEvent(next, record.id, "admin", {...setup,

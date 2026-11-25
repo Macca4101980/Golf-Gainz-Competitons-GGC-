@@ -228,6 +228,7 @@ export function manageTeamEvent(state, eventId, actorId, change, now = new Date(
     const drafts = change.sessions.filter(session => !locked.has(session.id));
     const oldFixtures = event.fixtures.filter(fixture => !locked.has(fixture.sessionId));
     const oldIds = new Set(oldFixtures.map(fixture => fixture.competitionId));
+    const previousComps = new Map(comps.filter(comp => oldIds.has(comp.id)).map(comp => [comp.id, comp]));
     const rebuiltFixtures = [];
     const rebuiltComps = [];
     for (const session of drafts) {
@@ -239,6 +240,7 @@ export function manageTeamEvent(state, eventId, actorId, change, now = new Date(
         const old = oldFixtures.find(item => item.sessionId === session.id && item.position === index + 1);
         const fixtureId = old?.id || uid();
         const compId = old?.competitionId || uid();
+        const previousComp = previousComps.get(compId);
         const pairs = format.playersPerMatch === 2 ? [a, b].map((ids, side) => ({
           id: `${fixtureId}-${side}`, ids, name: event.sides[side].name,
         })) : [];
@@ -246,12 +248,14 @@ export function manageTeamEvent(state, eventId, actorId, change, now = new Date(
           position: index + 1, sideAPlayerIds: a, sideBPlayerIds: b, status: "draft" });
         rebuiltComps.push({
           id: compId, societyId: record.societyId, createdBy: actorId,
-          name: `${record.name} · ${session.name.trim()} ${index + 1}`,
-          format: format.format, handicapAllowance: format.handicapAllowance,
           course: record.course, tee: record.tee, courseSnapshot: record.courseSnapshot,
           fee: 0, days: 21, holesMode: "18", starts: at, ends: new Date(+now + 21 * 86400000).toISOString(),
-          entries: [...a, ...b], invites: [], pairs, pairingMode: "preset", status: "draft",
-          showLiveLeaderboard: true, teamEventId: eventId, teamEventFixtureId: fixtureId, updatedAt: at,
+          invites: [], showLiveLeaderboard: true,
+          ...previousComp,
+          name: `${record.name} · ${session.name.trim()} ${index + 1}`,
+          format: format.format, handicapAllowance: format.handicapAllowance,
+          entries: [...a, ...b], pairs, pairingMode: "preset", status: "draft",
+          teamEventId: eventId, teamEventFixtureId: fixtureId, updatedAt: at,
         });
       });
     }

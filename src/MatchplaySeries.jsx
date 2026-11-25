@@ -21,6 +21,7 @@ import {
   rebuildMatchplayRecord,
   standardLeagues,
 } from "./matchplaySeriesModel.js";
+import { buildCourseSnapshot } from "./competitionCourse.js";
 
 const nowIso = () => new Date().toISOString();
 const deadlineText = (fixture) =>
@@ -87,20 +88,22 @@ function persistResolvedMatchplay(previous, resolvedRecords) {
   };
 }
 
-export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
+export function MatchplayCreate({ state, me, initialSocietyId, preset = null, onCreate }) {
+  const builderTemplate = preset?.builderTemplate || null;
+  const builderSetup = preset?.builderSetup || {};
   const manageable = (state.societies || []).filter(
     (group) =>
       group.ownerId === me?.id || (group.admins || []).includes(me?.id),
   );
   const [groupId, setGroupId] = useState(
-    initialSocietyId &&
-      manageable.some((group) => group.id === initialSocietyId)
-      ? initialSocietyId
+    (builderSetup.societyId || initialSocietyId) &&
+      manageable.some((group) => group.id === (builderSetup.societyId || initialSocietyId))
+      ? (builderSetup.societyId || initialSocietyId)
       : manageable[0]?.id || "",
   );
-  const [name, setName] = useState("");
-  const [mode, setMode] = useState("knockout");
-  const [entrantType, setEntrantType] = useState("individual");
+  const [name, setName] = useState(builderSetup.name || builderTemplate?.name || "");
+  const [mode, setMode] = useState(builderTemplate?.matchplayMode || "knockout");
+  const [entrantType, setEntrantType] = useState(builderTemplate?.family === "team-event" || ["pairs","groups","societies"].includes(builderSetup.audience) ? "team" : "individual");
   const [sourceLeagueId, setSourceLeagueId] = useState("");
   const [selected, setSelected] = useState([]);
   const [playoffSize, setPlayoffSize] = useState(4);
@@ -123,15 +126,25 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
     .filter(Boolean);
   const teamSource =
     source || leagues.find((item) => (item.teams || []).length);
+  const builderTeams = builderTemplate?.entrantRule?.sides
+    ? ["A", "B"].map((side) => ({
+        id: `builder-side-${side.toLowerCase()}`,
+        name: `Side ${side}`,
+        memberIds: (builderSetup.assignments || []).filter((item) => item.side === side).map((item) => item.playerId),
+      }))
+    : Array.isArray(builderSetup.assignments)
+      ? builderSetup.assignments.filter(Array.isArray).map((memberIds, index) => ({ id: `builder-team-${index + 1}`, name: `Team ${index + 1}`, memberIds }))
+      : [];
+  const builderEntrants = new Set(builderSetup.entrantIds || []);
   const choices =
     entrantType === "team"
-      ? (teamSource?.teams || []).map((team) => ({
+      ? (builderTeams.length ? builderTeams : (teamSource?.teams || [])).map((team) => ({
           ...team,
           id: team.id,
           name: team.name,
           memberIds: team.memberIds || [],
         }))
-      : players.map((player) => ({
+      : players.filter((player) => !builderEntrants.size || builderEntrants.has(player.id)).map((player) => ({
           id: player.id,
           name: player.name,
           memberIds: [player.id],
@@ -159,7 +172,7 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         mode === "playoff" || handicapSource !== "competition-end"
           ? handicapSource
           : "competition-start";
-      const record = buildMatchplayRecord({
+      const built = buildMatchplayRecord({
         name: name.trim() || "Matchplay",
         societyId: groupId,
         mode,
@@ -182,7 +195,19 @@ export function MatchplayCreate({ state, me, initialSocietyId, onCreate }) {
         createdBy: me?.id,
         state,
       });
-      onCreate(record);
+      onCreate({
+        ...built,
+        builderTemplateId: builderTemplate?.id || null,
+        course: builderSetup.courseId || null,
+        tee: builderSetup.teeName || null,
+        courseSnapshot: builderSetup.courseId && builderSetup.teeName
+          ? buildCourseSnapshot(state.courses.find((course) => course.id === builderSetup.courseId), builderSetup.teeName)
+          : null,
+        eventFormat: ["4bbb-match", "fourball-match", "foursomes-match"].includes(builderTemplate?.defaultFormat)
+          ? builderTemplate.defaultFormat
+          : null,
+        eventRules: builderTemplate?.rules || null,
+      });
     } catch (error) {
       alert(error.message || "Could not create this matchplay competition.");
     }

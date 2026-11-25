@@ -13,7 +13,7 @@ const nowIso = () => new Date().toISOString();
 export const isMatchplaySeries = (record) =>
   record?.recordType === "matchplay-series" && record?.matchplay;
 export const standardLeagues = (state) =>
-  (state?.leagues || []).filter((record) => !isMatchplaySeries(record));
+  (state?.leagues || []).filter((record) => !isMatchplaySeries(record) && record?.recordType !== "team-event");
 export const matchplaySeries = (state) =>
   (state?.leagues || []).filter(isMatchplaySeries);
 export const isLeaguePlayoffRecord = (record) =>
@@ -512,7 +512,10 @@ export function fixtureCompetitionPreset(record, fixture, state) {
   return {
     name: `${record.name} · ${entrantA.name} v ${entrantB.name}`,
     societyId: record.societyId,
-    format: team ? "fourball-match" : "matchplay",
+    format: record.eventFormat || (team ? "fourball-match" : "matchplay"),
+    course: record.course || null,
+    tee: record.tee || null,
+    courseSnapshot: record.courseSnapshot || null,
     handicapAllowance: handicaps.allowance,
     handicapSource: handicaps.source,
     handicapSnapshot: handicaps.snapshot,

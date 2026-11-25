@@ -5,17 +5,19 @@ export const BUILDER_AUDIENCES = Object.freeze([
   { id: "societies", label: "Large teams / club vs club", detail: "Society, club or county sides." },
 ]);
 
-export const BUILDER_DURATIONS = Object.freeze([
-  { id: "one-off", label: "One day / one-off", detail: "A single competition or match." },
-  { id: "series", label: "Over several weeks or months", detail: "A League, tour or multi-stage event." },
-  { id: "unsure", label: "I’m not sure", detail: "Show both suitable choices." },
+export const BUILDER_STYLES = Object.freeze([
+  { id: "course", label: "Leaderboard scoring", detail: "Rank scores across the field, for example Stableford or stroke play." },
+  { id: "head-to-head", label: "Matchplay", detail: "Golfers or teams play directly against opponents." },
+  { id: "unsure", label: "I’m not sure", detail: "See the available competition structures." },
 ]);
 
-export const BUILDER_STYLES = Object.freeze([
-  { id: "course", label: "Score against the course", detail: "Stableford, stroke play or points." },
-  { id: "head-to-head", label: "Head-to-head competition", detail: "Golfers or teams play opponents." },
-  { id: "mixed", label: "A mixture of both", detail: "Qualifying, tables and knockout stages." },
-  { id: "unsure", label: "I’m not sure", detail: "Let GGC recommend the best fit." },
+export const BUILDER_STRUCTURES = Object.freeze([
+  { id: "day", label: "One-off competition", detail: "One competition with a leaderboard." },
+  { id: "season", label: "Season standings", detail: "Combine results across multiple events." },
+  { id: "knockout", label: "Straight knockout", detail: "Winners advance until two entrants meet in the final." },
+  { id: "round-robin", label: "Round robin", detail: "Each entrant plays every other entrant." },
+  { id: "group-stage", label: "Groups then knockout", detail: "Group matches decide who goes into the knockout." },
+  { id: "team-event", label: "Two sides with multiple matches", detail: "Combine individual match results into one team result." },
 ]);
 
 const t = (template) => Object.freeze(template);
@@ -36,7 +38,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "traditional-matchplay",
-    name: "Traditional Matchplay",
+    name: "Single Matchplay Match",
     family: "matchplay",
     audiences: ["individual", "pairs"],
     durations: ["one-off", "series"],
@@ -50,7 +52,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "club-championship",
-    name: "Club Championship",
+    name: "Traditional Club Championship",
     family: "league",
     audiences: ["individual"],
     durations: ["series"],
@@ -78,7 +80,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "winter-league-farthingstone",
-    name: "Winter League (Farthingstone)",
+    name: "Pairs Winter League",
     family: "league",
     audiences: ["pairs"],
     durations: ["series"],
@@ -92,7 +94,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "order-of-merit",
-    name: "Order of Merit",
+    name: "Traditional Order of Merit",
     family: "league",
     audiences: ["individual", "pairs", "groups"],
     durations: ["series"],
@@ -106,7 +108,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "race-to-dubai",
-    name: "Race to Dubai",
+    name: "Weighted Order of Merit",
     family: "league",
     audiences: ["individual"],
     durations: ["series"],
@@ -120,7 +122,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "fedex-cup",
-    name: "FedEx Cup",
+    name: "Order of Merit with Playoffs",
     family: "league",
     audiences: ["individual"],
     durations: ["series"],
@@ -134,7 +136,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "football-league",
-    name: "Football League",
+    name: "Round-Robin Matchplay League",
     family: "matchplay",
     audiences: ["individual", "pairs", "societies"],
     durations: ["series"],
@@ -148,13 +150,13 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "fa-cup",
-    name: "FA Cup",
+    name: "Straight Knockout Matchplay",
     family: "matchplay",
     audiences: ["individual", "pairs", "societies"],
     durations: ["series", "one-off"],
     styles: ["head-to-head"],
     summary: "Straight knockout with automatic byes and progression.",
-    overview: "Any field size can enter. GGC expands the bracket, gives the highest seeds byes and advances winners automatically.",
+    overview: "Enter 2 to 64 golfers or pairs. GGC builds the bracket, allocates byes and advances winners.",
     defaultFormat: "matchplay",
     matchplayMode: "knockout",
     rules: ["Automatic bracket", "Odd fields receive byes", "Configurable round deadlines", "Automatic final"],
@@ -162,12 +164,12 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "world-cup",
-    name: "World Cup",
+    name: "Group Stage + Knockout Matchplay",
     family: "matchplay",
     audiences: ["individual", "pairs", "societies"],
     durations: ["series"],
     styles: ["mixed", "head-to-head"],
-    summary: "Balanced groups followed by a knockout.",
+    summary: "Play round-robin matches in groups, then send the qualifiers into a knockout (WGC Match Play).",
     overview: "GGC seeds the groups, generates each group fixture and progresses qualifiers into the complete knockout bracket.",
     defaultFormat: "matchplay",
     matchplayMode: "group-stage",
@@ -176,7 +178,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "champions-league",
-    name: "Champions League",
+    name: "Pairs Group Stage + Knockout Matchplay",
     family: "matchplay",
     audiences: ["pairs", "societies"],
     durations: ["series"],
@@ -190,20 +192,20 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "ryder-solheim-cup",
-    name: "Ryder / Solheim Cup",
+    name: "Team Matchplay Cup",
     family: "team-event",
     audiences: ["societies"],
     durations: ["one-off", "series"],
     styles: ["head-to-head", "mixed"],
-    summary: "Two large teams contest Four-Ball, Foursomes and Singles sessions.",
-    overview: "Captains select line-ups for each session. GGC applies the correct match allowance and totals points into the event scoreboard.",
+    summary: "Two sides play Four-Ball, Foursomes and Singles for an overall team result (The Ryder Cup).",
+    overview: "GGC groups the selected golfers into two sides, generates draft matches and totals completed match points on the event scoreboard.",
     defaultFormat: "4bbb-match",
     rules: ["Two sides", "Four-Ball session", "Foursomes session", "Singles session", "Aggregate event points"],
     entrantRule: { min: 8, sides: 2, perSide: 4 },
   }),
   t({
     id: "presidents-cup",
-    name: "Presidents Cup",
+    name: "Team Matchplay Sessions",
     family: "team-event",
     audiences: ["societies"],
     durations: ["one-off", "series"],
@@ -216,7 +218,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "county-handicap-league",
-    name: "County Handicap League",
+    name: "Inter-Club Four-Ball League",
     family: "team-event",
     audiences: ["societies"],
     durations: ["series"],
@@ -229,7 +231,7 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "hollingsworth-trophy",
-    name: "Hollingsworth Trophy",
+    name: "Inter-Club Foursomes Match",
     family: "team-event",
     audiences: ["societies"],
     durations: ["one-off", "series"],
@@ -242,12 +244,12 @@ export const COMPETITION_TEMPLATES = Object.freeze([
   }),
   t({
     id: "the-open",
-    name: "The Open",
+    name: "Stroke Play Championship with a Cut",
     family: "league",
     audiences: ["individual"],
     durations: ["series"],
     styles: ["course"],
-    summary: "Multi-round stroke play with a cut and final leaderboard.",
+    summary: "Play multiple rounds of stroke play, with the leading golfers advancing after the cut (The Open).",
     overview: "Schedule qualifying rounds, apply a cut after the configured round and retain cumulative gross or nett totals.",
     defaultFormat: "gross-stroke",
     defaultRounds: 4,
@@ -260,27 +262,27 @@ export function templateById(id) {
   return COMPETITION_TEMPLATES.find((template) => template.id === id) || null;
 }
 
-const matches = (values, choice) =>
-  choice === "unsure" || values.includes(choice) || (choice === "mixed" && values.includes("head-to-head"));
+// Keep existing template IDs for saved favourites and competition records.
+const availableStructures = {
+  "traditional-golf-day": "day",
+  "winter-league-farthingstone": "season",
+  "order-of-merit": "season",
+  "football-league": "round-robin",
+  "fa-cup": "knockout",
+  "world-cup": "group-stage",
+  "ryder-solheim-cup": "team-event",
+  "hollingsworth-trophy": "team-event",
+};
 
 export function recommendTemplates(answers = {}, favourites = []) {
-  const audience = answers.audience || "individual";
-  const duration = answers.duration || "unsure";
-  const style = answers.style || "unsure";
-  return COMPETITION_TEMPLATES
-    .map((template) => {
-      let score = 0;
-      if (template.audiences.includes(audience)) score += 8;
-      else score -= 12;
-      if (matches(template.durations, duration)) score += 4;
-      else if (duration !== "unsure") score -= 4;
-      if (matches(template.styles, style)) score += 5;
-      else if (style !== "unsure") score -= 3;
-      if (favourites.includes(template.id)) score += 1;
-      return { ...template, recommendationScore: score };
-    })
-    .filter((template) => template.recommendationScore >= 8)
-    .sort((a, b) => b.recommendationScore - a.recommendationScore || a.name.localeCompare(b.name));
+  return COMPETITION_TEMPLATES.filter((template) => {
+    const structure = availableStructures[template.id];
+    if (!structure || !template.audiences.includes(answers.audience || "individual")) return false;
+    if (answers.audience === "societies" && structure !== "team-event") return false;
+    if (answers.style && answers.style !== "unsure" && !template.styles.includes(answers.style)) return false;
+    if (answers.duration && answers.duration !== "unsure" && !template.durations.includes(answers.duration)) return false;
+    return !answers.structure || structure === answers.structure;
+  }).sort((a, b) => Number(favourites.includes(b.id)) - Number(favourites.includes(a.id)) || a.name.localeCompare(b.name));
 }
 
 export function validateBuilderSetup({ template, entrantIds = [], courseId, teeName, state, teamAssignments = [] } = {}) {
@@ -296,14 +298,27 @@ export function validateBuilderSetup({ template, entrantIds = [], courseId, teeN
   }
   if (rule.multiple && count >= (rule.min || 1) && count % rule.multiple !== 0)
     issues.push({ level: "amber", code: "entrants-multiple", message: `This format works in groups of ${rule.multiple}. GGC will leave one golfer unassigned until another is added.` });
-  if (rule.knockout && count > 2 && (count & (count - 1)) !== 0)
-    issues.push({ level: "amber", code: "knockout-byes", message: `A ${count}-entrant knockout is not a power of two. GGC will give the highest seeds automatic byes.` });
+  const grouped = teamAssignments.length > 0 && Array.isArray(teamAssignments[0]);
+  const bracketSize = grouped ? teamAssignments.length : count;
+  if (grouped && template.family === "matchplay") {
+    const minimum = template.matchplayMode === "group-stage" ? 4 : 2;
+    if (teamAssignments.some((team) => team.length !== 2) || bracketSize < minimum)
+      issues.push({ level: "red", code: "matchplay-pairs", message: `Choose at least ${minimum} complete pairs for this format.` });
+  }
+  if (rule.knockout && bracketSize > 64)
+    issues.push({ level: "red", code: "knockout-limit", message: "A knockout field can have up to 64 golfers or pairs." });
+  if (rule.knockout && bracketSize > 2 && (bracketSize & (bracketSize - 1)) !== 0)
+    issues.push({ level: "amber", code: "knockout-byes", message: `A ${bracketSize}-entrant knockout is not a power of two. GGC will give the highest seeds automatic byes.` });
   if (rule.sides === 2 && teamAssignments.length) {
     const sides = [teamAssignments.filter((item) => item.side === "A").length, teamAssignments.filter((item) => item.side === "B").length];
     if (Math.min(...sides) < rule.perSide)
       issues.push({ level: "red", code: "side-min", message: `Each side needs at least ${rule.perSide} golfers. Current sides: ${sides[0]} and ${sides[1]}.` });
     else if (sides[0] !== sides[1])
-      issues.push({ level: "amber", code: "side-balance", message: `The sides contain ${sides[0]} and ${sides[1]} golfers. Balance them before launch.` });
+      issues.push({ level: "red", code: "side-balance", message: `The sides contain ${sides[0]} and ${sides[1]} golfers. Balance them before launch.` });
+    else if (sides[0] % 2 !== 0)
+      issues.push({ level: "red", code: "side-pairs", message: "Each side needs an even number of golfers to form complete pairs." });
+    else if (template.id === "hollingsworth-trophy" && sides[0] !== 10)
+      issues.push({ level: "red", code: "foursomes-side-size", message: "Choose exactly 10 golfers per side for five Foursomes matches." });
   }
   const course = (state?.courses || []).find((item) => item.id === courseId);
   const tee = course?.tees?.find((item) => item.name === teeName || item.id === teeName);

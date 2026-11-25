@@ -215,7 +215,7 @@ export function MatchplayCreate({ state, me, initialSocietyId, preset = null, on
   return (
     <div className="matchplayCreate">
       <p className="muted">
-        Create a knockout, football-style League, World Cup-style group stage,
+        Create a knockout, round-robin league, group stage with a knockout,
         or attach a playoff to an existing League.
       </p>
       <label>

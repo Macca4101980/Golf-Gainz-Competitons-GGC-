@@ -19,19 +19,24 @@ const tee = {
 };
 const state = { courses: [{ id: "farthingstone", name: "Farthingstone", tees: [tee] }] };
 
-test("Competition Builder V1 exposes the agreed 17 master templates", () => {
+test("existing template IDs resolve with descriptive golf names", () => {
   assert.equal(COMPETITION_TEMPLATES.length, 17);
-  assert.equal(templateById("winter-league-farthingstone").name, "Winter League (Farthingstone)");
-  assert.ok(COMPETITION_TEMPLATES.some((item) => item.name === "Hollingsworth Trophy"));
-  assert.ok(COMPETITION_TEMPLATES.some((item) => item.name === "Ryder / Solheim Cup"));
+  assert.equal(templateById("winter-league-farthingstone").name, "Pairs Winter League");
+  assert.equal(templateById("hollingsworth-trophy").name, "Inter-Club Foursomes Match");
+  assert.match(templateById("ryder-solheim-cup").summary, /\(The Ryder Cup\)/);
 });
 
-test("large multi-week head-to-head answers recommend team-event templates", () => {
-  const results = recommendTemplates({ audience: "societies", duration: "series", style: "head-to-head" });
-  const names = results.map((item) => item.name);
-  assert.ok(names.includes("County Handicap League"));
-  assert.ok(names.includes("Ryder / Solheim Cup"));
-  assert.ok(names.includes("Football League"));
+test("recommendations require matching scoring and structure, even for favourites", () => {
+  const results = recommendTemplates({ audience: "individual", style: "course", structure: "day" }, ["fa-cup", "the-open"]);
+  assert.deepEqual(results.map((item) => item.id), ["traditional-golf-day"]);
+  assert.deepEqual(
+    recommendTemplates({ audience: "individual", style: "head-to-head", structure: "group-stage" }).map((item) => item.id),
+    ["world-cup"],
+  );
+  assert.deepEqual(
+    recommendTemplates({ audience: "societies", style: "head-to-head" }).map((item) => item.id),
+    ["hollingsworth-trophy", "ryder-solheim-cup"],
+  );
 });
 
 test("knockout validation warns about byes without blocking a valid field", () => {

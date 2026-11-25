@@ -21,7 +21,7 @@ export function matchPlayResult(c,state,{stopWhenDecided=true}={}){
  const playing=rows.map(r=>r.playingHandicap),low=Math.min(...playing),relativeHandicaps=playing.map(h=>Math.max(0,whsRound((h-low)*((c.handicapAllowance??100)/100))));
  let diff=0;const detail=[];
  for(const i of indexes){const values=cards.map(card=>card.gross?.[i]);if(!values.every(isEnteredHoleScore))break;const nets=values.map((value,j)=>isNoReturnScore(value)?Infinity:Number(value)-holeStrokes(relativeHandicaps[j],holes[i].si));if(nets[0]<nets[1])diff++;if(nets[1]<nets[0])diff--;detail.push({hole:i+1,nets,diff});if(stopWhenDecided&&Math.abs(diff)>indexes.length-detail.length)break}
- const played=detail.length,remaining=indexes.length-played,complete=played>0&&(remaining===0||Math.abs(diff)>remaining);
+ const played=detail.length,remaining=indexes.length-played,complete=played>0&&(remaining===0||(!c.matchplayLeg&&Math.abs(diff)>remaining));
  return{rows,relativeHandicaps,diff,played,remaining,complete,winner:diff>0?0:diff<0?1:null,label:resultLabel(diff,played,indexes.length),holes:detail};
 }
 

@@ -1,4 +1,5 @@
 import { leagueDisplayTable } from "./leagueDisplay.js";
+import { syncMatchplayCompetitionResult } from "./matchplayCompetition.js";
 import {
   createGroupStage,
   createKnockout,
@@ -118,6 +119,23 @@ function leagueFinished(league, state, at = new Date()) {
 export function currentMatchplayRecord(record, state, at = new Date()) {
   if (!isMatchplaySeries(record)) return record;
   let resolved = record;
+  if (record.builderTemplateId === "champions-league") {
+    let scoringState = {...state, leagues: [record]};
+    const submitted = (state.comps || []).filter(comp => comp.matchplaySeriesId === record.id &&
+      ["live", "completed"].includes(comp.status)).flatMap(comp => {
+      const cards = (comp.entries || []).map(id =>
+        (state.cards || []).find(card => card.compId === comp.id && card.playerId === id && card.submitted));
+      if (!cards.length || cards.some(card => !card?.submittedAt)) return [];
+      const completedAt = cards.map(card => card.submittedAt).sort().at(-1);
+      return [{ comp, completedAt }];
+    }).sort((a, b) => a.completedAt.localeCompare(b.completedAt));
+    for (const {comp, completedAt} of submitted) {
+      const fixture = scoringState.leagues[0].matchplay.fixtures.find(item => item.id === comp.matchplayFixtureId);
+      if (fixture?.expiresAt && completedAt > fixture.expiresAt) continue;
+      scoringState = syncMatchplayCompetitionResult(scoringState, comp, {completedAt});
+    }
+    resolved = scoringState.leagues[0];
+  }
   if (
     record.matchplay?.qualificationStatus === "forecasted" &&
     record.sourceLeagueId
@@ -187,6 +205,7 @@ export function buildMatchplayRecord({
   groupCount = 2,
   qualifiersPerGroup = 2,
   legs = 1,
+  knockoutLegs = 1,
   points = {},
   roundTimeLimitDays = 21,
   handicapSettings = null,
@@ -235,7 +254,7 @@ export function buildMatchplayRecord({
       groupCount,
       qualifiersPerGroup,
       legs,
-      points: { ...points, roundTimeLimitDays },
+      points: { ...points, roundTimeLimitDays, knockoutLegs },
       createdAt,
     });
   else
@@ -352,6 +371,7 @@ export function rebuildMatchplayRecord(
     groupCount: requestedGroups,
     qualifiersPerGroup: requestedQualifiers,
     legs: Number(legs) || record.matchplay?.legs || 1,
+    knockoutLegs: record.matchplay?.rules?.knockoutLegs || 1,
     points: points || record.matchplay?.rules || {},
     roundTimeLimitDays:
       roundTimeLimitDays ?? record.matchplay?.rules?.roundTimeLimitDays ?? 21,
@@ -478,7 +498,7 @@ export function editMatchplayRecord(
   };
 }
 
-export function fixtureCompetitionPreset(record, fixture, state) {
+export function fixtureCompetitionPreset(record, fixture, state, leg = null) {
   const series = record?.matchplay;
   if (!isMatchplaySeries(record) || !fixture)
     throw new Error("Matchplay fixture not found.");
@@ -494,9 +514,9 @@ export function fixtureCompetitionPreset(record, fixture, state) {
       "Both fixture entrants must be known before creating a scorecard.",
     );
   const entrantA = series.entrants.find(
-      (item) => item.id === fixture.entrantAId,
+      (item) => item.id === (leg === 2 ? fixture.entrantBId : fixture.entrantAId),
     ),
-    entrantB = series.entrants.find((item) => item.id === fixture.entrantBId);
+    entrantB = series.entrants.find((item) => item.id === (leg === 2 ? fixture.entrantAId : fixture.entrantBId));
   if (!entrantA || !entrantB)
     throw new Error("Fixture entrants are missing from this matchplay series.");
   const team = series.entrantType === "team",
@@ -510,7 +530,7 @@ export function fixtureCompetitionPreset(record, fixture, state) {
     : [];
   const handicaps = matchplayHandicapSettings(record, state || {});
   return {
-    name: `${record.name} · ${entrantA.name} v ${entrantB.name}`,
+    name: `${record.name} · ${entrantA.name} v ${entrantB.name}${leg ? ` · Leg ${leg}` : fixture.leg && series.legs === 2 ? ` · Group leg ${fixture.leg}` : ""}`,
     societyId: record.societyId,
     format: record.eventFormat || (team ? "fourball-match" : "matchplay"),
     course: record.course || null,
@@ -526,5 +546,7 @@ export function fixtureCompetitionPreset(record, fixture, state) {
     pairingMode: "preset",
     matchplaySeriesId: record.id,
     matchplayFixtureId: fixture.id,
+    matchplayLeg: leg,
+    holesMode: leg ? "18" : undefined,
   };
 }

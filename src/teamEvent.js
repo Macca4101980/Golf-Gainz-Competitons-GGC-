@@ -44,6 +44,11 @@ const templatePlan = (templateId) => {
   };
 };
 
+export function plannedTeamEventMatchCount(templateId, sideSize) {
+  return templatePlan(templateId).sessions.reduce((total, session) =>
+    total + Math.floor(sideSize / session.playersPerMatch), 0);
+}
+
 function normaliseSessions(templateId, requested) {
   const plan = templatePlan(templateId);
   if (!requested?.length) return plan;
@@ -64,7 +69,7 @@ function normaliseSessions(templateId, requested) {
       handicapAllowance: Number.isFinite(+item.handicapAllowance) ? +item.handicapAllowance : base.handicapAllowance,
     };
   });
-  return { resultMode: requested.resultMode || plan.resultMode, sessions };
+  return { resultMode: plan.resultMode, sessions };
 }
 
 function sessionLineups(session, sideA, sideB, requested = {}) {
@@ -178,14 +183,120 @@ export function teamEventRecords(state) {
   return (state?.leagues || []).filter((record) => record.recordType === "team-event" && record.teamEvent);
 }
 
+export function teamEventSessionDraft(record, sessionId, state) {
+  const fixtures = record.teamEvent.fixtures.filter(item => item.sessionId === sessionId)
+    .sort((a, b) => a.position - b.position);
+  const locked = fixtures.some(item => {
+    const competition = state.comps.find(comp => comp.id === item.competitionId);
+    return !competition || competition.status !== "draft" || competition.roundGroups?.length ||
+      state.cards.some(card => card.compId === item.competitionId);
+  });
+  return {
+    locked,
+    A: fixtures.map(item => item.sideAPlayerIds),
+    B: fixtures.map(item => item.sideBPlayerIds),
+  };
+}
+
+export function manageTeamEvent(state, eventId, actorId, change, now = new Date()) {
+  const record = teamEventRecords(state).find(item => item.id === eventId);
+  const group = record && state.societies.find(item => item.id === record.societyId);
+  if (!group || !actorId || (group.ownerId !== actorId && !group.admins?.includes(actorId)))
+    throw new Error("Only group organisers can manage this event.");
+  if (record.updatedAt !== change.expectedUpdatedAt)
+    throw new Error("The event has changed. Reopen the organiser screen.");
+  const at = now.toISOString();
+  const event = structuredClone(record.teamEvent);
+  let comps = state.comps;
+  let removed = [];
+  if (change.sideNames) {
+    const names = change.sideNames.map(name => name.trim());
+    if (names.length !== 2 || names.some(name => !name) || names[0].toLowerCase() === names[1].toLowerCase())
+      throw new Error("Enter two distinct side names.");
+    event.sides.forEach((side, index) => { side.name = names[index]; });
+  }
+  if (change.sessions) {
+    const seen = new Set();
+    for (const session of change.sessions) {
+      if (!session.id || seen.has(session.id)) throw new Error("Session IDs must be unique.");
+      seen.add(session.id);
+    }
+    if (!seen.size) throw new Error("Keep at least one session.");
+    const locked = new Set(event.sessions.filter(session => teamEventSessionDraft(record, session.id, state).locked)
+      .map(session => session.id));
+    if ([...locked].some(id => !seen.has(id))) throw new Error("Published sessions cannot be removed.");
+    const drafts = change.sessions.filter(session => !locked.has(session.id));
+    const oldFixtures = event.fixtures.filter(fixture => !locked.has(fixture.sessionId));
+    const oldIds = new Set(oldFixtures.map(fixture => fixture.competitionId));
+    const rebuiltFixtures = [];
+    const rebuiltComps = [];
+    for (const session of drafts) {
+      const format = TEAM_SESSION_FORMATS[session.formatId];
+      if (!format || !session.name.trim()) throw new Error("Each session needs a name and match format.");
+      const { A, B } = sessionLineups(format, event.sides[0].memberIds, event.sides[1].memberIds, session.lineups);
+      A.forEach((a, index) => {
+        const b = B[index];
+        const old = oldFixtures.find(item => item.sessionId === session.id && item.position === index + 1);
+        const fixtureId = old?.id || uid();
+        const compId = old?.competitionId || uid();
+        const pairs = format.playersPerMatch === 2 ? [a, b].map((ids, side) => ({
+          id: `${fixtureId}-${side}`, ids, name: event.sides[side].name,
+        })) : [];
+        rebuiltFixtures.push({ id: fixtureId, competitionId: compId, sessionId: session.id, sessionName: session.name.trim(),
+          position: index + 1, sideAPlayerIds: a, sideBPlayerIds: b, status: "draft" });
+        rebuiltComps.push({
+          id: compId, societyId: record.societyId, createdBy: actorId,
+          name: `${record.name} · ${session.name.trim()} ${index + 1}`,
+          format: format.format, handicapAllowance: format.handicapAllowance,
+          course: record.course, tee: record.tee, courseSnapshot: record.courseSnapshot,
+          fee: 0, days: 21, holesMode: "18", starts: at, ends: new Date(+now + 21 * 86400000).toISOString(),
+          entries: [...a, ...b], invites: [], pairs, pairingMode: "preset", status: "draft",
+          showLiveLeaderboard: true, teamEventId: eventId, teamEventFixtureId: fixtureId, updatedAt: at,
+        });
+      });
+    }
+    event.sessions = change.sessions.map(session => locked.has(session.id)
+      ? event.sessions.find(item => item.id === session.id)
+      : {...TEAM_SESSION_FORMATS[session.formatId], id: session.id, name: session.name.trim()});
+    event.fixtures = event.sessions.flatMap(session => (locked.has(session.id) ? event.fixtures : rebuiltFixtures)
+      .filter(fixture => fixture.sessionId === session.id));
+    const retained = new Set(rebuiltComps.map(comp => comp.id));
+    removed = [...oldIds].filter(id => !retained.has(id));
+    comps = [...comps.filter(comp => !oldIds.has(comp.id)), ...rebuiltComps];
+  }
+  if (change.publish) {
+    const fixtures = event.fixtures.filter(item => item.sessionId === change.publish);
+    const ids = new Set(fixtures.map(fixture => fixture.competitionId));
+    if (!ids.size || fixtures.some(item => !comps.some(comp => comp.id === item.competitionId && comp.status === "draft")))
+      throw new Error("This session is no longer in draft.");
+    comps = comps.map(comp => ids.has(comp.id) ? {...comp, status: "live", starts: at,
+      ends: new Date(+now + (Number(comp.days) || 21) * 86400000).toISOString(), updatedAt: at} : comp);
+    fixtures.forEach(fixture => { fixture.status = "live"; });
+  }
+  return {...state, comps,
+    deletedCompIds: [...new Set([...(state.deletedCompIds || []), ...removed])],
+    leagues: state.leagues.map(item => item.id === eventId
+      ? {...record, teams: event.sides, teamEvent: event, updatedAt: at} : item),
+  };
+}
+
 export function teamEventFixtureResult(fixture, competition, state) {
   if (!competition) return { status: "not-created", pointsA: 0, pointsB: 0, label: "Not created" };
+  if (["draft", "cancelled", "deleted"].includes(competition.status))
+    return { status: competition.status, pointsA: 0, pointsB: 0, label: competition.status };
   let result = null;
   if (["4bbb-match", "fourball-match"].includes(competition.format) && competition.pairs?.length === 2) {
     const match = fourballMatchResult(competition.pairs[0], competition.pairs[1], competition, state);
     result = { complete: match.decided, winner: match.up > 0 ? 0 : match.up < 0 ? 1 : null, label: match.text, holeDifference: match.up };
-  } else if (competition.format === "foursomes-match") result = sharedBallMatchResult(competition, state);
-  else result = matchPlayResult(competition, state, { stopWhenDecided: false });
+  } else if (competition.format === "foursomes-match") {
+    const roundGroups = [fixture.sideAPlayerIds, fixture.sideBPlayerIds].map(ids =>
+      competition.roundGroups?.find(group => group.playerIds?.length === ids.length && ids.every(id => group.playerIds.includes(id))));
+    if (roundGroups.every(Boolean)) result = sharedBallMatchResult({...competition, roundGroups}, state);
+  } else {
+    const ids = [fixture.sideAPlayerIds[0], fixture.sideBPlayerIds[0]];
+    const cards = ids.map(id => state.cards.find(card => card.compId === competition.id && card.playerId === id)).filter(Boolean);
+    result = matchPlayResult(competition, {...state, cards});
+  }
   if (!result?.complete) return { status: "open", pointsA: 0, pointsB: 0, label: result?.label || "Awaiting result" };
   const holeDifference = Number(result.holeDifference ?? result.diff ?? 0);
   if (result.winner == null) return { status: "complete", pointsA: 0.5, pointsB: 0.5, holeDifference, label: result.label || "Halved" };

@@ -34,7 +34,8 @@ import CompetitionGuide from'./CompetitionGuide.jsx';
 import CompetitionBuilder from'./CompetitionBuilder.jsx';
 import{templatePreset}from'./competitionBuilder.js';
 import TeamEventResults from'./TeamEventResults.jsx';
-import{createTeamEvent,teamEventRecords}from'./teamEvent.js';
+import TeamEventManager from'./TeamEventManager.jsx';
+import{createTeamEvent,manageTeamEvent,teamEventRecords}from'./teamEvent.js';
 import{applySeasonProgression}from'./seasonCompetition.js';
 import{MatchplayCreate,MatchplayEdit,MatchplayFixtures,MatchplayResults}from'./MatchplaySeries.jsx';
 import{matchplaySeries,standardLeagues}from'./matchplaySeriesModel.js';
@@ -411,6 +412,30 @@ async function addBuilderPlaceholders(sid, ids) {
   setState(previous=>({...previous,players:[...previous.players,...added],societies:previous.societies.map(item=>item.id===sid?{...item,members:[...new Set([...(item.members||[]),...ids])]}:item)}));
  }
 }
+async function saveTeamEventChanges(eventId, change) {
+ const now = new Date();
+ const before = latestStateRef.current;
+ const next = manageTeamEvent(before, eventId, currentMe?.id, change, now);
+ const event = next.leagues.find(record => record.id === eventId);
+ next.audit = [...(next.audit || []), {
+  id: uid(), societyId: event.societyId, at: now.toISOString(), editedById: currentMe.id,
+  editedByName: currentMe.name, action: change.publish ? 'PUBLISH TEAM EVENT SESSION' : 'EDIT TEAM EVENT',
+  after: {teamEventId: eventId, sessionId: change.publish || null},
+ }];
+ if(CLOUD && auth?.access_token) await saveCloud(next, setCloud, auth.access_token);
+ const eventCompIds = new Set(before.comps.filter(comp => comp.teamEventId === eventId).map(comp => comp.id));
+ const eventComps = next.comps.filter(comp => comp.teamEventId === eventId);
+ const deletedIds = next.deletedCompIds.filter(id => eventCompIds.has(id));
+ setState(previous=>({
+  ...previous,
+  leagues: previous.leagues.map(record => record.id === eventId ? event : record),
+  comps: [...previous.comps.filter(comp => !eventCompIds.has(comp.id) && comp.teamEventId !== eventId), ...eventComps],
+  deletedCompIds: [...new Set([...(previous.deletedCompIds || []), ...deletedIds])],
+  audit: [...(previous.audit || []).filter(entry => entry.id !== next.audit.at(-1).id), next.audit.at(-1)],
+ }));
+ setModal(null);
+ setEditMatchplay(null);
+}
 async function useBuilderTemplate(template,setup){
  const sid=setup.societyId;
  if(!sid||sid!==builderGroupId||!adminGroupIds.has(sid))throw new Error('Choose a group you can manage.');
@@ -433,7 +458,7 @@ async function useBuilderTemplate(template,setup){
   const next={...current,leagues:[...(current.leagues||[]),teamEvent.record],comps:[...(current.comps||[]),...teamEvent.competitions],audit:[...(current.audit||[]),{id:uid(),societyId:sid,action:'CREATE TEAM EVENT FROM TEMPLATE',editedById:currentMe?.id,editedByName:currentMe?.name||'Unknown',at:new Date().toISOString(),after:{teamEventId:teamEvent.record.id,templateId:template.id,competitionIds:teamEvent.competitions.map(comp=>comp.id)}}]};
   if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);
   setState(previous=>({...previous,leagues:[...(previous.leagues||[]),teamEvent.record],comps:[...(previous.comps||[]),...teamEvent.competitions],audit:[...(previous.audit||[]),next.audit.at(-1)]}));
-  setModal(null);setTab('comps');
+  setEditMatchplay(teamEvent.record);setModal('manageteamevent');setTab('results');
   void sendBuilderGroupInvites(sid,setup.inviteIds);
   return;
  }
@@ -444,6 +469,7 @@ async function declineInvite(c){if(!currentMe||!confirm('Decline the invitation 
 function enter(c){
  if(!currentMe){setModal('player');return}
  const group=state.societies.find(s=>s.id===c.societyId),admin=group?.ownerId===currentMe.id||(group?.admins||[]).includes(currentMe.id);
+ if(!admin&&(c.teamEventId||c.matchplaySeriesId)&&!(c.entries||[]).includes(currentMe.id)){alert('Only the assigned golfers can open this scorecard.');return}
  if(!admin&&['matchplay','nassau'].includes(c.format)&&!(c.entries||[]).includes(currentMe.id)&&(c.entries||[]).length>=2){alert('This head-to-head competition is limited to exactly two golfers.');return}
  if(!admin&&c.format==='sixes'&&!(c.entries||[]).includes(currentMe.id)&&(c.entries||[]).length>=3){alert('Split Sixes is limited to exactly three golfers.');return}
  if(!admin)setState(x=>{const others=(c.entries||[]).filter(id=>id!==currentMe.id);const contacts={...(x.contacts||{}),[currentMe.id]:[...new Set([...(x.contacts?.[currentMe.id]||[]),...others])]};for(const id of others)contacts[id]=[...new Set([...(contacts[id]||[]),currentMe.id])];const hiddenContacts={...(x.hiddenContacts||{}),[currentMe.id]:(x.hiddenContacts?.[currentMe.id]||[]).filter(id=>!others.includes(id))};for(const id of others)hiddenContacts[id]=(hiddenContacts[id]||[]).filter(pid=>pid!==currentMe.id);return {...x,contacts,hiddenContacts,comps:x.comps.map(q=>q.id===c.id?{...q,entries:[...new Set([...(q.entries||[]),currentMe.id])],invites:(q.invites||[]).filter(id=>id!==currentMe.id)}:q)}});
@@ -472,7 +498,7 @@ return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicato
  const standaloneSeries=series.filter(record=>!record.sourceLeagueId||!groupLeagues.some(league=>league.id===record.sourceLeagueId));
  if(!groupLeagues.length&&!series.length&&!teamEvents.length)return null;
  return <section key={s.id}><SectionTitle a={s.name.toUpperCase()} b={`${groupLeagues.length} league${groupLeagues.length===1?'':'s'} · ${series.length} matchplay · ${teamEvents.length} team event${teamEvents.length===1?'':'s'}`}/>
-  {teamEvents.map((record,i)=><details className="wlSeasonTwirl matchplayTwirl" key={record.id} open={i===0}><summary><span><b>{record.name}</b><small>Team-event scoreboard</small></span><strong>›</strong></summary><TeamEventResults record={record} state={state} onOpenCompetition={competition=>{if(competition){setEditComp(competition);setModal('editcomp')}}}/></details>)}
+  {teamEvents.map((record,i)=><details className="wlSeasonTwirl matchplayTwirl" key={record.id} open={i===0}><summary><span><b>{record.name}</b><small>Team-event scoreboard</small></span><strong>›</strong></summary>{adminGroupIds.has(s.id)&&<button className="secondary" onClick={()=>{setEditMatchplay(record);setModal('manageteamevent')}}>MANAGE TEAM EVENT</button>}<TeamEventResults record={record} state={state} onOpenCompetition={competition=>{if(competition){setEditComp(competition);setModal('leaderboard')}}}/></details>)}
   {standaloneSeries.map((record,i)=><details className="wlSeasonTwirl matchplayTwirl" key={record.id} open={i===0}><summary><span><b>{record.name}</b><small>Matchplay results</small></span><strong>›</strong></summary><MatchplayResults record={record} state={state} me={currentMe} setState={setState}/></details>)}
   {groupLeagues.map((l,i)=><details className="wlSeasonTwirl" key={l.id} defaultOpen={(() => {try {const saved=sessionStorage.getItem(`ggc-results-league-${l.id}`);return saved===null?i===0:saved==='true'}catch{return i===0}})()} onToggle={e=>{try{sessionStorage.setItem(`ggc-results-league-${l.id}`,String(e.currentTarget.open))}catch{}}}><summary><span><b>{l.name}</b><small>League results</small></span><strong>›</strong></summary><HistoricalLeagueResults league={l} state={state} isAdmin={adminGroupIds.has(s.id)} playoffs={series.filter(record=>record.sourceLeagueId===l.id)} me={currentMe} setState={setState}/></details>)}
  </section>})}</>}
@@ -484,6 +510,11 @@ return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicato
 {modal==='advancedcreate'&&canManageAny&&<Modal title="Custom (advanced)" close={()=>setModal(null)}><p className="muted">Open the existing detailed setup tools. Nothing in these workflows has been removed or redesigned.</p><div className="advancedCreateChoices"><button className="primary" onClick={()=>setModal('comp')}><Plus/> CUSTOM COMPETITION / MATCH</button><button className="secondary" onClick={()=>setModal('newleague')}><Plus/> CREATE LEAGUE</button><button className="secondary" onClick={()=>setModal('newmatchplay')}><Plus/> CREATE MATCHPLAY LEAGUE OR KNOCKOUT</button></div></Modal>}
 {modal==='competitionbuilder'&&currentMe&&<Modal className="competitionBuilderModal" title="" close={()=>setModal(null)}><CompetitionBuilder state={state} groups={myGroups.filter(group=>adminGroupIds.has(group.id))} memberGroups={myGroups} canInvite={!!auth?.access_token&&!!supabase} groupId={builderGroupId} onGroupChange={setBuilderGroupId} onCreateGroup={()=>setCreatingBuilderGroup(true)} personalFavourites={state.settings?.competitionBuilderFavourites||[]} onToggleFavourite={toggleBuilderFavourite} onUseTemplate={useBuilderTemplate} onClose={()=>setModal(null)} courseManager={<CourseLibrary state={state} onSave={async next=>{setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}}/>}/></Modal>}
 {modal==='competitionbuilder'&&creatingBuilderGroup&&<SocietyModal createOnly state={state} setState={setState} me={currentMe} setSocId={setBuilderGroupId} auth={auth} setCloud={setCloud} onAuthoritativeGroup={acceptAuthoritativeGroup} close={()=>setCreatingBuilderGroup(false)}/>}
+{modal==='manageteamevent'&&editMatchplay&&adminGroupIds.has(editMatchplay.societyId)&&
+ <Modal title="Manage Team Event" close={()=>{setModal(null);setEditMatchplay(null)}}>
+  <TeamEventManager key={editMatchplay.id} record={state.leagues.find(item=>item.id===editMatchplay.id)||editMatchplay}
+   state={state} onSave={change=>saveTeamEventChanges(editMatchplay.id,change)}/>
+ </Modal>}
 {modal==='editmatchplay'&&editMatchplay&&adminGroupIds.has(editMatchplay.societyId)&&<Modal className="matchplayModal" title="Manage Matchplay" close={()=>{setModal(null);setEditMatchplay(null)}}><MatchplayEdit record={state.leagues.find(item=>item.id===editMatchplay.id)||editMatchplay} state={state} onSave={(updated,options={})=>{setState(previous=>{const generated=(previous.comps||[]).filter(comp=>comp.matchplaySeriesId===updated.id),resetIds=new Set(options.resetFixtures?generated.map(comp=>comp.id):[]),removedCards=(previous.cards||[]).filter(card=>resetIds.has(card.compId));return {...previous,leagues:(previous.leagues||[]).map(item=>item.id===updated.id?updated:item),comps:(previous.comps||[]).filter(comp=>!resetIds.has(comp.id)),cards:(previous.cards||[]).filter(card=>!resetIds.has(card.compId)),deletedCompIds:[...new Set([...(previous.deletedCompIds||[]),...resetIds])],deletedCardIds:[...new Set([...(previous.deletedCardIds||[]),...removedCards.map(card=>card.id)])],audit:[...(previous.audit||[]),{id:uid(),societyId:updated.societyId,action:options.resetFixtures?'REBUILD MATCHPLAY STRUCTURE':'EDIT MATCHPLAY SETTINGS',editedById:currentMe?.id,editedByName:currentMe?.name||'Unknown',at:new Date().toISOString(),after:{seriesId:updated.id,structure:updated.structure,handicapSettings:updated.handicapSettings,qualificationSize:updated.matchplay?.qualificationSize,deletedCompetitionIds:[...resetIds],deletedCardIds:removedCards.map(card=>card.id)}}]}});setModal(null);setEditMatchplay(null)} } onDelete={()=>{const current=state.leagues.find(item=>item.id===editMatchplay.id)||editMatchplay;const linked=(state.comps||[]).filter(comp=>comp.matchplaySeriesId===current.id);if(!confirm(`Delete “${current.name}” and all ${linked.length} generated match${linked.length===1?'':'es'}, scorecards and results? This cannot be undone.`))return;setState(previous=>{const generated=(previous.comps||[]).filter(comp=>comp.matchplaySeriesId===current.id),compIds=new Set(generated.map(comp=>comp.id)),removedCards=(previous.cards||[]).filter(card=>compIds.has(card.compId));return {...previous,leagues:(previous.leagues||[]).filter(item=>item.id!==current.id),comps:(previous.comps||[]).filter(comp=>!compIds.has(comp.id)),cards:(previous.cards||[]).filter(card=>!compIds.has(card.compId)),deletedLeagueIds:[...new Set([...(previous.deletedLeagueIds||[]),current.id])],deletedCompIds:[...new Set([...(previous.deletedCompIds||[]),...compIds])],deletedCardIds:[...new Set([...(previous.deletedCardIds||[]),...removedCards.map(card=>card.id)])],audit:[...(previous.audit||[]),{id:uid(),societyId:current.societyId,action:'DELETE MATCHPLAY',editedById:currentMe?.id,editedByName:currentMe?.name||'Unknown',at:new Date().toISOString(),before:{seriesId:current.id,name:current.name,competitionIds:[...compIds],cardIds:removedCards.map(card=>card.id)}}]}});setModal(null);setEditMatchplay(null)}}/></Modal>}{modal==='newmatchplay'&&canManageAny&&<Modal className="matchplayModal" title="Create Matchplay League or Knockout" close={()=>{setModal(null);setEditComp(null)}}><MatchplayCreate state={state} me={currentMe} initialSocietyId={society?.id} preset={editComp?.builderTemplate?editComp:null} onCreate={record=>{const inviteIds=editComp?.builderSetup?.inviteIds;const apply=previous=>({...previous,leagues:[...(previous.leagues||[]),record],audit:[...(previous.audit||[]),{id:uid(),societyId:record.societyId,action:'CREATE MATCHPLAY',editedById:currentMe?.id,editedByName:currentMe?.name||'Unknown',at:new Date().toISOString(),after:{seriesId:record.id,structure:record.structure,sourceLeagueId:record.sourceLeagueId}}]});const next=apply(latestStateRef.current);setState(next);setEditComp(null);setModal(null);setTab('comps');if(inviteIds?.length)void (async()=>{
  try{if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);await sendBuilderGroupInvites(record.societyId,inviteIds)}
  catch{alert('Group invites were held because the Matchplay cloud save failed. Send them from Groups once the event is saved.')}
@@ -593,8 +624,8 @@ function CompModal({
   const [minimumDrivesPerPlayer, setMinimumDrivesPerPlayer] = useState(
     existing?.minimumDrivesPerPlayer ?? 0,
   );
-  const [course, setCourse] = useState(existing?.course || "");
-  const [tee, setTee] = useState(existing?.tee || "");
+  const [course, setCourse] = useState(existing?.course || preset?.course || "");
+  const [tee, setTee] = useState(existing?.tee || preset?.tee || "");
   const [fee, setFee] = useState(existing?.fee ?? 0);
   const [days, setDays] = useState(existing?.days || 1);
   const [durationChoice, setDurationChoice] = useState(
@@ -614,7 +645,7 @@ function CompModal({
   const [startAt, setStartAt] = useState(
     toLocalDateTime(existing?.starts || new Date()),
   );
-  const [holesMode, setHolesMode] = useState(existing?.holesMode || "18");
+  const [holesMode, setHolesMode] = useState(existing?.holesMode || preset?.holesMode || "18");
   const [separate, setSeparate] = useState(
     existing ? !!existing.separateDailyPots : true,
   );
@@ -804,6 +835,12 @@ function CompModal({
   }
   async function save() {
     if (!chosenSociety) return alert("Choose a group.");
+    const leg = existing?.matchplayLeg || preset?.matchplayLeg;
+    if (leg && (holesMode !== "18" || format !== (existing?.format || preset?.format)))
+      return alert("Knockout legs use the fixture format and all 18 holes.");
+    if (!existing && leg && state.comps.some(item => item.matchplaySeriesId === preset.matchplaySeriesId &&
+      item.matchplayFixtureId === preset.matchplayFixtureId && item.matchplayLeg === leg))
+      return alert("A scorecard exists for this leg. Reopen it from the fixture.");
     if (leagueId && !selectedLeague)
       return alert("Choose a valid League for this Group.");
     if (!FORMAT_RULES[format]?.verified)
@@ -935,6 +972,7 @@ function CompModal({
       showLiveLeaderboard,
       matchplaySeriesId: liveExisting?.matchplaySeriesId || preset?.matchplaySeriesId || null,
       matchplayFixtureId: liveExisting?.matchplayFixtureId || preset?.matchplayFixtureId || null,
+      matchplayLeg: liveExisting?.matchplayLeg || preset?.matchplayLeg || null,
       handicapSource: liveExisting?.handicapSource || preset?.handicapSource || null,
       handicapSnapshot: liveExisting?.handicapSnapshot || preset?.handicapSnapshot || null,
       handicapAdjustments: liveExisting?.handicapAdjustments || preset?.handicapAdjustments || null,
@@ -1403,6 +1441,7 @@ function CompModal({
         Holes
         <select
           value={holesMode}
+          disabled={!!(existing?.matchplayLeg || preset?.matchplayLeg)}
           onChange={(e) => {
             setHolesMode(e.target.value);
             if (e.target.value !== "18") setPayoutMode("winner");
@@ -2545,6 +2584,9 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
       return;
     }
     const submittedCards = state.cards.filter((card) => card.compId === c.id && ids.includes(card.playerId));
+    if (c.matchplayLeg && ((c.entries || []).some(id => !submittedCards.some(card => card.playerId === id)) ||
+      submittedCards.some(card => missingActiveHoleIndexes(card, c).length)))
+      return alert("Complete all 18 holes for both sides before submitting this leg.");
     const missing = canAutomaticallyFinalise(c)
       ? submittedCards.reduce((n, card) => n + missingActiveHoleIndexes(card, c).length, 0)
       : 0;
@@ -2572,7 +2614,11 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
         },
       ],
     };
-    next = syncMatchplayCompetitionResult(next, c, {completedAt: now});
+    const seriesRecord = state.leagues.find(record => record.id === c.matchplaySeriesId);
+    if (admin || seriesRecord?.builderTemplateId !== "champions-league")
+      next = syncMatchplayCompetitionResult(next, c, {completedAt: now});
+    if (c.matchplayLeg && next.leagues !== state.leagues)
+      next.comps = next.comps.map(comp => comp.id === c.id ? {...comp, status: "completed", statusChangedAt: now, updatedAt: now} : comp);
     setState(next);
     if (CLOUD && auth?.access_token)
       await saveCloud(next, setCloud, auth.access_token);

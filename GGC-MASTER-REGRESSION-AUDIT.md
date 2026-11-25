@@ -2,6 +2,12 @@
 
 Status: 🔵 changed/tested this build · 🟢 retained and regression-tested · 🟠 requires live/device verification · 🔴 broken/missing · ⚫ regression.
 
+## Competition Builder organiser and two-leg matchplay
+
+- 🔵 Team event management preserves published sessions, checks organiser permissions, supports resting golfers and can publish an individual session.
+- 🔵 Two-leg knockout uses separate 18-hole cards, reverses pair order, waits for both legs and resolves tied aggregates by sudden death.
+- 🟠 Authenticated organiser save/reopen, participant submission and a second signed-in session on the isolated site require live verification.
+
 ## V4 Beta 1 scope / current audit
 - 🔵 BUILD-V4B1 — visible/package build identity moved to V4 Beta 1 / 4.0.0-beta.1.
 - 🔵 GOLF-GAIN-001 — Golf Gain companion App Store card added using the supplied icon and App Store destination.

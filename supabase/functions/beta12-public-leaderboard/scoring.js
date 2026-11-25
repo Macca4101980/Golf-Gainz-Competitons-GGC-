@@ -85,10 +85,10 @@ export function fourballMatchResult(pairA,pairB,c,state){
   if(a<b)up++;
   if(b<a)up--;
   holes.push({a,b,up});
-  if(Math.abs(up)>indexes.length-holes.length)break;
+  if(!c.matchplayLeg&&Math.abs(up)>indexes.length-holes.length)break;
  }
  const played=holes.length,left=indexes.length-played;
- const decided=played>0&&(left===0||Math.abs(up)>left);
+ const decided=played>0&&(left===0||(!c.matchplayLeg&&Math.abs(up)>left));
  const text=up===0?(decided?'Match halved':'All Square'):decided&&left>0?`${Math.abs(up)} & ${left}`:`${Math.abs(up)} UP`;
  return {up,played,left,holes,relativeHandicaps,text,decided};
 }

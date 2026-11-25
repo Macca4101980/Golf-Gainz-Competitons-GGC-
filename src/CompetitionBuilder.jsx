@@ -12,6 +12,7 @@ import {
   recommendTemplates,
   validateBuilderSetup,
 } from "./competitionBuilder.js";
+import { plannedTeamEventMatchCount } from "./teamEvent.js";
 
 const labels = (items, id) => items.find((item) => item.id === id)?.label || "Not chosen";
 
@@ -341,7 +342,7 @@ export default function CompetitionBuilder({
             {answers.structure === "knockout" && entrantCount >= 2 && <div><dt>Bracket</dt><dd>{entrantCount - 1} matches · {2 ** Math.ceil(Math.log2(entrantCount)) - entrantCount} byes</dd></div>}
             {answers.structure === "group-stage" && <div><dt>Stages</dt><dd>Group matches → Knockout</dd></div>}
             {answers.structure === "season" && <div><dt>Default events</dt><dd>{template.defaultRounds}</dd></div>}
-            {answers.structure === "team-event" && <div><dt>Draft matches</dt><dd>{template.id === "hollingsworth-trophy" ? Math.floor(sideA / 2) : sideA * 2}</dd></div>}</dl></article>
+            {answers.structure === "team-event" && <div><dt>Draft matches</dt><dd>{plannedTeamEventMatchCount(template.id, Math.min(sideA, sideB))}</dd></div>}</dl></article>
           <div className="builderValidation">{invitees.length > 0 && blocked && <p className="muted">Pending invitations do not meet a format’s minimum entrant or team requirements.</p>}{validation.map((issue) => <div className={issue.level} key={issue.code}><span>{issue.level === "green" ? "✓" : issue.level === "amber" ? "!" : "×"}</span><p>{issue.message}</p></div>)}</div>
           <div className="builderFavouriteActions"><button className="secondary" onClick={() => onToggleFavourite?.(template.id, "personal")}><Star /> {personalFavourites.includes(template.id) ? "PERSONAL FAVOURITE SAVED" : "SAVE PERSONAL FAVOURITE"}</button><button className="secondary" onClick={() => onToggleFavourite?.(template.id, "group")}><Star /> {groupFavourites.includes(template.id) ? "GROUP FAVOURITE SAVED" : "SAVE FOR THIS GROUP"}</button></div>
           {setupError && <p className="autherror" role="alert">{setupError}</p>}

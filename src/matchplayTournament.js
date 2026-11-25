@@ -170,13 +170,49 @@ export function createGroupStage({id=`matchplay-${Date.now()}`,name='Matchplay G
  seeded.forEach((entrant,index)=>{const block=Math.floor(index/count),offset=index%count,groupIndex=block%2===0?offset:count-1-offset;groups[groupIndex].entrantIds.push(entrant.id);});
  const qualify=Math.floor(asNumber(qualifiersPerGroup,2));
  if(qualify<1||groups.some(group=>qualify>=group.entrantIds.length))throw new Error('Each group must retain at least one non-qualifying entrant.');
+ if (points.knockoutLegs === 2) {
+  const field = count * qualify;
+  if (count % 2 || field > 64 || (field & (field - 1)))
+   throw new Error('Choose an even number of groups that produce 2, 4, 8, 16, 32 or 64 qualifiers.');
+ }
  const rules={winPoints:3,drawPoints:1,lossPoints:0,...points},fixtures=[];
  groups.forEach(group=>{
   const groupEntrants=group.entrantIds.map(entrant=>seeded.find(item=>item.id===entrant));
   const schedule=createRoundRobin({id:group.id,name:group.name,societyId,entrants:groupEntrants,entrantType,legs,createdAt,points:rules});
   fixtures.push(...schedule.fixtures.map(fixture=>({...fixture,seriesId:id,stage:'group',groupId:group.id})));
  });
- return{id,name,societyId,type:'group-stage',entrantType,entrants:seeded,groups,qualifiersPerGroup:qualify,fixtures,createdAt,rules};
+ return{id,name,societyId,type:'group-stage',entrantType,entrants:seeded,groups,qualifiersPerGroup:qualify,legs,fixtures,createdAt,rules};
+}
+
+export function nextKnockoutLeg(series, fixture) {
+ if (series?.type !== 'knockout' || series.rules?.knockoutLegs !== 2) return null;
+ return fixture.legResults?.length === 2 ? null : (fixture.legResults?.length || 0) + 1;
+}
+
+export function recordKnockoutLeg(source, fixtureId, leg, result) {
+ const series = clone(source);
+ const fixture = series.fixtures.find(item => item.id === fixtureId);
+ if (!fixture || !['scheduled', 'live'].includes(fixture.status) || nextKnockoutLeg(series, fixture) !== leg)
+  throw new Error('Only the current leg can be scored.');
+ const {holesWonA, holesWonB, holesPlayed, completedAt = new Date().toISOString()} = result;
+ if (![holesWonA, holesWonB, holesPlayed].every(value => Number.isInteger(value) && value >= 0) ||
+     holesPlayed !== 18 || holesWonA + holesWonB > holesPlayed)
+  throw new Error('Enter valid hole totals for a full 18-hole leg.');
+ // Leg two is displayed in reverse order. Store all totals in bracket order.
+ const score = {leg, holesWonA: leg === 1 ? holesWonA : holesWonB,
+  holesWonB: leg === 1 ? holesWonB : holesWonA, holesPlayed, completedAt};
+ fixture.legResults = [...(fixture.legResults || []), score];
+ if (leg === 1) {
+  fixture.status = 'live';
+  return series;
+ }
+ const [first, second] = fixture.legResults;
+ return recordFixtureResult(series, fixtureId, {
+  holesWonA: first.holesWonA + second.holesWonA,
+  holesWonB: first.holesWonB + second.holesWonB,
+  holesPlayed: first.holesPlayed + second.holesPlayed,
+  completedAt,
+ });
 }
 
 export function recordFixtureResult(source,fixtureId,{holesWonA=0,holesWonB=0,holesPlayed=0,winnerId=null,completedAt=new Date().toISOString()}={}){
@@ -184,6 +220,7 @@ export function recordFixtureResult(source,fixtureId,{holesWonA=0,holesWonB=0,ho
  const series=clone(source),fixture=series.fixtures.find(item=>item.id===fixtureId);if(!fixture)throw new Error('Matchplay fixture not found.');
  if(!fixture.entrantAId||!fixture.entrantBId)throw new Error('Both fixture entrants must be known before recording a result.');
  if(TERMINAL.has(fixture.status))throw new Error('This fixture is already complete.');
+ if (nextKnockoutLeg(series, fixture)) throw new Error('Record both legs before deciding the tie.');
  const a=Math.max(0,asNumber(holesWonA)),b=Math.max(0,asNumber(holesWonB));fixture.score={holesWonA:a,holesWonB:b,holesPlayed:Math.max(a+b,asNumber(holesPlayed))};
  const resolvedWinner=winnerId||(a>b?fixture.entrantAId:b>a?fixture.entrantBId:null);
  if(resolvedWinner&&![fixture.entrantAId,fixture.entrantBId].includes(resolvedWinner))throw new Error('The winner must be one of the fixture entrants.');
@@ -262,7 +299,7 @@ export function groupStageKnockoutPreview(source){
  }
  const field=pairs.length*2,order=knockoutSeedOrder(field),entrants=[];
  pairs.forEach((pair,index)=>pair.forEach((entrant,side)=>entrants.push({...entrant,seed:order[index*2+side]})));
- const preview=createKnockout({id:`${source.id}-planned-knockout`,name:`${source.name} Knockout`,societyId:source.societyId,entrants,entrantType:source.entrantType,createdAt:source.createdAt,rules:{preview:true,sourceGroupStageId:source.id}});
+ const preview=createKnockout({id:`${source.id}-planned-knockout`,name:`${source.name} Knockout`,societyId:source.societyId,entrants,entrantType:source.entrantType,createdAt:source.createdAt,rules:{preview:true,sourceGroupStageId:source.id,knockoutLegs:source.rules?.knockoutLegs}});
  preview.fixtures=preview.fixtures.map(fixture=>({...fixture,status:'forecasted'}));
  preview.preview=true;
  return preview;
@@ -288,7 +325,7 @@ export function qualifyGroupStage(source,{id=`${source?.id}-knockout`,name=`${so
  }
  const field=pairs.length*2,order=knockoutSeedOrder(field),entrantById=new Map(source.entrants.map(item=>[item.id,item])),qualified=[];
  pairs.forEach((pair,index)=>pair.forEach((row,side)=>qualified.push({...entrantById.get(row.entrantId),seed:order[index*2+side],sourceGroupId:tables.find(table=>table.standings.some(item=>item.entrantId===row.entrantId))?.groupId,groupPosition:row.position})));
- const knockout=createKnockout({id,name,societyId:source.societyId,entrants:qualified,entrantType:source.entrantType,createdAt:qualifiedAt,rules:{sourceGroupStageId:source.id,qualifiersPerGroup:source.qualifiersPerGroup,roundTimeLimitDays:source.rules?.roundTimeLimitDays||21}});
+ const knockout=createKnockout({id,name,societyId:source.societyId,entrants:qualified,entrantType:source.entrantType,createdAt:qualifiedAt,rules:{sourceGroupStageId:source.id,qualifiersPerGroup:source.qualifiersPerGroup,roundTimeLimitDays:source.rules?.roundTimeLimitDays||21,knockoutLegs:source.rules?.knockoutLegs}});
  knockout.sourceGroupStageId=source.id;knockout.qualifiedAt=qualifiedAt;return knockout;
 }
 

@@ -6,14 +6,14 @@ export const BUILDER_AUDIENCES = Object.freeze([
 ]);
 
 export const BUILDER_STYLES = Object.freeze([
-  { id: "course", label: "Leaderboard scoring", detail: "Rank scores across the field, for example Stableford or stroke play." },
+  { id: "course", label: "Strokeplay / Stableford", detail: "Golfers or teams compete against the course, with results determined by strokes or points." },
   { id: "head-to-head", label: "Matchplay", detail: "Golfers or teams play directly against opponents." },
   { id: "unsure", label: "I’m not sure", detail: "See the available competition structures." },
 ]);
 
 export const BUILDER_STRUCTURES = Object.freeze([
   { id: "day", label: "One-off competition", detail: "One competition with a leaderboard." },
-  { id: "season", label: "Season standings", detail: "Combine results across multiple events." },
+  { id: "season", label: "Multiple Events", detail: "Combine results across multiple rounds or competitions to determine an overall winner." },
   { id: "knockout", label: "Straight knockout", detail: "Winners advance until two entrants meet in the final." },
   { id: "round-robin", label: "Round robin", detail: "Each entrant plays every other entrant." },
   { id: "group-stage", label: "Groups then knockout", detail: "Group matches decide who goes into the knockout." },

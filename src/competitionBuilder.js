@@ -20,6 +20,35 @@ export const BUILDER_STRUCTURES = Object.freeze([
   { id: "team-event", label: "Two sides with multiple matches", detail: "Combine individual match results into one team result." },
 ]);
 
+export const BUILDER_SCORING_FORMATS = Object.freeze([
+  { id: "stableford", label: "Individual Stableford", audiences: ["individual"] },
+  { id: "stroke", label: "Individual Nett Stroke Play", audiences: ["individual"] },
+  { id: "gross-stroke", label: "Individual Gross Stroke Play", audiences: ["individual"] },
+  { id: "4bbb-stableford", label: "4BBB Stableford", audiences: ["pairs"] },
+  { id: "4bbb-stroke", label: "4BBB Stroke Play", audiences: ["pairs"] },
+  { id: "aggregate-stableford", label: "Aggregate Stableford", audiences: ["pairs"] },
+  { id: "aggregate-stroke", label: "Aggregate Stroke Play", audiences: ["pairs"] },
+  { id: "multiplier-stableford", label: "Pairs Multiplier Stableford", audiences: ["pairs"] },
+  { id: "foursomes", label: "Foursomes", audiences: ["pairs"] },
+  { id: "greensomes", label: "Greensomes", audiences: ["pairs"] },
+  { id: "gruesomes", label: "Gruesomes", audiences: ["pairs"] },
+  { id: "pinehurst", label: "Pinehurst / Chapman", audiences: ["pairs"] },
+  { id: "pairs-scramble", label: "Pairs Scramble", audiences: ["pairs"] },
+  { id: "scramble", label: "Texas Scramble", audiences: ["groups"] },
+  { id: "florida", label: "Florida Scramble", audiences: ["groups"] },
+  { id: "shamble", label: "Shamble", audiences: ["groups"] },
+  { id: "best1", label: "Best 1 from Group", audiences: ["groups"] },
+  { id: "best2", label: "Best 2 from Group", audiences: ["groups"] },
+  { id: "best3", label: "Best 3 from Group", audiences: ["groups"] },
+  { id: "cha-cha-cha", label: "Cha Cha Cha", audiences: ["groups"] },
+  { id: "irish-fourball", label: "Irish Fourball", audiences: ["groups"] },
+  { id: "bowmaker", label: "Bowmaker", audiences: ["groups"] },
+  { id: "alliance", label: "Alliance", audiences: ["groups"] },
+  { id: "yellow-ball", label: "Yellow Ball", audiences: ["groups"] },
+]);
+
+export const builderScoringFormats = (audience) => BUILDER_SCORING_FORMATS.filter((format) => format.audiences.includes(audience));
+
 const t = (template) => Object.freeze(template);
 
 export const COMPETITION_TEMPLATES = Object.freeze([
@@ -265,13 +294,20 @@ export function templateById(id) {
 // Keep existing template IDs for saved favourites and competition records.
 const availableStructures = {
   "traditional-golf-day": "day",
+  "club-championship": "season",
+  "golf-tour": "season",
   "winter-league-farthingstone": "season",
   "order-of-merit": "season",
+  "race-to-dubai": "season",
+  "fedex-cup": "season",
   "football-league": "round-robin",
   "fa-cup": "knockout",
   "world-cup": "group-stage",
   "ryder-solheim-cup": "team-event",
+  "presidents-cup": "team-event",
+  "county-handicap-league": "team-event",
   "hollingsworth-trophy": "team-event",
+  "the-open": "season",
 };
 
 export function recommendTemplates(answers = {}, favourites = []) {
@@ -295,7 +331,7 @@ export function builderRosterCounts(target, entrants, invitees) {
   };
 }
 
-export function validateBuilderSetup({ template, entrantIds = [], courseId, teeName, state, teamAssignments = [] } = {}) {
+export function validateBuilderSetup({ template, entrantIds = [], courseId, teeName, state, teamAssignments = [], audience, format } = {}) {
   const issues = [];
   if (!template) return [{ level: "red", code: "template", message: "Choose a competition template." }];
   const count = new Set(entrantIds).size;
@@ -308,6 +344,8 @@ export function validateBuilderSetup({ template, entrantIds = [], courseId, teeN
   }
   if (rule.multiple && count >= (rule.min || 1) && count % rule.multiple !== 0)
     issues.push({ level: "amber", code: "entrants-multiple", message: `This format works in groups of ${rule.multiple}. GGC will leave one golfer unassigned until another is added.` });
+  if (audience && !builderScoringFormats(audience).some((item) => item.id === format) && template.family !== "matchplay" && template.family !== "team-event")
+    issues.push({ level: "red", code: "format", message: "Choose a supported scoring format for these entrants." });
   const grouped = teamAssignments.length > 0 && Array.isArray(teamAssignments[0]);
   const bracketSize = grouped ? teamAssignments.length : count;
   if (grouped && template.family === "matchplay") {
@@ -376,7 +414,7 @@ export function templatePreset(template, setup = {}) {
   const base = {
     name: setup.name || template.name,
     societyId: setup.societyId,
-    format: template.defaultFormat || "stableford",
+    format: setup.format || template.defaultFormat || "stableford",
     entries: [...new Set(setup.entrantIds || [])],
     course: setup.courseId || "",
     tee: setup.teeName || "",
@@ -384,7 +422,9 @@ export function templatePreset(template, setup = {}) {
     builderTemplateId: template.id,
   };
   if (Array.isArray(setup.assignments) && setup.assignments.length && !template.entrantRule?.sides) {
-    base.pairs = setup.assignments.map((ids, index) => ({ id: `builder-team-${Date.now()}-${index}`, name: `Team ${index + 1}`, ids }));
+    if (setup.audience === "groups")
+      base.roundGroups = setup.assignments.map((ids, index) => ({ id: `builder-team-${Date.now()}-${index}`, name: `Team ${index + 1}`, playerIds: ids }));
+    else base.pairs = setup.assignments.map((ids, index) => ({ id: `builder-team-${Date.now()}-${index}`, name: `Team ${index + 1}`, ids }));
     base.pairingMode = "preset";
   }
   return base;

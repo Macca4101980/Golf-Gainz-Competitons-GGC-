@@ -35,6 +35,7 @@ import CompetitionBuilder from'./CompetitionBuilder.jsx';
 import{templatePreset}from'./competitionBuilder.js';
 import TeamEventResults from'./TeamEventResults.jsx';
 import{createTeamEvent,teamEventRecords}from'./teamEvent.js';
+import{applySeasonProgression}from'./seasonCompetition.js';
 import{MatchplayCreate,MatchplayEdit,MatchplayFixtures,MatchplayResults}from'./MatchplaySeries.jsx';
 import{matchplaySeries,standardLeagues}from'./matchplaySeriesModel.js';
 import{completedPlayoffPlacings,entrantPrizeShares,leaguePrizeForecast,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
@@ -355,7 +356,7 @@ const visibleGroups=myGroups.filter(s=>!hiddenGroups.includes(s.id));
 const orderedVisibleGroups=[...visibleGroups].sort((a,b)=>(a.id===society?.id?-1:0)-(b.id===society?.id?-1:0));
 const myGroupIds=new Set(myGroups.map(s=>s.id));
 const visibleGroupIds=new Set(visibleGroups.map(s=>s.id));const adminIdentityIds=new Set([currentMe?.id,auth?.user?.id].filter(Boolean));const adminGroupIds=new Set(myGroups.filter(s=>adminIdentityIds.has(s.ownerId)||(s.admins||[]).some(id=>adminIdentityIds.has(id))).map(s=>s.id));const canManageAny=adminGroupIds.size>0;
-useEffect(()=>{if(!currentMe?.id||!adminGroupIds.size)return;const now=new Date(),ended=(state.comps||[]).filter(c=>adminGroupIds.has(c.societyId)&&['live','scheduled'].includes(c.status||'live')&&Number.isFinite(Date.parse(c.ends))&&Date.parse(c.ends)>=CARD_FINALISATION_CUTOFF&&Date.parse(c.ends)<=now.getTime());if(!ended.length)return;let next=state;const events=[];for(const c of ended){const before=next.cards;next=finaliseCompetitionState(c,next,{at:now.toISOString(),by:currentMe.id,reason:'competition-close'});const finalised=(next.cards||[]).filter((card,i)=>card.compId===c.id&&card!==before[i]&&card.autoClosedAt===now.toISOString());events.push({id:uid(),societyId:c.societyId,compId:c.id,action:'AUTO CLOSE COMPETITION',editedById:currentMe.id,editedByName:currentMe.name,at:now.toISOString(),after:{status:'completed',finalisedCardIds:finalised.map(card=>card.id),generatedNoReturnCount:finalised.reduce((n,card)=>n+(card.generatedNoReturnHoles||[]).length,0)}})}next={...next,comps:next.comps.map(c=>ended.some(x=>x.id===c.id)?{...c,status:'completed',statusChangedAt:now.toISOString(),statusChangedBy:'GGC',autoClosedAt:now.toISOString()}:c),audit:[...(next.audit||[]),...events]};setState(next)},[clockTick,currentMe?.id,state.comps,state.cards]);
+useEffect(()=>{if(!currentMe?.id||!adminGroupIds.size)return;const now=new Date(),ended=(state.comps||[]).filter(c=>adminGroupIds.has(c.societyId)&&['live','scheduled'].includes(c.status||'live')&&Number.isFinite(Date.parse(c.ends))&&Date.parse(c.ends)>=CARD_FINALISATION_CUTOFF&&Date.parse(c.ends)<=now.getTime());if(!ended.length)return;let next=state;const events=[];for(const c of ended){const before=next.cards;next=finaliseCompetitionState(c,next,{at:now.toISOString(),by:currentMe.id,reason:'competition-close'});const finalised=(next.cards||[]).filter((card,i)=>card.compId===c.id&&card!==before[i]&&card.autoClosedAt===now.toISOString());events.push({id:uid(),societyId:c.societyId,compId:c.id,action:'AUTO CLOSE COMPETITION',editedById:currentMe.id,editedByName:currentMe.name,at:now.toISOString(),after:{status:'completed',finalisedCardIds:finalised.map(card=>card.id),generatedNoReturnCount:finalised.reduce((n,card)=>n+(card.generatedNoReturnHoles||[]).length,0)}})}next={...next,comps:next.comps.map(c=>ended.some(x=>x.id===c.id)?{...c,status:'completed',statusChangedAt:now.toISOString(),statusChangedBy:'GGC',autoClosedAt:now.toISOString()}:c),audit:[...(next.audit||[]),...events]};for(const id of new Set(ended.map(c=>c.leagueId).filter(Boolean))){const record=(next.leagues||[]).find(l=>l.id===id&&l.seasonRules);if(record)next=applySeasonProgression(record,next)}setState(next)},[clockTick,currentMe?.id,state.comps,state.cards]);
 const groupUpdates=useGroupUpdates(supabase,!!auth?.access_token&&!!currentMe?.id,[...adminGroupIds]);const updateAdminGroups=myGroups.filter(s=>adminGroupIds.has(s.id));
 useEffect(()=>{if(!supabase||!auth?.access_token||!currentMe?.id||!adminGroupIds.size)return;const events=automaticUpdateEvents(state,adminGroupIds),keys=events.map(x=>x.eventKey).sort().join('|');if(keys===automaticUpdateKeysRef.current)return;automaticUpdateKeysRef.current=keys;publishAutomaticUpdates(supabase,events).then(()=>groupUpdates.refresh()).catch(error=>console.error('Automatic Updates sync failed',error?.message||error))},[auth?.access_token,currentMe?.id,state.comps,state.cards,state.leagues]);
 useEffect(()=>{if(!supabase||!auth?.access_token)return;void flushPushNotifications(supabase);const timer=setInterval(()=>void flushPushNotifications(supabase),30000);return()=>clearInterval(timer)},[auth?.access_token]);
@@ -424,7 +425,7 @@ async function useBuilderTemplate(template,setup){
  }
  if(template.family==='league'){
   setSocId(sid);localStorage.setItem('ggc-society',sid);
-  sessionStorage.setItem(`ggc-league-setup-${sid}`,JSON.stringify({creating:true,editingLeague:false,name:setup.name||template.name,target:template.defaultRounds||10,weekDates:[],builderTemplateId:template.id,memberIds:setup.entrantIds||[],builderGroupInviteIds:setup.inviteIds,course:setup.courseId,tee:setup.teeName}));
+  sessionStorage.setItem(`ggc-league-setup-${sid}`,JSON.stringify({creating:true,editingLeague:false,name:setup.name||template.name,target:template.defaultRounds||10,weekDates:[],builderTemplateId:template.id,memberIds:setup.entrantIds||[],builderGroupInviteIds:setup.inviteIds,course:setup.courseId,tee:setup.teeName,format:setup.format||template.defaultFormat,audience:setup.audience,assignments:setup.assignments||[]}));
   setModal(null);setTab('leaguecreate');return;
  }
  if(teamEvent){
@@ -461,7 +462,7 @@ return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicato
 {tab==='leaguecreate'&&society&&adminGroupIds.has(society.id)&&<><Title t="Create League"/><p className="muted">Set up the League and its competitions here. Advanced customisation stays in Settings.</p><Leagues state={state} setState={setState} me={currentMe} societyId={society.id} storageAuth={CLOUD&&auth?.access_token?{url:SUPA_URL,key:SUPA_KEY,token:auth.access_token}:null} onPersist={next=>setState(next)} onBuilderLeagueCreated={async (next,sid,ids)=>{
  try{if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token);await sendBuilderGroupInvites(sid,ids)}
  catch{alert('Group invites were held because the League cloud save failed. Send them from Groups once the League is saved.')}
- }} onCreateCompetition={league=>{setEditComp({__newLeague:true,leagueId:league.id,societyId:society.id,entries:[...(league.memberIds||[])],course:league.course||'',tee:league.tee||'',format:'stableford',handicapAllowance:league.handicapSettings?.allowance??league.handicapAllowance??90,batchPairs:league.batchPairs||[],batchBaseName:league.batchBaseName||'',batchDates:league.batchDates||[]});setModal('leaguecomp')}} onEditCompetition={c=>{setEditComp(c);setModal('editcomp')}} onManageMatchplay={item=>{setEditMatchplay(item);setModal('editmatchplay')}}/></>}
+ }} onCreateCompetition={league=>{setEditComp({__newLeague:true,leagueId:league.id,societyId:society.id,entries:[...(league.memberIds||[])],course:league.course||'',tee:league.tee||'',format:league.format||'stableford',handicapAllowance:league.handicapSettings?.allowance??league.handicapAllowance??FORMAT_RULES[league.format||'stableford']?.defaultAllowance??90,batchPairs:league.batchPairs||[],roundGroups:league.roundGroups||[],batchBaseName:league.batchBaseName||'',batchDates:league.batchDates||[]});setModal('leaguecomp')}} onEditCompetition={c=>{setEditComp(c);setModal('editcomp')}} onManageMatchplay={item=>{setEditMatchplay(item);setModal('editmatchplay')}}/></>}
 {tab==='groups'&&<><GroupsPage state={state} setState={setState} me={currentMe} setSocId={setSocId} setTab={setTab} setModal={setModal} setEditComp={setEditComp} auth={auth} setCloud={setCloud} hiddenGroups={hiddenGroups} onAuthoritativeGroup={acceptAuthoritativeGroup}/></>}
 {tab==='updates'&&<GroupUpdates groups={myGroups} adminGroups={updateAdminGroups} updates={groupUpdates} notificationSettings={<PushNotificationSettings client={supabase}/>}/>}
 {tab==='results'&&<><Title t="Results"/><p className="muted">Weekly results, league tables, matchplay and handicaps.</p>{orderedVisibleGroups.map(s=>{
@@ -636,6 +637,9 @@ function CompModal({
   const [invite, setInvite] = useState("");
   const [pairs, setPairs] = useState(
     existing?.pairs || preset?.pairs || preset?.batchPairs || [],
+  );
+  const [roundGroups] = useState(
+    existing?.roundGroups || preset?.roundGroups || [],
   );
   const [pairingMode, setPairingMode] = useState(
     existing?.pairingMode || preset?.pairingMode || ((existing?.pairs?.length||preset?.pairs?.length) ? "preset" : "on-day"),
@@ -924,6 +928,7 @@ function CompModal({
         : liveExisting?.entries || preset?.entries || [],
       invites: liveExisting?.invites || [],
       pairs: inheritedPairs || pairs,
+      roundGroups,
       pairingMode: selectedLeague ? "preset" : pairingMode,
       twoClub,
       twoFee: twoClub ? Math.max(0, +twoFee || 0) : 0,
@@ -1915,9 +1920,9 @@ function LifecycleControls({
     const finalisedCards = next === "completed"
       ? (closingState.cards || []).filter(card => card.compId === c.id && card.autoClosedAt === now.toISOString())
       : [];
-    const nextState = {
+    let nextState = {
       ...closingState,
-      comps: state.comps.map((q) => (q.id === c.id ? { ...q, ...patch } : q)),
+      comps: closingState.comps.map((q) => (q.id === c.id ? { ...q, ...patch } : q)),
       audit: [
         ...(state.audit || []),
         {
@@ -1937,6 +1942,10 @@ function LifecycleControls({
         },
       ],
     };
+    if (next === "completed" && c.leagueId) {
+      const season = (nextState.leagues || []).find((record) => record.id === c.leagueId && record.seasonRules);
+      if (season) nextState = applySeasonProgression(season, nextState);
+    }
     setState(nextState);
     close();
     if (CLOUD && auth?.access_token)

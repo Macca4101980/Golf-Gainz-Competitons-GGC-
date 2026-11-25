@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   COMPETITION_TEMPLATES,
   automaticAssignments,
+  builderScoringFormats,
   builderRosterCounts,
   recommendTemplates,
   templateById,
@@ -36,8 +37,14 @@ test("recommendations require matching scoring and structure, even for favourite
   );
   assert.deepEqual(
     recommendTemplates({ audience: "societies", style: "head-to-head" }).map((item) => item.id),
-    ["hollingsworth-trophy", "ryder-solheim-cup"],
+    ["county-handicap-league", "hollingsworth-trophy", "ryder-solheim-cup", "presidents-cup"],
   );
+});
+
+test("builder only offers scoring formats backed by the relevant engine", () => {
+  assert.ok(builderScoringFormats("pairs").some((item) => item.id === "foursomes"));
+  assert.ok(builderScoringFormats("groups").some((item) => item.id === "scramble"));
+  assert.equal(builderScoringFormats("individual").some((item) => item.id === "scramble"), false);
 });
 
 test("knockout validation warns about byes without blocking a valid field", () => {
@@ -95,6 +102,18 @@ test("template preset carries entrants, course, tee and automatic teams into exi
   assert.equal(preset.tee, "Green");
   assert.deepEqual(preset.entries, ["a", "b"]);
   assert.deepEqual(preset.pairs[0].ids, ["a", "b"]);
+});
+
+test("group formats create round groups rather than pairs", () => {
+  const preset = templatePreset(templateById("traditional-golf-day"), {
+    audience: "groups",
+    format: "scramble",
+    entrantIds: ["a", "b", "c", "d"],
+    assignments: [["a", "b", "c", "d"]],
+  });
+  assert.equal(preset.format, "scramble");
+  assert.deepEqual(preset.roundGroups[0].playerIds, ["a", "b", "c", "d"]);
+  assert.equal(preset.pairs, undefined);
 });
 
 test("Ryder / Solheim template creates Four-Ball, Foursomes and Singles fixtures", () => {

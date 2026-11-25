@@ -8,6 +8,7 @@ import {
   automaticAssignments,
   builderRulesText,
   builderRosterCounts,
+  builderScoringFormats,
   recommendTemplates,
   validateBuilderSetup,
 } from "./competitionBuilder.js";
@@ -95,6 +96,7 @@ export default function CompetitionBuilder({
   const [selectedId, setSelectedId] = useState("");
   const [infoId, setInfoId] = useState("");
   const [name, setName] = useState("");
+  const [format, setFormat] = useState("");
   const [entrantIds, setEntrantIds] = useState([]);
   const [target, setTarget] = useState("");
   const [inviteGroupId, setInviteGroupId] = useState("");
@@ -138,6 +140,7 @@ export default function CompetitionBuilder({
   const plannedEntrantIds = [...entrantIds, ...placeholderIds];
   const selectedCourse = (state.courses || []).find((course) => course.id === courseId);
   const [groupSize, setGroupSize] = useState(4);
+  const scoringFormats = builderScoringFormats(answers.audience);
   const teamSize = answers.audience === "groups" ? groupSize : 2;
   const plannedAssignments = useMemo(() => placeholderIds.length
     ? allocate(plannedEntrantIds)
@@ -158,6 +161,8 @@ export default function CompetitionBuilder({
     teeName,
     state,
     teamAssignments: answers.audience === "individual" ? [] : plannedAssignments,
+    audience: answers.audience,
+    format,
   });
   const blocked = saving || !validTarget || tooManySelected || placeholderLimitExceeded || !society || validation.some((issue) => issue.level === "red");
   const stage = [1, 1, 1, 2, 3, 3, 4][step] || 1;
@@ -166,6 +171,10 @@ export default function CompetitionBuilder({
     const chosen = COMPETITION_TEMPLATES.find((item) => item.id === id);
     setSelectedId(id);
     setName(chosen?.name || "");
+    const chosenFormat = scoringFormats.some((item) => item.id === chosen?.defaultFormat)
+      ? chosen.defaultFormat
+      : scoringFormats[0]?.id || chosen?.defaultFormat || "stableford";
+    setFormat(chosenFormat);
     const ids = groupPlayers.map((player) => player.id);
     setEntrantIds(ids);
     setTarget(String(ids.length || 1));
@@ -194,7 +203,7 @@ export default function CompetitionBuilder({
       await onUseTemplate(template, {
         name: name || template.name, societyId: society.id, audience: answers.audience,
         structure: answers.structure, style: answers.style, entrantIds: plannedEntrantIds,
-        courseId, teeName, assignments: plannedAssignments, placeholderIds, inviteIds: invitees,
+        courseId, teeName, format, assignments: plannedAssignments, placeholderIds, inviteIds: invitees,
       });
     } catch (error) {
       setSetupError(error?.message || "Could not finish this setup. Try again.");
@@ -262,6 +271,11 @@ export default function CompetitionBuilder({
         <section className="builderPersonalise">
           <p className="builderEyebrow">PERSONALISE</p><h2>Players and teams</h2>
           <label>Competition name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
+          {template.family !== "matchplay" && template.family !== "team-event" && <label>Scoring format
+            <select value={format} onChange={(event) => setFormat(event.target.value)}>
+              {scoringFormats.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+          </label>}
           {answers.audience === "groups" && <label>Golfers per team
             <select value={groupSize} onChange={(event) => {
               const size = Number(event.target.value);
@@ -322,7 +336,7 @@ export default function CompetitionBuilder({
       {step === 6 && template && (
         <section className="builderReview">
           <p className="builderEyebrow">PREVIEW</p><h2>Review before creating</h2>
-          <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Creating in</dt><dd>{society?.name || "Choose a group"}</dd></div><div><dt>Entrants</dt><dd>{plannedEntrantIds.length}</dd></div>{placeholderCount > 0 && <div><dt>New placeholders</dt><dd>{placeholderCount}</dd></div>}{invitees.length > 0 && <div><dt>Group invites</dt><dd>{invitees.map((id) => inviteable.get(id).name).join(", ")}</dd></div>}<div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
+          <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Creating in</dt><dd>{society?.name || "Choose a group"}</dd></div><div><dt>Entrants</dt><dd>{plannedEntrantIds.length}</dd></div>{template.family !== "matchplay" && template.family !== "team-event" && <div><dt>Scoring</dt><dd>{scoringFormats.find((item) => item.id === format)?.label || format}</dd></div>}{placeholderCount > 0 && <div><dt>New placeholders</dt><dd>{placeholderCount}</dd></div>}{invitees.length > 0 && <div><dt>Group invites</dt><dd>{invitees.map((id) => inviteable.get(id).name).join(", ")}</dd></div>}<div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
             {answers.structure === "round-robin" && <div><dt>Fixtures per leg</dt><dd>{entrantCount * (entrantCount - 1) / 2}</dd></div>}
             {answers.structure === "knockout" && entrantCount >= 2 && <div><dt>Bracket</dt><dd>{entrantCount - 1} matches · {2 ** Math.ceil(Math.log2(entrantCount)) - entrantCount} byes</dd></div>}
             {answers.structure === "group-stage" && <div><dt>Stages</dt><dd>Group matches → Knockout</dd></div>}

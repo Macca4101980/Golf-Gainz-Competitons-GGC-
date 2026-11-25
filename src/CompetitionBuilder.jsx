@@ -77,16 +77,17 @@ function RulesDialog({ template, onClose }) {
 
 export default function CompetitionBuilder({
   state,
-  society,
-  me,
+  groups,
+  groupId,
+  onGroupChange,
+  onCreateGroup,
   personalFavourites = [],
-  groupFavourites = [],
   onToggleFavourite,
   onUseTemplate,
   courseManager,
   onClose,
 }) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [answers, setAnswers] = useState({ audience: "", style: "", structure: "" });
   const [selectedId, setSelectedId] = useState("");
   const [infoId, setInfoId] = useState("");
@@ -96,6 +97,8 @@ export default function CompetitionBuilder({
   const [teeName, setTeeName] = useState("");
   const [assignments, setAssignments] = useState([]);
   const [showCourses, setShowCourses] = useState(false);
+  const society = groups.find((group) => group.id === groupId);
+  const groupFavourites = society?.competitionBuilderFavourites || [];
   const allFavourites = [...new Set([...personalFavourites, ...groupFavourites])];
   const recommendations = useMemo(() => recommendTemplates(answers, allFavourites), [answers, allFavourites.join("|")]);
   const compatible = { audience: answers.audience };
@@ -123,8 +126,8 @@ export default function CompetitionBuilder({
     state,
     teamAssignments: answers.audience === "individual" ? [] : assignments,
   });
-  const blocked = validation.some((issue) => issue.level === "red");
-  const stage = [1, 1, 1, 2, 3, 3, 4][step];
+  const blocked = !society || validation.some((issue) => issue.level === "red");
+  const stage = [1, 1, 1, 2, 3, 3, 4][step] || 1;
 
   function chooseTemplate(id) {
     const chosen = COMPETITION_TEMPLATES.find((item) => item.id === id);
@@ -154,11 +157,25 @@ export default function CompetitionBuilder({
   return (
     <div className="competitionBuilder">
       <div className="builderHeader">
-        <button className="builderBack" aria-label="Back" onClick={() => step ? setStep(step - 1) : onClose()}><ArrowLeft /></button>
+        <button className="builderBack" aria-label="Back" onClick={() => step >= 0 ? setStep(step - 1) : onClose()}><ArrowLeft /></button>
         <div><small>COMPETITION BUILDER</small><b>{step < 4 ? "Let GGC build your competition" : template?.name || "Build your competition"}</b></div>
         <span>Step {stage} of 5</span>
       </div>
       <div className="builderProgress"><i style={{ width: `${stage * 20}%` }} /></div>
+
+      {step === -1 && (
+        <section className="builderCourseStep">
+          <h2>Which group is this for?</h2>
+          <label>Group
+            <select value={society?.id || ""} onChange={(event) => onGroupChange(event.target.value)}>
+              <option value="">Choose a group</option>
+              {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+            </select>
+          </label>
+          <button className="secondary" onClick={onCreateGroup}>CREATE A NEW GROUP</button>
+          <button className="primary" disabled={!society} onClick={() => setStep(0)}>CONTINUE <ChevronRight /></button>
+        </section>
+      )}
 
       {step === 0 && <ChoiceList title="Who is taking part?" help="Choose the size of the competitive unit. You can select the actual golfers later." items={BUILDER_AUDIENCES} value={answers.audience} onChange={(audience) => { setAnswers({ audience, style: "", structure: "" }); setStep(1); }} />}
       {step === 1 && <ChoiceList title="How will golfers compete?" help="Choose how scores or matches are compared." items={styles} value={answers.style} onChange={(style) => { setAnswers({ ...answers, style, structure: "" }); setStep(2); }} />}
@@ -181,7 +198,7 @@ export default function CompetitionBuilder({
               </article>;
             })}
           </div>
-          <button className="textbtn" onClick={() => { setAnswers({ audience: "", style: "", structure: "" }); setStep(0); }}>START AGAIN</button>
+          <button className="textbtn" onClick={() => { setAnswers({ audience: "", style: "", structure: "" }); setStep(-1); }}>START AGAIN</button>
         </section>
       )}
 
@@ -218,7 +235,7 @@ export default function CompetitionBuilder({
       {step === 6 && template && (
         <section className="builderReview">
           <p className="builderEyebrow">PREVIEW</p><h2>Review before creating</h2>
-          <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Entrants</dt><dd>{entrantIds.length}</dd></div><div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
+          <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Creating in</dt><dd>{society?.name || "Choose a group"}</dd></div><div><dt>Entrants</dt><dd>{entrantIds.length}</dd></div><div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
             {answers.structure === "round-robin" && <div><dt>Fixtures per leg</dt><dd>{entrantCount * (entrantCount - 1) / 2}</dd></div>}
             {answers.structure === "knockout" && entrantCount >= 2 && <div><dt>Bracket</dt><dd>{entrantCount - 1} matches · {2 ** Math.ceil(Math.log2(entrantCount)) - entrantCount} byes</dd></div>}
             {answers.structure === "group-stage" && <div><dt>Stages</dt><dd>Group matches → Knockout</dd></div>}

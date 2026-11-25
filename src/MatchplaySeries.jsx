@@ -165,6 +165,8 @@ export function MatchplayCreate({ state, me, initialSocietyId, preset = null, on
     );
   function create() {
     try {
+      if (!group || (builderSetup.societyId && group.id !== builderSetup.societyId))
+        throw new Error("Choose a group you can manage.");
       const entrants = choices
         .filter((item) => selected.includes(item.id))
         .map((item, index) => ({ ...item, seed: index + 1 }));
@@ -222,6 +224,7 @@ export function MatchplayCreate({ state, me, initialSocietyId, preset = null, on
         Group
         <select
           value={groupId}
+          disabled={!!builderSetup.societyId}
           onChange={(event) => {
             setGroupId(event.target.value);
             setSourceLeagueId("");

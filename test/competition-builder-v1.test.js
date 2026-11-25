@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   COMPETITION_TEMPLATES,
   automaticAssignments,
+  builderRosterCounts,
   recommendTemplates,
   templateById,
   templatePreset,
@@ -125,4 +126,11 @@ test("County and Hollingsworth templates generate the agreed match counts", () =
   };
   assert.equal(build("county-handicap-league", 12).competitions.length, 6);
   assert.equal(build("hollingsworth-trophy", 10).competitions.length, 5);
+});
+
+test("each distinct invitee fills one planned roster place", () => {
+  const group = ["a", "b"];
+  assert.deepEqual(builderRosterCounts(8, group, []), { members: 2, invitations: 0, shortfall: 6 });
+  assert.deepEqual(builderRosterCounts(8, group, ["c", "a", "c", "d"]), { members: 2, invitations: 2, shortfall: 4 });
+  assert.equal(builderRosterCounts(2, group, ["c"]).shortfall, 0);
 });

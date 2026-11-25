@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, ChevronRight, Download, Info, Shuffle, Star, X } from "lucide-react";
 import {
   BUILDER_AUDIENCES,
@@ -7,6 +7,7 @@ import {
   COMPETITION_TEMPLATES,
   automaticAssignments,
   builderRulesText,
+  builderRosterCounts,
   recommendTemplates,
   validateBuilderSetup,
 } from "./competitionBuilder.js";
@@ -78,6 +79,8 @@ function RulesDialog({ template, onClose }) {
 export default function CompetitionBuilder({
   state,
   groups,
+  memberGroups,
+  canInvite,
   groupId,
   onGroupChange,
   onCreateGroup,
@@ -93,6 +96,14 @@ export default function CompetitionBuilder({
   const [infoId, setInfoId] = useState("");
   const [name, setName] = useState("");
   const [entrantIds, setEntrantIds] = useState([]);
+  const [target, setTarget] = useState("");
+  const [inviteGroupId, setInviteGroupId] = useState("");
+  const [inviteIds, setInviteIds] = useState([]);
+  const [fillPlaceholders, setFillPlaceholders] = useState(false);
+  const [placeholderPrefix] = useState(() => `unclaimed-${crypto.randomUUID()}`);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [setupError, setSetupError] = useState("");
   const [courseId, setCourseId] = useState("");
   const [teeName, setTeeName] = useState("");
   const [assignments, setAssignments] = useState([]);
@@ -106,11 +117,33 @@ export default function CompetitionBuilder({
   const structures = BUILDER_STRUCTURES.filter((item) => recommendTemplates({ ...compatible, style: answers.style, structure: item.id }).length);
   const template = COMPETITION_TEMPLATES.find((item) => item.id === selectedId) || null;
   const groupPlayers = (society?.members || []).map((id) => state.players.find((player) => player.id === id)).filter(Boolean);
+  const memberIds = new Set(groupPlayers.map((player) => player.id));
+  const otherGroups = memberGroups.filter((group) => group.id !== groupId);
+  const eligibleInviteIds = new Set(otherGroups.flatMap((group) => group.members || []));
+  const inviteable = new Map(state.players
+    .filter((player) => eligibleInviteIds.has(player.id) && !memberIds.has(player.id)
+      && !player.unclaimed && !player.placeholder && !player.guest)
+    .map((player) => [player.id, player]));
+  const invitees = canInvite ? inviteIds.filter((id) => inviteable.has(id)) : [];
+  const inviteOptions = [...new Set(otherGroups.find((group) => group.id === inviteGroupId)?.members || [])]
+    .map((id) => inviteable.get(id)).filter(Boolean);
+  const targetCount = Number(target);
+  const validTarget = Number.isSafeInteger(targetCount) && targetCount >= 1;
+  const roster = builderRosterCounts(validTarget ? targetCount : 0, entrantIds, invitees);
+  const tooManySelected = validTarget && roster.members + roster.invitations > targetCount;
+  const placeholderLimitExceeded = fillPlaceholders && roster.shortfall > 1000;
+  const placeholderCount = fillPlaceholders && !placeholderLimitExceeded ? roster.shortfall : 0;
+  const placeholderIds = useMemo(() => Array.from({ length: placeholderCount }, (_, index) =>
+    `${placeholderPrefix}-${groupId}-${index + 1}`), [placeholderCount, placeholderPrefix, groupId]);
+  const plannedEntrantIds = [...entrantIds, ...placeholderIds];
   const selectedCourse = (state.courses || []).find((course) => course.id === courseId);
   const [groupSize, setGroupSize] = useState(4);
   const teamSize = answers.audience === "groups" ? groupSize : 2;
-  const [sideA, sideB] = ["A", "B"].map((side) => assignments.filter((item) => item.side === side).length);
-  const entrantCount = answers.audience === "individual" ? entrantIds.length : assignments.length;
+  const plannedAssignments = useMemo(() => placeholderIds.length
+    ? allocate(plannedEntrantIds)
+    : assignments, [placeholderIds, assignments, entrantIds, template, teamSize, answers.audience]);
+  const [sideA, sideB] = ["A", "B"].map((side) => plannedAssignments.filter((item) => item.side === side).length);
+  const entrantCount = answers.audience === "individual" ? plannedEntrantIds.length : plannedAssignments.length;
   const structureLabel = labels(BUILDER_STRUCTURES, answers.structure);
 
   function allocate(ids, chosen = template, size = teamSize) {
@@ -120,13 +153,13 @@ export default function CompetitionBuilder({
   }
   const validation = validateBuilderSetup({
     template,
-    entrantIds,
+    entrantIds: plannedEntrantIds,
     courseId,
     teeName,
     state,
-    teamAssignments: answers.audience === "individual" ? [] : assignments,
+    teamAssignments: answers.audience === "individual" ? [] : plannedAssignments,
   });
-  const blocked = !society || validation.some((issue) => issue.level === "red");
+  const blocked = saving || !validTarget || tooManySelected || placeholderLimitExceeded || !society || validation.some((issue) => issue.level === "red");
   const stage = [1, 1, 1, 2, 3, 3, 4][step] || 1;
 
   function chooseTemplate(id) {
@@ -135,6 +168,10 @@ export default function CompetitionBuilder({
     setName(chosen?.name || "");
     const ids = groupPlayers.map((player) => player.id);
     setEntrantIds(ids);
+    setTarget(String(ids.length || 1));
+    setInviteGroupId("");
+    setInviteIds([]);
+    setFillPlaceholders(false);
     setAssignments(allocate(ids, chosen));
     setStep(4);
   }
@@ -148,6 +185,25 @@ export default function CompetitionBuilder({
     updateEntrants(entrantIds.includes(id) ? entrantIds.filter((value) => value !== id) : [...entrantIds, id]);
   }
 
+  async function finishSetup() {
+    if (blocked || savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSetupError("");
+    try {
+      await onUseTemplate(template, {
+        name: name || template.name, societyId: society.id, audience: answers.audience,
+        structure: answers.structure, style: answers.style, entrantIds: plannedEntrantIds,
+        courseId, teeName, assignments: plannedAssignments, placeholderIds, inviteIds: invitees,
+      });
+    } catch (error) {
+      setSetupError(error?.message || "Could not finish this setup. Try again.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
   const summaryAnswers = [
     labels(BUILDER_AUDIENCES, answers.audience),
     labels(BUILDER_STRUCTURES, answers.structure),
@@ -157,7 +213,7 @@ export default function CompetitionBuilder({
   return (
     <div className="competitionBuilder">
       <div className="builderHeader">
-        <button className="builderBack" aria-label="Back" onClick={() => step >= 0 ? setStep(step - 1) : onClose()}><ArrowLeft /></button>
+        <button className="builderBack" aria-label="Back" disabled={saving} onClick={() => step >= 0 ? setStep(step - 1) : onClose()}><ArrowLeft /></button>
         <div><small>COMPETITION BUILDER</small><b>{step < 4 ? "Let GGC build your competition" : template?.name || "Build your competition"}</b></div>
         <span>Step {stage} of 5</span>
       </div>
@@ -215,8 +271,39 @@ export default function CompetitionBuilder({
           </label>}
           <div className="builderSelectAll"><b>ENTRANTS</b><button className="textbtn" onClick={() => updateEntrants(groupPlayers.map((player) => player.id))}>SELECT ALL</button></div>
           <div className="builderEntrants">{groupPlayers.map((player) => <label key={player.id}><input type="checkbox" checked={entrantIds.includes(player.id)} onChange={() => toggleEntrant(player.id)} /><span><b>{player.name}</b><small>HI {Number(player.hi || 0).toFixed(1)}</small></span></label>)}</div>
+          <label>How many golfers are you planning for?
+            <input type="number" min="1" step="1" value={target} onChange={(event) => setTarget(event.target.value)} />
+          </label>
+          <p className="muted">{groupPlayers.length} in {society?.name} · {roster.members} selected{validTarget ? ` of ${targetCount} planned` : ""}</p>
+          {tooManySelected && <p className="autherror" role="alert">Deselect golfers or raise the planned field size.</p>}
+          {canInvite && otherGroups.length > 0 && (roster.shortfall > 0 || inviteIds.length > 0) && <>
+            <label>Invite golfers from another group
+              <select value={inviteGroupId} onChange={(event) => setInviteGroupId(event.target.value)}>
+                <option value="">Choose another group</option>
+                {otherGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+              </select>
+            </label>
+            {inviteGroupId && (inviteOptions.length ? <div className="builderEntrants">
+              {inviteOptions.map((player) => <label key={player.id}>
+                <input type="checkbox" checked={inviteIds.includes(player.id)}
+                  disabled={!inviteIds.includes(player.id) && roster.shortfall === 0}
+                  onChange={() => setInviteIds((ids) => ids.includes(player.id) ? ids.filter((id) => id !== player.id) : [...ids, player.id])} />
+                {player.name}
+              </label>)}
+            </div> : <p className="muted">No eligible golfers in this group.</p>)}
+            {invitees.length > 0 && <p className="muted">{invitees.length} group invite{invitees.length === 1 ? "" : "s"} to send after saving. Add these golfers to the competition once they accept.</p>}
+          </>}
+          {roster.shortfall > 0 && <fieldset>
+            <legend>{roster.shortfall} place{roster.shortfall === 1 ? "" : "s"} still to fill</legend>
+            <label className="check"><input type="radio" name="builder-shortfall" checked={fillPlaceholders} onChange={() => setFillPlaceholders(true)} />
+              Create {roster.shortfall} placeholder golfer{roster.shortfall === 1 ? "" : "s"}</label>
+            <label className="check"><input type="radio" name="builder-shortfall" checked={!fillPlaceholders} onChange={() => setFillPlaceholders(false)} />
+              Leave the remaining places open</label>
+            {fillPlaceholders && <p className="muted">Edit their names, handicaps and emails under Groups, then send their GGC invites. GGC adds the placeholders to the group when you continue from the review. Their initial Handicap Index is 0.0.</p>}
+          </fieldset>}
           {(answers.audience !== "individual" || template.entrantRule?.sides) && <><button className="secondary builderRandomise" onClick={() => setAssignments(allocate(entrantIds))}><Shuffle /> RANDOMISE {template.entrantRule?.sides ? "SIDES" : "TEAMS"}</button><div className="builderAssignments">{template.entrantRule?.sides ? ["A", "B"].map((side) => <div key={side}><b>SIDE {side}</b><span>{assignments.filter((item) => item.side === side).map((item) => state.players.find((player) => player.id === item.playerId)?.name).filter(Boolean).join(", ") || "No golfers"}</span></div>) : assignments.map((ids, index) => <div key={index}><b>TEAM {index + 1}</b><span>{ids.map((id) => state.players.find((player) => player.id === id)?.name).filter(Boolean).join(" + ")}</span></div>)}</div></>}
-          <button className="primary" onClick={() => setStep(5)}>COURSE & TEES <ChevronRight /></button>
+          {placeholderLimitExceeded && <p className="autherror" role="alert">Create up to 1,000 placeholder golfers at a time.</p>}
+          <button className="primary" disabled={!validTarget || tooManySelected || placeholderLimitExceeded} onClick={() => setStep(5)}>COURSE & TEES <ChevronRight /></button>
         </section>
       )}
 
@@ -235,15 +322,16 @@ export default function CompetitionBuilder({
       {step === 6 && template && (
         <section className="builderReview">
           <p className="builderEyebrow">PREVIEW</p><h2>Review before creating</h2>
-          <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Creating in</dt><dd>{society?.name || "Choose a group"}</dd></div><div><dt>Entrants</dt><dd>{entrantIds.length}</dd></div><div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
+          <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Creating in</dt><dd>{society?.name || "Choose a group"}</dd></div><div><dt>Entrants</dt><dd>{plannedEntrantIds.length}</dd></div>{placeholderCount > 0 && <div><dt>New placeholders</dt><dd>{placeholderCount}</dd></div>}{invitees.length > 0 && <div><dt>Group invites</dt><dd>{invitees.map((id) => inviteable.get(id).name).join(", ")}</dd></div>}<div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
             {answers.structure === "round-robin" && <div><dt>Fixtures per leg</dt><dd>{entrantCount * (entrantCount - 1) / 2}</dd></div>}
             {answers.structure === "knockout" && entrantCount >= 2 && <div><dt>Bracket</dt><dd>{entrantCount - 1} matches · {2 ** Math.ceil(Math.log2(entrantCount)) - entrantCount} byes</dd></div>}
             {answers.structure === "group-stage" && <div><dt>Stages</dt><dd>Group matches → Knockout</dd></div>}
             {answers.structure === "season" && <div><dt>Default events</dt><dd>{template.defaultRounds}</dd></div>}
             {answers.structure === "team-event" && <div><dt>Draft matches</dt><dd>{template.id === "hollingsworth-trophy" ? Math.floor(sideA / 2) : sideA * 2}</dd></div>}</dl></article>
-          <div className="builderValidation">{validation.map((issue) => <div className={issue.level} key={issue.code}><span>{issue.level === "green" ? "✓" : issue.level === "amber" ? "!" : "×"}</span><p>{issue.message}</p></div>)}</div>
+          <div className="builderValidation">{invitees.length > 0 && blocked && <p className="muted">Pending invitations do not meet a format’s minimum entrant or team requirements.</p>}{validation.map((issue) => <div className={issue.level} key={issue.code}><span>{issue.level === "green" ? "✓" : issue.level === "amber" ? "!" : "×"}</span><p>{issue.message}</p></div>)}</div>
           <div className="builderFavouriteActions"><button className="secondary" onClick={() => onToggleFavourite?.(template.id, "personal")}><Star /> {personalFavourites.includes(template.id) ? "PERSONAL FAVOURITE SAVED" : "SAVE PERSONAL FAVOURITE"}</button><button className="secondary" onClick={() => onToggleFavourite?.(template.id, "group")}><Star /> {groupFavourites.includes(template.id) ? "GROUP FAVOURITE SAVED" : "SAVE FOR THIS GROUP"}</button></div>
-          <button className="primary" disabled={blocked} onClick={() => onUseTemplate?.(template, { name: name || template.name, societyId: society?.id, audience: answers.audience, structure: answers.structure, style: answers.style, entrantIds, courseId, teeName, assignments })}>{template.family === "team-event" ? "CREATE DRAFT EVENT" : "CONTINUE TO STEP 5"} <ChevronRight /></button>
+          {setupError && <p className="autherror" role="alert">{setupError}</p>}
+          <button className="primary" disabled={blocked} onClick={finishSetup}>{saving ? "SAVING…" : template.family === "team-event" ? "CREATE DRAFT EVENT" : "CONTINUE TO STEP 5"} <ChevronRight /></button>
           <button className="secondary" onClick={() => setInfoId(template.id)}><Info /> VIEW / DOWNLOAD FULL RULES</button>
         </section>
       )}

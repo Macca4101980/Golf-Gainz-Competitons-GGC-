@@ -285,6 +285,16 @@ export function recommendTemplates(answers = {}, favourites = []) {
   }).sort((a, b) => Number(favourites.includes(b.id)) - Number(favourites.includes(a.id)) || a.name.localeCompare(b.name));
 }
 
+export function builderRosterCounts(target, entrants, invitees) {
+  const members = new Set(entrants);
+  const invitations = new Set(invitees.filter((id) => !members.has(id)));
+  return {
+    members: members.size,
+    invitations: invitations.size,
+    shortfall: Math.max(0, target - members.size - invitations.size),
+  };
+}
+
 export function validateBuilderSetup({ template, entrantIds = [], courseId, teeName, state, teamAssignments = [] } = {}) {
   const issues = [];
   if (!template) return [{ level: "red", code: "template", message: "Choose a competition template." }];

@@ -17,9 +17,10 @@ test('members can read and vote without direct table access',()=>{
  assert.match(app,/ggc_vote_group_poll/);
 });
 
-test('unread updates drive both navigation and installed app badges',()=>{
- assert.match(app,/navigator\.setAppBadge\(unread\)/);
- assert.match(app,/navigator\.clearAppBadge\(\)/);
+test('unread updates drive navigation, but opening GGC clears the launcher badge',()=>{
+ assert.doesNotMatch(app,/navigator\.setAppBadge\(unread\)/);
+ assert.match(app,/clearLauncherBadge\(\)/);
+ assert.match(app,/visibilitychange/);
  assert.match(main,/groupUpdates\.unread>0/);
 });
 

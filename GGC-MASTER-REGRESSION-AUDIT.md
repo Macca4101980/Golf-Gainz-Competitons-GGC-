@@ -530,3 +530,14 @@ Automated/static result for Build 3.6.0: **39 passed, 0 failed**.
 - Calculation parity: ran the current main/Beta 7 Winter League engine against the live source and Beta 8 engine against the post-copy test read-back. Exact comparison passes for all 10 weeks, every team point total/hole score/countback order/player Playing Handicap/cut, best-count setting and overall standings. Repeated at a provisional date and after all release dates; both pass. Existing Beta 8 course-priority and cancelled-week-number fixes remain.
 - Very Little Helps: 37 provisional through hole 15; 42 after release. Guns and Bogeys: 36 provisional; 43 after release. Both have zero provisional cuts; after release cuts are 3 and 3.5 respectively under copied team split settings. Corrected starting HI snapshot resolves Dave's earlier 12-vs-13 discrepancy without a further scoring-code edit. Corrected live cards resolve the prior 10-point Very Little Helps test result.
 - Added a permanent regression for 15-hole masking, no official points/cuts while provisional, full points/cuts after release, and no mutation of stored gross scores. All 140 automated tests pass. No app source or deployment change required for this data alignment. These are database/engine checks; no fresh browser verification performed in this step.
+
+### 26 November 2026 — personal Updates deletion and launcher badge
+- 🔵 Automated: horizontal left swipe reveals personal Delete; vertical scroll and right swipe do not trigger deletion.
+- 🔵 Automated: launch/foreground clears the icon badge and delivered OS notifications without changing the in-app unread feed.
+- 🔵 Automated: personal dismissals are scoped to the signed-in golfer; group-wide admin deletion remains separate.
+- 🟠 Live: verify swipe, reload, second golfer's visibility, and physical iOS/Android launcher badge on isolated test deployment before production promotion.
+
+### 26 November 2026 — builder decision path
+- 🔵 Automated: Stroke Play / Stableford wording; automatically infer single available style/structure; present short template lists directly.
+- 🔵 Automated: selected template determines actual style and structure even when an intermediate question is skipped.
+- 🟠 Live: verify skipped paths, Back and Start Again in the isolated browser before promotion.

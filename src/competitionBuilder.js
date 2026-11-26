@@ -6,7 +6,7 @@ export const BUILDER_AUDIENCES = Object.freeze([
 ]);
 
 export const BUILDER_STYLES = Object.freeze([
-  { id: "course", label: "Strokeplay / Stableford", detail: "Golfers or teams compete against the course, with results determined by strokes or points." },
+  { id: "course", label: "Stroke Play / Stableford", detail: "Golfers or teams compete against the course, with results determined by strokes or points." },
   { id: "head-to-head", label: "Matchplay", detail: "Golfers or teams play directly against opponents." },
   { id: "unsure", label: "I’m not sure", detail: "See the available competition structures." },
 ]);
@@ -320,6 +320,34 @@ export function recommendTemplates(answers = {}, favourites = []) {
     if (answers.duration && answers.duration !== "unsure" && !template.durations.includes(answers.duration)) return false;
     return !answers.structure || structure === answers.structure;
   }).sort((a, b) => Number(favourites.includes(b.id)) - Number(favourites.includes(a.id)) || a.name.localeCompare(b.name));
+}
+
+// Only ask a question when it usefully narrows the actual supported templates.
+export function builderStyleChoices(audience) {
+  const choices = BUILDER_STYLES.filter(item => item.id !== "unsure" && recommendTemplates({ audience, style: item.id }).length);
+  return choices.length > 1 ? [...choices, BUILDER_STYLES.find(item => item.id === "unsure")] : choices;
+}
+
+export function builderStructureChoices(answers) {
+  return BUILDER_STRUCTURES.filter(item => recommendTemplates({ ...answers, structure: item.id }).length);
+}
+
+export function builderNextQuestion(answers, fromStep) {
+  if (fromStep === 0 && builderStyleChoices(answers.audience).length > 1) return { step: 1, answers };
+  const styles = builderStyleChoices(answers.audience);
+  const resolved = { ...answers, style: answers.style || (styles.length === 1 ? styles[0].id : "") };
+  const structures = builderStructureChoices(resolved);
+  if (structures.length === 1) return { step: 3, answers: { ...resolved, structure: structures[0].id } };
+  const templates = recommendTemplates(resolved);
+  // A short list is easier to choose from directly; grouping is useful only for longer lists.
+  if (templates.length <= 4 || structures.every(item => recommendTemplates({ ...resolved, structure: item.id }).length === 1))
+    return { step: 3, answers: resolved };
+  return { step: 2, answers: resolved };
+}
+
+export function builderTemplateAnswers(answers, template) {
+  return { ...answers, structure: availableStructures[template.id],
+    style: template.styles.includes(answers.style) ? answers.style : template.styles.includes("course") ? "course" : "head-to-head" };
 }
 
 export function builderRosterCounts(target, entrants, invitees) {

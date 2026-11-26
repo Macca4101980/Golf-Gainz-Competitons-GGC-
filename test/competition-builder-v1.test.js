@@ -153,3 +153,20 @@ test("each distinct invitee fills one planned roster place", () => {
   assert.deepEqual(builderRosterCounts(8, group, ["c", "a", "c", "d"]), { members: 2, invitations: 2, shortfall: 4 });
   assert.equal(builderRosterCounts(2, group, ["c"]).shortfall, 0);
 });
+
+test("builder skips automatic choices and directly offers short template lists", async () => {
+  const {builderNextQuestion,builderTemplateAnswers,builderStyleChoices,BUILDER_STYLES}=await import("../src/competitionBuilder.js");
+  assert.equal(BUILDER_STYLES[0].label,"Stroke Play / Stableford");
+  assert.equal(builderNextQuestion({audience:"individual"},0).step,1);
+  const large=builderNextQuestion({audience:"societies"},0);
+  assert.equal(large.step,3);
+  assert.equal(large.answers.style,"head-to-head");
+  assert.equal(large.answers.structure,"team-event");
+  assert.deepEqual(builderStyleChoices("groups").map(x=>x.id),["course"]);
+  assert.equal(builderNextQuestion({audience:"groups"},0).step,3);
+  const match=builderNextQuestion({audience:"individual",style:"head-to-head"},1);
+  assert.equal(match.step,3);
+  assert.equal(builderTemplateAnswers(match.answers,templateById("fa-cup")).structure,"knockout");
+  assert.equal(builderTemplateAnswers(match.answers,templateById("world-cup")).structure,"group-stage");
+  assert.equal(builderNextQuestion({audience:"individual",style:"course"},1).step,2);
+});

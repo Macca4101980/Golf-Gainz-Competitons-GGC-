@@ -9,6 +9,10 @@ import {
   builderRulesText,
   builderRosterCounts,
   builderScoringFormats,
+  builderStyleChoices,
+  builderStructureChoices,
+  builderNextQuestion,
+  builderTemplateAnswers,
   recommendTemplates,
   validateBuilderSetup,
 } from "./competitionBuilder.js";
@@ -94,6 +98,7 @@ export default function CompetitionBuilder({
 }) {
   const [step, setStep] = useState(-1);
   const [answers, setAnswers] = useState({ audience: "", style: "", structure: "" });
+  const [questionHistory, setQuestionHistory] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [infoId, setInfoId] = useState("");
   const [name, setName] = useState("");
@@ -115,9 +120,8 @@ export default function CompetitionBuilder({
   const groupFavourites = society?.competitionBuilderFavourites || [];
   const allFavourites = [...new Set([...personalFavourites, ...groupFavourites])];
   const recommendations = useMemo(() => recommendTemplates(answers, allFavourites), [answers, allFavourites.join("|")]);
-  const compatible = { audience: answers.audience };
-  const styles = BUILDER_STYLES.filter((item) => recommendTemplates({ ...compatible, style: item.id }).length);
-  const structures = BUILDER_STRUCTURES.filter((item) => recommendTemplates({ ...compatible, style: answers.style, structure: item.id }).length);
+  const styles = builderStyleChoices(answers.audience);
+  const structures = builderStructureChoices(answers);
   const template = COMPETITION_TEMPLATES.find((item) => item.id === selectedId) || null;
   const groupPlayers = (society?.members || []).map((id) => state.players.find((player) => player.id === id)).filter(Boolean);
   const memberIds = new Set(groupPlayers.map((player) => player.id));
@@ -148,7 +152,8 @@ export default function CompetitionBuilder({
     : assignments, [placeholderIds, assignments, entrantIds, template, teamSize, answers.audience]);
   const [sideA, sideB] = ["A", "B"].map((side) => plannedAssignments.filter((item) => item.side === side).length);
   const entrantCount = answers.audience === "individual" ? plannedEntrantIds.length : plannedAssignments.length;
-  const structureLabel = labels(BUILDER_STRUCTURES, answers.structure);
+  const chosenAnswers = template ? builderTemplateAnswers(answers, template) : answers;
+  const structureLabel = labels(BUILDER_STRUCTURES, chosenAnswers.structure);
 
   function allocate(ids, chosen = template, size = teamSize) {
     if (chosen?.entrantRule?.sides) return automaticAssignments(ids, { sides: 2 });
@@ -168,6 +173,22 @@ export default function CompetitionBuilder({
   const blocked = saving || !validTarget || tooManySelected || placeholderLimitExceeded || !society || validation.some((issue) => issue.level === "red");
   const stage = [1, 1, 1, 2, 3, 3, 4][step] || 1;
 
+  function advanceQuestion(nextAnswers, fromStep) {
+    setQuestionHistory(history => [...history, { step, answers }]);
+    const next = fromStep === 2 ? { step: 3, answers: nextAnswers } : builderNextQuestion(nextAnswers, fromStep);
+    setAnswers(next.answers);
+    setStep(next.step);
+  }
+  function goBack() {
+    if (step >= 4) { setStep(step - 1); return; }
+    if (questionHistory.length) {
+      const previous = questionHistory[questionHistory.length - 1];
+      setQuestionHistory(history => history.slice(0, -1));
+      setAnswers(previous.answers);
+      setStep(previous.step);
+    } else if (step === 0) setStep(-1);
+    else onClose();
+  }
   function chooseTemplate(id) {
     const chosen = COMPETITION_TEMPLATES.find((item) => item.id === id);
     setSelectedId(id);
@@ -203,7 +224,7 @@ export default function CompetitionBuilder({
     try {
       await onUseTemplate(template, {
         name: name || template.name, societyId: society.id, audience: answers.audience,
-        structure: answers.structure, style: answers.style, entrantIds: plannedEntrantIds,
+        structure: chosenAnswers.structure, style: chosenAnswers.style, entrantIds: plannedEntrantIds,
         courseId, teeName, format, assignments: plannedAssignments, placeholderIds, inviteIds: invitees,
       });
     } catch (error) {
@@ -215,15 +236,15 @@ export default function CompetitionBuilder({
   }
 
   const summaryAnswers = [
-    labels(BUILDER_AUDIENCES, answers.audience),
-    labels(BUILDER_STRUCTURES, answers.structure),
-    labels(BUILDER_STYLES, answers.style),
-  ];
+    answers.audience && labels(BUILDER_AUDIENCES, answers.audience),
+    answers.structure && labels(BUILDER_STRUCTURES, answers.structure),
+    answers.style && answers.style !== "unsure" && labels(BUILDER_STYLES, answers.style),
+  ].filter(Boolean);
 
   return (
     <div className="competitionBuilder" data-ggc-dirty={saving ? "true" : undefined}>
       <div className="builderHeader">
-        <button className="builderBack" aria-label="Back" disabled={saving} onClick={() => step >= 0 ? setStep(step - 1) : onClose()}><ArrowLeft /></button>
+        <button className="builderBack" aria-label="Back" disabled={saving} onClick={goBack}><ArrowLeft /></button>
         <div><small>COMPETITION BUILDER</small><b>{step < 4 ? "Let GGC build your competition" : template?.name || "Build your competition"}</b></div>
         <span>Step {stage} of 5</span>
       </div>
@@ -243,9 +264,9 @@ export default function CompetitionBuilder({
         </section>
       )}
 
-      {step === 0 && <ChoiceList title="Who is taking part?" help="Choose the size of the competitive unit. You can select the actual golfers later." items={BUILDER_AUDIENCES} value={answers.audience} onChange={(audience) => { setAnswers({ audience, style: "", structure: "" }); setStep(1); }} />}
-      {step === 1 && <ChoiceList title="How will golfers compete?" help="Choose how scores or matches are compared." items={styles} value={answers.style} onChange={(style) => { setAnswers({ ...answers, style, structure: "" }); setStep(2); }} />}
-      {step === 2 && <ChoiceList title="How should the event be organised?" help="Choose the structure that fits your competition." items={structures} value={answers.structure} onChange={(structure) => { setAnswers({ ...answers, structure }); setStep(3); }} />}
+      {step === 0 && <ChoiceList title="Who is taking part?" help="Choose the size of the competitive unit. You can select the actual golfers later." items={BUILDER_AUDIENCES} value={answers.audience} onChange={(audience) => { advanceQuestion({ audience, style: "", structure: "" }, 0); }} />}
+      {step === 1 && <ChoiceList title="How will golfers compete?" help="Choose how scores or matches are compared." items={styles} value={answers.style} onChange={(style) => { advanceQuestion({ ...answers, style, structure: "" }, 1); }} />}
+      {step === 2 && <ChoiceList title="How should the event be organised?" help="Choose the structure that fits your competition." items={structures} value={answers.structure} onChange={(structure) => { advanceQuestion({ ...answers, structure }, 2); }} />}
 
       {step === 3 && (
         <section className="builderTemplates">
@@ -264,7 +285,7 @@ export default function CompetitionBuilder({
               </article>;
             })}
           </div>
-          <button className="textbtn" onClick={() => { setAnswers({ audience: "", style: "", structure: "" }); setStep(-1); }}>START AGAIN</button>
+          <button className="textbtn" onClick={() => { setAnswers({ audience: "", style: "", structure: "" }); setQuestionHistory([]); setStep(-1); }}>START AGAIN</button>
         </section>
       )}
 
@@ -338,11 +359,11 @@ export default function CompetitionBuilder({
         <section className="builderReview">
           <p className="builderEyebrow">PREVIEW</p><h2>Review before creating</h2>
           <article className="builderPreviewCard"><small>{structureLabel}</small><h3>{name || template.name}</h3><p>{template.summary}</p><dl><div><dt>Creating in</dt><dd>{society?.name || "Choose a group"}</dd></div><div><dt>Entrants</dt><dd>{plannedEntrantIds.length}</dd></div>{template.family !== "matchplay" && template.family !== "team-event" && <div><dt>Scoring</dt><dd>{scoringFormats.find((item) => item.id === format)?.label || format}</dd></div>}{placeholderCount > 0 && <div><dt>New placeholders</dt><dd>{placeholderCount}</dd></div>}{invitees.length > 0 && <div><dt>Group invites</dt><dd>{invitees.map((id) => inviteable.get(id).name).join(", ")}</dd></div>}<div><dt>Course</dt><dd>{selectedCourse?.name || "Not selected"}</dd></div><div><dt>Tees</dt><dd>{teeName || "Not selected"}</dd></div><div><dt>Handicaps</dt><dd>Automatic</dd></div>{template.entrantRule?.sides && <div><dt>Side sizes</dt><dd>{sideA} v {sideB}</dd></div>}
-            {answers.structure === "round-robin" && <div><dt>Fixtures per leg</dt><dd>{entrantCount * (entrantCount - 1) / 2}</dd></div>}
-            {answers.structure === "knockout" && entrantCount >= 2 && <div><dt>Bracket</dt><dd>{entrantCount - 1} matches · {2 ** Math.ceil(Math.log2(entrantCount)) - entrantCount} byes</dd></div>}
-            {answers.structure === "group-stage" && <div><dt>Stages</dt><dd>Group matches → Knockout</dd></div>}
-            {answers.structure === "season" && <div><dt>Default events</dt><dd>{template.defaultRounds}</dd></div>}
-            {answers.structure === "team-event" && <div><dt>Draft matches</dt><dd>{plannedTeamEventMatchCount(template.id, Math.min(sideA, sideB))}</dd></div>}</dl></article>
+            {chosenAnswers.structure === "round-robin" && <div><dt>Fixtures per leg</dt><dd>{entrantCount * (entrantCount - 1) / 2}</dd></div>}
+            {chosenAnswers.structure === "knockout" && entrantCount >= 2 && <div><dt>Bracket</dt><dd>{entrantCount - 1} matches · {2 ** Math.ceil(Math.log2(entrantCount)) - entrantCount} byes</dd></div>}
+            {chosenAnswers.structure === "group-stage" && <div><dt>Stages</dt><dd>Group matches → Knockout</dd></div>}
+            {chosenAnswers.structure === "season" && <div><dt>Default events</dt><dd>{template.defaultRounds}</dd></div>}
+            {chosenAnswers.structure === "team-event" && <div><dt>Draft matches</dt><dd>{plannedTeamEventMatchCount(template.id, Math.min(sideA, sideB))}</dd></div>}</dl></article>
           <div className="builderValidation">{invitees.length > 0 && blocked && <p className="muted">Pending invitations do not meet a format’s minimum entrant or team requirements.</p>}{validation.map((issue) => <div className={issue.level} key={issue.code}><span>{issue.level === "green" ? "✓" : issue.level === "amber" ? "!" : "×"}</span><p>{issue.message}</p></div>)}</div>
           <div className="builderFavouriteActions"><button className="secondary" onClick={() => onToggleFavourite?.(template.id, "personal")}><Star /> {personalFavourites.includes(template.id) ? "PERSONAL FAVOURITE SAVED" : "SAVE PERSONAL FAVOURITE"}</button><button className="secondary" onClick={() => onToggleFavourite?.(template.id, "group")}><Star /> {groupFavourites.includes(template.id) ? "GROUP FAVOURITE SAVED" : "SAVE FOR THIS GROUP"}</button></div>
           {setupError && <p className="autherror" role="alert">{setupError}</p>}

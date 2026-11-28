@@ -36,6 +36,8 @@ import{matchplaySeries,standardLeagues}from'./matchplaySeriesModel.js';
 import{completedPlayoffPlacings,entrantPrizeShares,leaguePrizeForecast,linkedPrizePlayoffs,moneyEligibleLeagues,seasonPrizePots}from'./leagueMoneyModel.js';
 import{syncMatchplayCompetitionResult}from'./matchplayCompetition.js';
 import{flushPushNotifications}from'./pushNotifications.js';
+import{clearLauncherBadge}from'./notificationBadges.js';
+import{publishRoundStarted}from'./roundStartNotifications.js';
 import{isGroupFormat,groupLeaderboard}from'./groupScoring.js';
 import{winterLeagueTable,leagueHandicapSettings}from'./winterLeague.js';
 import{FORMAT_RULES,scoreCard,formatResult,validateFormatStart,oomPointsForField,normaliseBlindPairIds,competitionHandicapIndex,courseHandicap,playingHandicap,pairScore,fourballMatchResult,fourballMatchHandicaps}from'./scoring.js';
@@ -353,6 +355,8 @@ const myGroupIds=new Set(myGroups.map(s=>s.id));
 const visibleGroupIds=new Set(visibleGroups.map(s=>s.id));const adminIdentityIds=new Set([currentMe?.id,auth?.user?.id].filter(Boolean));const adminGroupIds=new Set(myGroups.filter(s=>adminIdentityIds.has(s.ownerId)||(s.admins||[]).some(id=>adminIdentityIds.has(id))).map(s=>s.id));const canManageAny=adminGroupIds.size>0;
 useEffect(()=>{if(!currentMe?.id||!adminGroupIds.size)return;const now=new Date(),ended=(state.comps||[]).filter(c=>adminGroupIds.has(c.societyId)&&['live','scheduled'].includes(c.status||'live')&&Number.isFinite(Date.parse(c.ends))&&Date.parse(c.ends)>=CARD_FINALISATION_CUTOFF&&Date.parse(c.ends)<=now.getTime());if(!ended.length)return;let next=state;const events=[];for(const c of ended){const before=next.cards;next=finaliseCompetitionState(c,next,{at:now.toISOString(),by:currentMe.id,reason:'competition-close'});const finalised=(next.cards||[]).filter((card,i)=>card.compId===c.id&&card!==before[i]&&card.autoClosedAt===now.toISOString());events.push({id:uid(),societyId:c.societyId,compId:c.id,action:'AUTO CLOSE COMPETITION',editedById:currentMe.id,editedByName:currentMe.name,at:now.toISOString(),after:{status:'completed',finalisedCardIds:finalised.map(card=>card.id),generatedNoReturnCount:finalised.reduce((n,card)=>n+(card.generatedNoReturnHoles||[]).length,0)}})}next={...next,comps:next.comps.map(c=>ended.some(x=>x.id===c.id)?{...c,status:'completed',statusChangedAt:now.toISOString(),statusChangedBy:'GGC',autoClosedAt:now.toISOString()}:c),audit:[...(next.audit||[]),...events]};setState(next)},[clockTick,currentMe?.id,state.comps,state.cards]);
 const groupUpdates=useGroupUpdates(supabase,!!auth?.access_token&&!!currentMe?.id,[...adminGroupIds],currentMe?.id);const updateAdminGroups=myGroups.filter(s=>adminGroupIds.has(s.id));
+useEffect(()=>{if(tab!=='updates')return;void clearLauncherBadge();if(groupUpdates.unread>0)void groupUpdates.clearAll().catch(error=>console.error('Could not clear notification alerts',error?.message||error))},[tab,groupUpdates.unread]);
+async function setRoundStartNotificationAudience(groupId,audience){if(!adminGroupIds.has(groupId)||!['admins','group'].includes(audience))throw Error('GGC_GROUP_ADMIN_REQUIRED');const now=new Date().toISOString(),base=latestStateRef.current,next={...base,societies:(base.societies||[]).map(group=>group.id===groupId?{...group,roundStartNotificationAudience:audience,updatedAt:now}:group),audit:[...(base.audit||[]),{id:uid(),societyId:groupId,action:'UPDATE ROUND START NOTIFICATION AUDIENCE',editedById:currentMe.id,editedByName:currentMe.name,at:now,after:{audience}}]};setState(next);if(CLOUD&&auth?.access_token)await saveCloud(next,setCloud,auth.access_token)}
 useEffect(()=>{if(!supabase||!auth?.access_token||!currentMe?.id||!adminGroupIds.size)return;const events=automaticUpdateEvents(state,adminGroupIds),keys=events.map(x=>x.eventKey).sort().join('|');if(keys===automaticUpdateKeysRef.current)return;automaticUpdateKeysRef.current=keys;publishAutomaticUpdates(supabase,events).then(()=>groupUpdates.refresh()).catch(error=>console.error('Automatic Updates sync failed',error?.message||error))},[auth?.access_token,currentMe?.id,state.comps,state.cards,state.leagues]);
 useEffect(()=>{if(!supabase||!auth?.access_token)return;void flushPushNotifications(supabase);const timer=setInterval(()=>void flushPushNotifications(supabase),30000);return()=>clearInterval(timer)},[auth?.access_token]);
 const comps=(state.comps||[]).filter(c=>visibleGroupIds.has(c.societyId)&&c.status!=='deleted');
@@ -381,7 +385,13 @@ return <div className="app">{pullRefreshing&&<div className="pullRefreshIndicato
 {tab==='comps'&&<><Title t="Competitions"/>{import.meta.env.VITE_GGC_CROSS_COURSE==='true'&&supabase&&currentMe&&<button onClick={()=>setModal('cross-course')}>Cross-course fixtures</button>}{canManageAny&&<div className="compCreateActions"><button className="primary" onClick={()=>setModal('comp')}><Plus/> CREATE COMPETITION</button><button className="primary" onClick={()=>setModal('newleague')}><Plus/> CREATE LEAGUE</button><button className="primary" onClick={()=>setModal('newmatchplay')}><Plus/> CREATE MATCHPLAY LEAGUE OR KNOCKOUT</button></div>}{orderedVisibleGroups.map(s=>{const cs=comps.filter(c=>c.societyId===s.id&&!c.matchplaySeriesId);const series=matchplaySeries(state).filter(record=>record.societyId===s.id);const byDate=(a,b)=>(Date.parse(a.starts)||Infinity)-(Date.parse(b.starts)||Infinity)||String(a.name||'').localeCompare(String(b.name||''));const active=cs.filter(c=>effectiveCompStatus(c)!=='completed'&&effectiveCompStatus(c)!=='cancelled').sort(byDate);const done=cs.filter(c=>effectiveCompStatus(c)==='completed'||effectiveCompStatus(c)==='cancelled').sort(byDate);return <details className="groupCompTwirl" key={s.id} open={s.id===society?.id}><summary><span className="groupCompName"><b>{s.name.toUpperCase()}</b></span><span className="groupCompCount">{active.length}</span><strong>›</strong></summary><MatchplayFixtures records={series} state={state} setState={setState} me={currentMe} isAdmin={adminGroupIds.has(s.id)} onScorecard={(competition,existing)=>{if(existing)enter(competition);else{setEditComp(competition);setModal('matchplaycomp')}}}/>{active.length?active.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={s} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>):!series.length&&<Empty text="No live or upcoming competitions in this group."/>}{done.length>0&&<details className="completedTwirl"><summary>COMPLETED COMPETITIONS <span>{done.length}</span></summary>{done.map(c=><CompCard key={c.id} c={c} state={state} me={currentMe} society={s} enter={()=>enter(c)} board={()=>{setEditComp(c);setModal('leaderboard')}} share={()=>{setEditComp(c);setModal('shareleaderboard')}} edit={()=>{setEditComp(c);setModal('editcomp')}}/>)}</details>}</details>})}</>}
 {tab==='leaguecreate'&&society&&adminGroupIds.has(society.id)&&<><Title t="Create League"/><p className="muted">Set up the League and its competitions here. Advanced customisation stays in Settings.</p><Leagues state={state} setState={setState} me={currentMe} societyId={society.id} storageAuth={CLOUD&&auth?.access_token?{url:SUPA_URL,key:SUPA_KEY,token:auth.access_token}:null} onPersist={next=>setState(next)} onCreateCompetition={league=>{setEditComp({__newLeague:true,leagueId:league.id,societyId:society.id,entries:[...(league.memberIds||[])],handicapAllowance:league.handicapAllowance??90,batchPairs:league.batchPairs||[],batchBaseName:league.batchBaseName||'',batchDates:league.batchDates||[]});setModal('leaguecomp')}} onEditCompetition={c=>{setEditComp(c);setModal('editcomp')}} onManageMatchplay={item=>{setEditMatchplay(item);setModal('editmatchplay')}}/></>}
 {tab==='groups'&&<><GroupsPage state={state} setState={setState} me={currentMe} setSocId={setSocId} setTab={setTab} setModal={setModal} setEditComp={setEditComp} auth={auth} setCloud={setCloud} hiddenGroups={hiddenGroups} onAuthoritativeGroup={acceptAuthoritativeGroup}/></>}
-{tab==='updates'&&<GroupUpdates groups={myGroups} adminGroups={updateAdminGroups} updates={groupUpdates} notificationSettings={<PushNotificationSettings client={supabase}/>}/>}
+{tab==='updates'&&<GroupUpdates
+ groups={myGroups}
+ adminGroups={updateAdminGroups}
+ updates={groupUpdates}
+ notificationSettings={<PushNotificationSettings client={supabase}/>}
+ onRoundStartAudienceChange={setRoundStartNotificationAudience}
+/>}
 {tab==='results'&&<><Title t="Results"/><p className="muted">Weekly results, league tables, matchplay and handicaps.</p>{orderedVisibleGroups.map(s=>{
  const groupLeagues=standardLeagues(state).filter(l=>l.societyId===s.id&&!(state.deletedLeagueIds||[]).includes(l.id)&&((l.teams||[]).length||(state.comps||[]).some(c=>c.leagueId===l.id)));
  const series=matchplaySeries(state).filter(item=>item.societyId===s.id);
@@ -1989,6 +1999,7 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
         setState={setState}
         me={me}
         back={back}
+        notificationClient={supabase}
         onPersist={async (next) => {
           if (CLOUD && auth?.access_token)
             await saveCloud(next, setCloud, auth.access_token);
@@ -2187,6 +2198,8 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
             return alert("Choose golfers in their preset pairs.");
     }
     const now = new Date().toISOString();
+    const roundGroupId = savedGroup?.id || uid();
+    const isNewRound = !savedGroup?.id;
     let next = { ...state };
     const cards = [...state.cards];
     for (const id of ids) {
@@ -2224,7 +2237,7 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
         (g) => !(g.playerIds || []).some((id) => ids.includes(id)),
       ),
       {
-        id: savedGroup?.id || uid(),
+        id: roundGroupId,
         playerIds: ids,
         startedAt: savedGroup?.startedAt || now,
         startedBy: me.id,
@@ -2261,8 +2274,18 @@ function ScoreScreen({ c, state, setState, me, auth, setCloud, back }) {
     setGroupIds(ids);
     sessionStorage.removeItem(groupDraftKey);
     setSetup(false);
-    if (CLOUD && auth?.access_token)
+    if (CLOUD && auth?.access_token) {
       await saveCloud(next, setCloud, auth.access_token);
+      if (isNewRound)
+        try {
+          await publishRoundStarted(supabase, {
+            competitionId: c.id,
+            roundGroupId,
+          });
+        } catch (error) {
+          console.error('Round-start notification failed', error?.message || error);
+        }
+    }
   }
   function roundScoreText(row) {
     return (row.playerIds || [])
